@@ -146,7 +146,7 @@ export function useMessage(id: string | undefined) {
 }
 
 /**
- * Get unread message count
+ * Get unread message count - real-time polling
  */
 export function useUnreadMessageCount() {
   return useQuery({
@@ -154,9 +154,11 @@ export function useUnreadMessageCount() {
     queryFn: async () => {
       const response = await get<InternalMessage[]>('/api/messages?type=inbox&status=UNREAD&pageSize=1');
       // The API returns paginated response with meta
-      return (response as { meta?: { totalCount?: number } })?.meta?.totalCount ?? 0;
+      return (response as { meta?: { total?: number } })?.meta?.total ?? 0;
     },
-    refetchInterval: 30000, // Check every 30 seconds
+    refetchInterval: 5000, // Poll every 5 seconds for real-time updates
+    refetchIntervalInBackground: true, // Continue polling even when tab is not focused
+    staleTime: 0, // Always consider data stale to ensure fresh count
   });
 }
 

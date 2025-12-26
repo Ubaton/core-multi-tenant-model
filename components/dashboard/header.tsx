@@ -6,9 +6,10 @@
 
 'use client';
 
-import { Bell, Menu, Search, User } from 'lucide-react';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { Bell, Menu, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -19,10 +20,18 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useCurrentUser, useLogout } from '@/lib/client';
+import { useUnreadMessageCount } from '@/lib/client/hooks';
 
 export function Header() {
   const { data: user } = useCurrentUser();
   const logout = useLogout();
+  const pathname = usePathname();
+  const { data: unreadCount, isLoading: isLoadingCount } = useUnreadMessageCount();
+
+  // Determine the messages link based on current path
+  const messagesLink = pathname?.startsWith('/super-admin') 
+    ? '/super-admin/communications' 
+    : '/communications';
 
   return (
     <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
@@ -37,12 +46,18 @@ export function Header() {
 
       <div className="flex flex-1 justify-end gap-x-4 self-stretch lg:gap-x-6">
         <div className="flex items-center gap-x-4 lg:gap-x-6">
-          {/* Notifications */}
-          <Button variant="ghost" size="icon" className="relative">
-            <span className="sr-only">View notifications</span>
-            <Bell className="h-5 w-5 text-gray-400" />
-            <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500" />
-          </Button>
+          {/* Messages/Notifications */}
+          <Link href={messagesLink}>
+            <Button variant="ghost" size="icon" className="relative">
+              <span className="sr-only">View messages</span>
+              <Bell className={`h-5 w-5 ${unreadCount && unreadCount > 0 ? 'text-gray-600 dark:text-gray-300' : 'text-gray-400'}`} />
+              {typeof unreadCount === 'number' && unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-xs font-medium animate-pulse">
+                  {unreadCount > 99 ? '99+' : unreadCount}
+                </span>
+              )}
+            </Button>
+          </Link>
 
           {/* Separator */}
           <div className="hidden lg:block lg:h-6 lg:w-px lg:bg-gray-200 dark:lg:bg-gray-800" />

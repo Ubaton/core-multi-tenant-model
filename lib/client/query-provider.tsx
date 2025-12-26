@@ -28,8 +28,10 @@ export function QueryProvider({ children }: ProvidersProps) {
             gcTime: 5 * 60 * 1000,
             // Retry failed requests 2 times
             retry: 2,
-            // Don't refetch on window focus in development
-            refetchOnWindowFocus: process.env.NODE_ENV === 'production',
+            // Refetch on window focus for real-time updates
+            refetchOnWindowFocus: true,
+            // Refetch when reconnecting
+            refetchOnReconnect: true,
           },
           mutations: {
             // Retry mutations once
