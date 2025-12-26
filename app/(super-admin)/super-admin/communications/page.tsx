@@ -15,6 +15,7 @@ import {
   useReplyToMessage,
   useDeleteMessage,
   useUnreadMessageCount,
+  useTenants,
   type InternalMessage,
   type MessageFilters,
   type MessagePriority,
@@ -144,6 +145,7 @@ export default function SuperAdminCommunicationsPage() {
   const [composeSubject, setComposeSubject] = useState('');
   const [composeMessage, setComposeMessage] = useState('');
   const [composePriority, setComposePriority] = useState<MessagePriority>('NORMAL');
+  const [composeTenantId, setComposeTenantId] = useState<string>('');
 
   // Filters
   const [filters, setFilters] = useState<MessageFilters>({
@@ -161,6 +163,8 @@ export default function SuperAdminCommunicationsPage() {
   const { data: selectedMessage, isLoading: isLoadingMessage } = useMessage(
     selectedMessageId || undefined
   );
+  const { data: tenantsData } = useTenants({ pageSize: 100, isActive: true });
+  const tenants = tenantsData?.data ?? [];
 
   // Mutations
   const sendMessage = useSendMessage();
