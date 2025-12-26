@@ -40,7 +40,13 @@ if (connectionString.startsWith('prisma+postgres://')) {
   });
 } else {
   // Reuse pool in development to avoid connection exhaustion
-  const pool = globalForPrisma.pool ?? new Pool({ connectionString });
+  const pool = globalForPrisma.pool ?? new Pool({ 
+    connectionString,
+    max: 10, // Maximum connections in pool
+    idleTimeoutMillis: 30000, // Close idle connections after 30s
+    connectionTimeoutMillis: 10000, // Timeout after 10s trying to connect
+    ssl: connectionString.includes('sslmode=require') ? { rejectUnauthorized: false } : undefined,
+  });
 
   // Create the Prisma adapter using the pg pool
   const adapter = new PrismaPg(pool);
