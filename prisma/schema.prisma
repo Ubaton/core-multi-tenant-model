@@ -1,0 +1,601 @@
+// ════════════════════════════════════════════════════════════════════════════
+// MULTI-TENANT CHURCH DATA CAPTURING SYSTEM - DATABASE SCHEMA
+// ════════════════════════════════════════════════════════════════════════════
+// 
+// This schema implements strict multi-tenant isolation where:
+// - All tenant-owned tables include a mandatory tenantId column
+// - Referential integrity is enforced via foreign keys
+// - SUPER_ADMIN can access all tenants, others are tenant-scoped
+// ════════════════════════════════════════════════════════════════════════════
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../lib/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// ENUMS
+// ════════════════════════════════════════════════════════════════════════════
+
+enum UserRole {
+  SUPER_ADMIN    // Global access to all tenants
+  CHURCH_ADMIN   // Full access within a single tenant
+  STAFF          // Limited access within a tenant
+  CALL_CENTER    // Call center specific access
+  SUBSCRIBER     // Read-only or submission-based access
+  MEMBER         // Church member access
+}
+
+enum MemberStatus {
+  ACTIVE
+  INACTIVE
+  DECEASED
+  TRANSFERRED
+}
+
+enum LeadSource {
+  FACEBOOK
+  TV_SERVICE
+  WEBSITE
+  REFERRAL
+  WALK_IN
+  PHONE_CALL
+  OTHER
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  FOLLOW_UP
+  CONVERTED
+  CLOSED
+}
+
+enum PrayerRequestStatus {
+  PENDING
+  IN_PROGRESS
+  ANSWERED
+  CLOSED
+}
+
+enum CommunicationType {
+  SMS
+  EMAIL
+  WHATSAPP
+}
+
+enum CommunicationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+}
+
+enum OfferingType {
+  TITHE
+  OFFERING
+  FIRST_FRUIT
+  SPECIAL_SEED
+  BUILDING_PROJECT
+  MISSIONS
+  OTHER
+}
+
+enum InvitationStatus {
+  PENDING
+  ACCEPTED
+  EXPIRED
+  REVOKED
+}
+
+enum CallOutcome {
+  ANSWERED
+  NO_ANSWER
+  BUSY
+  VOICEMAIL
+  CALLBACK_REQUESTED
+  WRONG_NUMBER
+  COMPLETED
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// TENANT (CHURCH) - The root of multi-tenancy
+// ════════════════════════════════════════════════════════════════════════════
+
+model Tenant {
+  id          String   @id @default(cuid())
+  name        String   // Church name
+  slug        String   @unique // Subdomain identifier (e.g., "grace-chapel")
+  description String?
+  logo        String?
+  website     String?
+  email       String?
+  phone       String?
+  address     String?
+  city        String?
+  state       String?
+  country     String   @default("Nigeria")
+  timezone    String   @default("Africa/Lagos")
+  isActive    Boolean  @default(true)
+  isHQ        Boolean  @default(false) // Is this the headquarters?
+  parentId    String?  // For branch churches under HQ
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  parent      Tenant?   @relation("TenantHierarchy", fields: [parentId], references: [id])
+  branches    Tenant[]  @relation("TenantHierarchy")
+  
+  users       User[]
+  members     Member[]
+  leads       Lead[]
+  prayerRequests PrayerRequest[]
+  offerings   Offering[]
+  communications Communication[]
+  invitations Invitation[]
+  callLogs    CallLog[]
+  services    Service[]
+  departments Department[]
+  auditLogs   AuditLog[]
+
+  @@index([slug])
+  @@index([parentId])
+  @@index([isActive])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// USER - System users with role-based access
+// ════════════════════════════════════════════════════════════════════════════
+
+model User {
+  id            String    @id @default(cuid())
+  email         String    @unique
+  passwordHash  String
+  firstName     String
+  lastName      String
+  phone         String?
+  avatar        String?
+  role          UserRole  @default(MEMBER)
+  isActive      Boolean   @default(true)
+  emailVerified Boolean   @default(false)
+  lastLoginAt   DateTime?
+  
+  // Tenant association (null for SUPER_ADMIN who can access all)
+  tenantId      String?
+  tenant        Tenant?   @relation(fields: [tenantId], references: [id])
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  callLogs      CallLog[]         @relation("CallOperator")
+  assignedLeads Lead[]            @relation("LeadAssignee")
+  sentCommunications Communication[] @relation("CommunicationSender")
+  createdInvitations Invitation[]  @relation("InvitationCreator")
+  auditLogs     AuditLog[]
+
+  @@index([email])
+  @@index([tenantId])
+  @@index([role])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// MEMBER - Church members
+// ════════════════════════════════════════════════════════════════════════════
+
+model Member {
+  id            String       @id @default(cuid())
+  tenantId      String       // REQUIRED: Multi-tenant isolation
+  tenant        Tenant       @relation(fields: [tenantId], references: [id])
+  
+  // Personal Information
+  firstName     String
+  lastName      String
+  middleName    String?
+  email         String?
+  phone         String
+  alternatePhone String?
+  gender        Gender?
+  dateOfBirth   DateTime?
+  address       String?
+  city          String?
+  state         String?
+  country       String       @default("Nigeria")
+  occupation    String?
+  employer      String?
+  
+  // Church Information
+  membershipId  String?      // Church-assigned ID
+  status        MemberStatus @default(ACTIVE)
+  joinDate      DateTime     @default(now())
+  baptismDate   DateTime?
+  weddingDate   DateTime?
+  
+  // Family Relations
+  familyId      String?
+  isHeadOfFamily Boolean     @default(false)
+  
+  // Metadata
+  notes         String?
+  photo         String?
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  // Relations
+  prayerRequests PrayerRequest[]
+  offerings      Offering[]
+  receivedCommunications Communication[]
+  callLogs       CallLog[]
+  departments    DepartmentMember[]
+  convertedFromLead Lead?    @relation("LeadConversion")
+
+  @@unique([tenantId, phone])
+  @@unique([tenantId, membershipId])
+  @@index([tenantId])
+  @@index([status])
+  @@index([familyId])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// LEAD - Prospects from various sources (Facebook, TV, etc.)
+// ════════════════════════════════════════════════════════════════════════════
+
+model Lead {
+  id            String      @id @default(cuid())
+  tenantId      String      // REQUIRED: Multi-tenant isolation
+  tenant        Tenant      @relation(fields: [tenantId], references: [id])
+  
+  // Contact Information
+  firstName     String
+  lastName      String
+  email         String?
+  phone         String
+  alternatePhone String?
+  address       String?
+  city          String?
+  state         String?
+  
+  // Lead Details
+  source        LeadSource
+  sourceDetails String?     // e.g., specific Facebook campaign, TV program name
+  status        LeadStatus  @default(NEW)
+  notes         String?
+  
+  // Assignment
+  assignedToId  String?
+  assignedTo    User?       @relation("LeadAssignee", fields: [assignedToId], references: [id])
+  assignedAt    DateTime?
+  
+  // Conversion Tracking
+  convertedToMemberId String? @unique
+  convertedToMember   Member? @relation("LeadConversion", fields: [convertedToMemberId], references: [id])
+  convertedAt   DateTime?
+  
+  // Metadata
+  priority      Int         @default(0) // 0 = normal, higher = more urgent
+  lastContactAt DateTime?
+  nextFollowUp  DateTime?
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  // Relations
+  callLogs      CallLog[]
+  communications Communication[]
+
+  @@unique([tenantId, phone])
+  @@index([tenantId])
+  @@index([status])
+  @@index([source])
+  @@index([assignedToId])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// PRAYER REQUEST - Prayer submissions
+// ════════════════════════════════════════════════════════════════════════════
+
+model PrayerRequest {
+  id            String              @id @default(cuid())
+  tenantId      String              // REQUIRED: Multi-tenant isolation
+  tenant        Tenant              @relation(fields: [tenantId], references: [id])
+  
+  // Requestor (can be member or anonymous)
+  memberId      String?
+  member        Member?             @relation(fields: [memberId], references: [id])
+  
+  // Anonymous requestor details (if not a member)
+  requestorName  String?
+  requestorEmail String?
+  requestorPhone String?
+  
+  // Prayer Details
+  title         String
+  description   String
+  isAnonymous   Boolean             @default(false)
+  isUrgent      Boolean             @default(false)
+  status        PrayerRequestStatus @default(PENDING)
+  
+  // Response/Update
+  prayerResponse String?
+  answeredAt    DateTime?
+  
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+
+  @@index([tenantId])
+  @@index([memberId])
+  @@index([status])
+  @@index([isUrgent])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// OFFERING - Church offerings and collections
+// ════════════════════════════════════════════════════════════════════════════
+
+model Offering {
+  id            String       @id @default(cuid())
+  tenantId      String       // REQUIRED: Multi-tenant isolation
+  tenant        Tenant       @relation(fields: [tenantId], references: [id])
+  
+  // Giver Information
+  memberId      String?
+  member        Member?      @relation(fields: [memberId], references: [id])
+  
+  // Anonymous giver details
+  giverName     String?
+  giverPhone    String?
+  
+  // Offering Details
+  type          OfferingType
+  amount        Decimal      @db.Decimal(15, 2)
+  currency      String       @default("NGN")
+  description   String?
+  
+  // Service/Event Reference
+  serviceId     String?
+  service       Service?     @relation(fields: [serviceId], references: [id])
+  
+  // Payment Details
+  paymentMethod String?      // Cash, Bank Transfer, Card, etc.
+  reference     String?      // Payment reference number
+  
+  // Metadata
+  givenAt       DateTime     @default(now())
+  recordedBy    String?      // User ID who recorded this
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  @@index([tenantId])
+  @@index([memberId])
+  @@index([type])
+  @@index([serviceId])
+  @@index([givenAt])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// SERVICE - Church services/events
+// ════════════════════════════════════════════════════════════════════════════
+
+model Service {
+  id            String    @id @default(cuid())
+  tenantId      String    // REQUIRED: Multi-tenant isolation
+  tenant        Tenant    @relation(fields: [tenantId], references: [id])
+  
+  name          String
+  description   String?
+  serviceDate   DateTime
+  startTime     String?   // e.g., "09:00"
+  endTime       String?   // e.g., "12:00"
+  
+  // Attendance
+  attendanceCount Int?
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  offerings     Offering[]
+
+  @@index([tenantId])
+  @@index([serviceDate])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// COMMUNICATION - SMS, Email, WhatsApp messages
+// ════════════════════════════════════════════════════════════════════════════
+
+model Communication {
+  id            String             @id @default(cuid())
+  tenantId      String             // REQUIRED: Multi-tenant isolation
+  tenant        Tenant             @relation(fields: [tenantId], references: [id])
+  
+  // Message Details
+  type          CommunicationType
+  subject       String?            // For emails
+  message       String
+  
+  // Recipient (member or lead)
+  memberId      String?
+  member        Member?            @relation(fields: [memberId], references: [id])
+  leadId        String?
+  lead          Lead?              @relation(fields: [leadId], references: [id])
+  recipientPhone String?           // For SMS/WhatsApp
+  recipientEmail String?           // For Email
+  
+  // Sender
+  senderId      String
+  sender        User               @relation("CommunicationSender", fields: [senderId], references: [id])
+  
+  // Status Tracking
+  status        CommunicationStatus @default(PENDING)
+  sentAt        DateTime?
+  deliveredAt   DateTime?
+  failureReason String?
+  
+  // External Reference
+  externalId    String?            // ID from SMS/Email provider
+  
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  @@index([tenantId])
+  @@index([memberId])
+  @@index([leadId])
+  @@index([status])
+  @@index([type])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// CALL LOG - Call center activity tracking
+// ════════════════════════════════════════════════════════════════════════════
+
+model CallLog {
+  id            String      @id @default(cuid())
+  tenantId      String      // REQUIRED: Multi-tenant isolation
+  tenant        Tenant      @relation(fields: [tenantId], references: [id])
+  
+  // Call Parties
+  operatorId    String
+  operator      User        @relation("CallOperator", fields: [operatorId], references: [id])
+  
+  // Called party (member or lead)
+  memberId      String?
+  member        Member?     @relation(fields: [memberId], references: [id])
+  leadId        String?
+  lead          Lead?       @relation(fields: [leadId], references: [id])
+  
+  phoneNumber   String      // The number that was called
+  
+  // Call Details
+  outcome       CallOutcome
+  duration      Int?        // Duration in seconds
+  notes         String?
+  
+  // Follow-up
+  requiresFollowUp Boolean  @default(false)
+  followUpDate  DateTime?
+  followUpNotes String?
+  
+  calledAt      DateTime    @default(now())
+  
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  @@index([tenantId])
+  @@index([operatorId])
+  @@index([memberId])
+  @@index([leadId])
+  @@index([calledAt])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// DEPARTMENT - Church departments/ministries
+// ════════════════════════════════════════════════════════════════════════════
+
+model Department {
+  id            String    @id @default(cuid())
+  tenantId      String    // REQUIRED: Multi-tenant isolation
+  tenant        Tenant    @relation(fields: [tenantId], references: [id])
+  
+  name          String
+  description   String?
+  leaderId      String?   // Member ID of department head
+  isActive      Boolean   @default(true)
+  
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  members       DepartmentMember[]
+
+  @@unique([tenantId, name])
+  @@index([tenantId])
+}
+
+model DepartmentMember {
+  id            String    @id @default(cuid())
+  departmentId  String
+  department    Department @relation(fields: [departmentId], references: [id], onDelete: Cascade)
+  memberId      String
+  member        Member    @relation(fields: [memberId], references: [id], onDelete: Cascade)
+  role          String?   // Role within department
+  joinedAt      DateTime  @default(now())
+
+  @@unique([departmentId, memberId])
+  @@index([departmentId])
+  @@index([memberId])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// INVITATION - Token-based invitations
+// ════════════════════════════════════════════════════════════════════════════
+
+model Invitation {
+  id            String           @id @default(cuid())
+  tenantId      String           // REQUIRED: Multi-tenant isolation
+  tenant        Tenant           @relation(fields: [tenantId], references: [id])
+  
+  email         String
+  role          UserRole         @default(MEMBER)
+  token         String           @unique
+  status        InvitationStatus @default(PENDING)
+  
+  // Who created the invitation
+  createdById   String
+  createdBy     User             @relation("InvitationCreator", fields: [createdById], references: [id])
+  
+  expiresAt     DateTime
+  acceptedAt    DateTime?
+  
+  createdAt     DateTime         @default(now())
+  updatedAt     DateTime         @updatedAt
+
+  @@index([tenantId])
+  @@index([token])
+  @@index([email])
+  @@index([status])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// AUDIT LOG - Track all critical actions
+// ════════════════════════════════════════════════════════════════════════════
+
+model AuditLog {
+  id          String    @id @default(cuid())
+  tenantId    String?   // Null for global actions by SUPER_ADMIN
+  tenant      Tenant?   @relation(fields: [tenantId], references: [id])
+  
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  
+  action      String    // e.g., "CREATE_MEMBER", "UPDATE_OFFERING", "DELETE_LEAD"
+  entityType  String    // e.g., "Member", "Offering", "Lead"
+  entityId    String    // ID of the affected entity
+  
+  oldData     Json?     // Previous state (for updates/deletes)
+  newData     Json?     // New state (for creates/updates)
+  
+  ipAddress   String?
+  userAgent   String?
+  
+  createdAt   DateTime  @default(now())
+
+  @@index([tenantId])
+  @@index([userId])
+  @@index([entityType])
+  @@index([createdAt])
+}
+
