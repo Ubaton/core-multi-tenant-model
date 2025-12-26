@@ -15,6 +15,7 @@ import {
   Settings,
   BarChart3,
   Shield,
+  MessageSquare,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -22,6 +23,7 @@ const navigation = [
   { name: 'Dashboard', href: '/super-admin/dashboard', icon: Home },
   { name: 'Tenants', href: '/super-admin/tenants', icon: Building2 },
   { name: 'Users', href: '/super-admin/users', icon: Users },
+  { name: 'Messages', href: '/super-admin/communications', icon: MessageSquare },
   { name: 'Platform Stats', href: '/super-admin/stats', icon: BarChart3 },
   { name: 'Access Control', href: '/super-admin/access', icon: Shield },
   { name: 'Settings', href: '/super-admin/settings', icon: Settings },
