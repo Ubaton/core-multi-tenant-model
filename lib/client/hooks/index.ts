@@ -10,3 +10,4 @@ export * from './use-offerings';
 export * from './use-stats';
 export * from './use-tenants';
 export * from './use-users';
+export * from './use-permissions';
