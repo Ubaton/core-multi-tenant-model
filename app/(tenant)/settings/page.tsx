@@ -24,6 +24,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { useCurrentUser, useUpdateProfile, useChangePassword, useUpdateTenant, useTenant } from '@/lib/client';
+import { useTheme } from '@/context';
 import { cn } from '@/lib/utils';
 
 const settingsTabs = [
@@ -505,44 +506,73 @@ export default function SettingsPage() {
           )}
 
           {activeTab === 'appearance' && (
-            <Card>
-              <CardHeader>
-                <CardTitle>Appearance</CardTitle>
-                <CardDescription>
-                  Customize the look and feel of your dashboard.
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="space-y-4">
-                  <div>
-                    <p className="font-medium mb-3">Theme</p>
-                    <div className="flex gap-3">
-                      <button className="flex flex-col items-center gap-2 p-3 rounded-lg border-2 border-primary">
-                        <div className="w-16 h-10 rounded bg-white border"></div>
-                        <span className="text-sm">Light</span>
-                      </button>
-                      <button className="flex flex-col items-center gap-2 p-3 rounded-lg border-2 border-muted">
-                        <div className="w-16 h-10 rounded bg-gray-900"></div>
-                        <span className="text-sm">Dark</span>
-                      </button>
-                      <button className="flex flex-col items-center gap-2 p-3 rounded-lg border-2 border-muted">
-                        <div className="w-16 h-10 rounded bg-linear-to-r from-white to-gray-900"></div>
-                        <span className="text-sm">System</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-                <div className="flex justify-end">
-                  <Button>
-                    <Save className="mr-2 h-4 w-4" />
-                    Save Preferences
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
+            <AppearanceTab />
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+// Separate component for Appearance to use useTheme
+function AppearanceTab() {
+  const { theme, setTheme } = useTheme();
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Appearance</CardTitle>
+        <CardDescription>
+          Customize the look and feel of your dashboard.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        <div className="space-y-4">
+          <div>
+            <p className="font-medium mb-3">Theme</p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setTheme('light')}
+                className={cn(
+                  "flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-colors",
+                  theme === 'light' ? "border-primary" : "border-muted hover:border-muted-foreground/50"
+                )}
+              >
+                <div className="w-16 h-10 rounded bg-white border shadow-sm"></div>
+                <span className="text-sm">Light</span>
+              </button>
+              <button 
+                onClick={() => setTheme('dark')}
+                className={cn(
+                  "flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-colors",
+                  theme === 'dark' ? "border-primary" : "border-muted hover:border-muted-foreground/50"
+                )}
+              >
+                <div className="w-16 h-10 rounded bg-gray-900 border border-gray-700"></div>
+                <span className="text-sm">Dark</span>
+              </button>
+              <button 
+                onClick={() => setTheme('system')}
+                className={cn(
+                  "flex flex-col items-center gap-2 p-3 rounded-lg border-2 transition-colors",
+                  theme === 'system' ? "border-primary" : "border-muted hover:border-muted-foreground/50"
+                )}
+              >
+                <div className="w-16 h-10 rounded overflow-hidden border flex">
+                  <div className="w-1/2 bg-white"></div>
+                  <div className="w-1/2 bg-gray-900"></div>
+                </div>
+                <span className="text-sm">System</span>
+              </button>
+            </div>
+            <p className="text-sm text-muted-foreground mt-3">
+              {theme === 'system' 
+                ? "Theme will automatically match your system preferences." 
+                : `${theme.charAt(0).toUpperCase() + theme.slice(1)} mode is currently active.`}
+            </p>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
