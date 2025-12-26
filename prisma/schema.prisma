@@ -148,6 +148,7 @@ model Tenant {
   services    Service[]
   departments Department[]
   auditLogs   AuditLog[]
+  internalMessages InternalMessage[]
 
   @@index([slug])
   @@index([parentId])
@@ -184,6 +185,8 @@ model User {
   sentCommunications Communication[] @relation("CommunicationSender")
   createdInvitations Invitation[]  @relation("InvitationCreator")
   auditLogs     AuditLog[]
+  sentMessages  InternalMessage[] @relation("MessageSender")
+  receivedMessages InternalMessage[] @relation("MessageReceiver")
 
   @@index([email])
   @@index([tenantId])
@@ -619,6 +622,63 @@ model AuditLog {
   @@index([tenantId])
   @@index([userId])
   @@index([entityType])
+  @@index([createdAt])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// INTERNAL MESSAGE - Communication between Tenants and Super Admin
+// ════════════════════════════════════════════════════════════════════════════
+
+enum MessagePriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+}
+
+enum MessageStatus {
+  UNREAD
+  READ
+  REPLIED
+  ARCHIVED
+}
+
+model InternalMessage {
+  id            String          @id @default(cuid())
+  
+  // Sender/Receiver
+  senderId      String
+  sender        User            @relation("MessageSender", fields: [senderId], references: [id])
+  receiverId    String?         // Null if broadcast to Super Admin
+  receiver      User?           @relation("MessageReceiver", fields: [receiverId], references: [id])
+  
+  // Tenant context (for tenant-originated messages)
+  tenantId      String?
+  tenant        Tenant?         @relation(fields: [tenantId], references: [id])
+  
+  // Message content
+  subject       String
+  message       String
+  priority      MessagePriority @default(NORMAL)
+  status        MessageStatus   @default(UNREAD)
+  
+  // Threading (for replies)
+  parentId      String?
+  parent        InternalMessage? @relation("MessageThread", fields: [parentId], references: [id])
+  replies       InternalMessage[] @relation("MessageThread")
+  
+  // Metadata
+  readAt        DateTime?
+  archivedAt    DateTime?
+  
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@index([senderId])
+  @@index([receiverId])
+  @@index([tenantId])
+  @@index([status])
+  @@index([parentId])
   @@index([createdAt])
 }
 

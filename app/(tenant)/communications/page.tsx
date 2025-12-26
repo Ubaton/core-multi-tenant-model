@@ -1,12 +1,13 @@
 /**
  * ════════════════════════════════════════════════════════════════════════════
- * COMMUNICATIONS LIST PAGE
+ * COMMUNICATIONS PAGE
+ * Member communications (SMS/Email/WhatsApp) + Support messaging with Admin
  * ════════════════════════════════════════════════════════════════════════════
  */
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { 
   Plus, 
   Search, 
@@ -20,10 +21,14 @@ import {
   Clock,
   CheckCircle,
   XCircle,
+  Headphones,
+  Inbox,
+  Reply,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   DropdownMenu,
@@ -31,7 +36,26 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useCommunications, useDeleteCommunication } from '@/lib/client';
+import { 
+  useMessages, 
+  useMessage, 
+  useSendMessage, 
+  useReplyToMessage,
+  useUnreadMessageCount,
+  type InternalMessage,
+  type MessagePriority,
+} from '@/lib/client/hooks/use-messages';
 import { cn } from '@/lib/utils';
 
 const typeIcons = {
@@ -53,12 +77,56 @@ const statusConfig: Record<string, { color: string; icon: typeof Clock }> = {
   FAILED: { color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300', icon: XCircle },
 };
 
+const priorityColors: Record<MessagePriority, string> = {
+  LOW: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
+  NORMAL: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+  HIGH: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
+  URGENT: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+};
+
+type TabType = 'messages' | 'support';
+
+function formatMessageDate(dateString: string) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diff = now.getTime() - date.getTime();
+  const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+  
+  if (days === 0) {
+    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  } else if (days === 1) {
+    return 'Yesterday';
+  } else if (days < 7) {
+    return date.toLocaleDateString('en-US', { weekday: 'short' });
+  } else {
+    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
+}
+
+function getSenderName(message: InternalMessage) {
+  const { sender } = message;
+  return `${sender.firstName} ${sender.lastName}`;
+}
+
 export default function CommunicationsPage() {
+  // Tab state
+  const [activeTab, setActiveTab] = useState<TabType>('messages');
+
+  // Member communications state
   const [search, setSearch] = useState('');
   const [type, setType] = useState<string>('');
   const [status, setStatus] = useState<string>('');
   const [page, setPage] = useState(1);
 
+  // Support messaging state
+  const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
+  const [isComposeOpen, setIsComposeOpen] = useState(false);
+  const [replyText, setReplyText] = useState('');
+  const [composeSubject, setComposeSubject] = useState('');
+  const [composeMessage, setComposeMessage] = useState('');
+  const [composePriority, setComposePriority] = useState<MessagePriority>('NORMAL');
+
+  // Queries - Member communications
   const { data, isLoading } = useCommunications({
     search: search || undefined,
     type: type || undefined,
@@ -67,10 +135,60 @@ export default function CommunicationsPage() {
     pageSize: 20,
   });
 
+  // Queries - Support messages
+  const { data: messagesData, isLoading: isLoadingMessages, refetch: refetchMessages } = useMessages(
+    { type: 'all', page: 1, pageSize: 50 },
+    { refetchInterval: 10000 } // Poll every 10 seconds for real-time updates
+  );
+  const { data: unreadCount } = useUnreadMessageCount();
+  const { data: selectedMessage, isLoading: isLoadingMessage } = useMessage(
+    selectedMessageId || undefined
+  );
+
+  // Mutations
   const deleteCommunication = useDeleteCommunication();
+  const sendMessage = useSendMessage();
+  const replyMutation = useReplyToMessage(selectedMessageId || '');
 
   const communications = data?.data ?? [];
   const meta = data?.meta;
+  const supportMessages = messagesData?.data ?? [];
+
+  // Handlers
+  const handleSendReply = useCallback(async () => {
+    if (!selectedMessage || !replyText.trim()) return;
+
+    try {
+      await replyMutation.mutateAsync({
+        subject: `Re: ${selectedMessage.subject}`,
+        message: replyText.trim(),
+        priority: selectedMessage.priority,
+        receiverId: selectedMessage.senderId,
+      });
+      setReplyText('');
+    } catch (error) {
+      console.error('Failed to send reply:', error);
+    }
+  }, [selectedMessage, replyText, replyMutation]);
+
+  const handleCompose = useCallback(async () => {
+    if (!composeSubject.trim() || !composeMessage.trim()) return;
+
+    try {
+      await sendMessage.mutateAsync({
+        subject: composeSubject.trim(),
+        message: composeMessage.trim(),
+        priority: composePriority,
+        // No receiverId = message goes to Super Admin
+      });
+      setIsComposeOpen(false);
+      setComposeSubject('');
+      setComposeMessage('');
+      setComposePriority('NORMAL');
+    } catch (error) {
+      console.error('Failed to send message:', error);
+    }
+  }, [composeSubject, composeMessage, composePriority, sendMessage]);
 
   const getRecipientName = (comm: (typeof communications)[0]) => {
     if (comm.member) {
@@ -94,21 +212,65 @@ export default function CommunicationsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+      {/* Header with Tabs */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Communications</h1>
           <p className="text-gray-500 dark:text-gray-400">
-            Manage SMS, Email, and WhatsApp messages
+            Manage messages and contact support
           </p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          New Message
-        </Button>
+        <div className="flex items-center gap-3">
+          {/* Tab Switcher */}
+          <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+            <button
+              onClick={() => setActiveTab('messages')}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors",
+                activeTab === 'messages'
+                  ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              )}
+            >
+              <MessageSquare className="h-4 w-4" />
+              Messages
+            </button>
+            <button
+              onClick={() => setActiveTab('support')}
+              className={cn(
+                "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors relative",
+                activeTab === 'support'
+                  ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
+                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+              )}
+            >
+              <Headphones className="h-4 w-4" />
+              Support
+              {typeof unreadCount === 'number' && unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                  {unreadCount}
+                </span>
+              )}
+            </button>
+          </div>
+          {activeTab === 'messages' && (
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              New Message
+            </Button>
+          )}
+          {activeTab === 'support' && (
+            <Button onClick={() => setIsComposeOpen(true)}>
+              <Plus className="h-4 w-4 mr-2" />
+              Contact Support
+            </Button>
+          )}
+        </div>
       </div>
 
-      {/* Stats Cards */}
+      {/* MEMBER COMMUNICATIONS TAB */}
+      {activeTab === 'messages' && (
+        <>
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
           <CardContent className="pt-6">
@@ -298,10 +460,8 @@ export default function CommunicationsPage() {
                         <td className="py-3 px-4">
                           <div className="flex justify-end">
                             <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm">
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
+                              <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">
+                                <MoreHorizontal className="h-4 w-4" />
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
                                 <DropdownMenuItem>
@@ -359,6 +519,276 @@ export default function CommunicationsPage() {
           )}
         </CardContent>
       </Card>
+        </>
+      )}
+
+      {/* SUPPORT MESSAGING TAB */}
+      {activeTab === 'support' && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-16rem)]">
+          {/* Message List */}
+          <Card className="lg:col-span-1 flex flex-col">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg">Conversations</CardTitle>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => refetchMessages()}
+                  className="h-8 w-8 p-0"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                </Button>
+              </div>
+            </CardHeader>
+            <CardContent className="flex-1 overflow-y-auto p-0">
+              {isLoadingMessages ? (
+                <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                  Loading messages...
+                </div>
+              ) : supportMessages.length === 0 ? (
+                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                  <Inbox className="h-10 w-10 mx-auto mb-2 opacity-50" />
+                  <p>No messages yet</p>
+                  <p className="text-sm mt-1">Start a conversation with support</p>
+                </div>
+              ) : (
+                <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                  {supportMessages.map((msg) => (
+                    <button
+                      key={msg.id}
+                      onClick={() => {
+                        setSelectedMessageId(msg.id);
+                        setReplyText('');
+                      }}
+                      className={cn(
+                        "w-full p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors",
+                        selectedMessageId === msg.id && "bg-blue-50 dark:bg-blue-900/20",
+                        msg.status === 'UNREAD' && "bg-blue-50/50 dark:bg-blue-900/10"
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            {msg.status === 'UNREAD' && (
+                              <span className="w-2 h-2 bg-blue-500 rounded-full shrink-0" />
+                            )}
+                            <span className="font-medium text-gray-900 dark:text-white truncate text-sm">
+                              {getSenderName(msg)}
+                            </span>
+                            {msg.sender.role === 'SUPER_ADMIN' && (
+                              <Badge variant="outline" className="text-xs">Admin</Badge>
+                            )}
+                          </div>
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate mt-0.5">
+                            {msg.subject}
+                          </p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            {msg.message.substring(0, 50)}...
+                          </p>
+                        </div>
+                        <div className="flex flex-col items-end gap-1 shrink-0">
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {formatMessageDate(msg.createdAt)}
+                          </span>
+                          {msg.priority !== 'NORMAL' && (
+                            <Badge className={cn("text-xs", priorityColors[msg.priority])}>
+                              {msg.priority}
+                            </Badge>
+                          )}
+                        </div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Message Detail */}
+          <Card className="lg:col-span-2 flex flex-col">
+            {selectedMessageId && selectedMessage ? (
+              <>
+                <CardHeader className="pb-3 border-b dark:border-gray-800">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <CardTitle className="text-lg flex items-center gap-2">
+                        {selectedMessage.subject}
+                        <Badge className={priorityColors[selectedMessage.priority]}>
+                          {selectedMessage.priority}
+                        </Badge>
+                      </CardTitle>
+                      <CardDescription className="mt-1">
+                        {selectedMessage.sender.role === 'SUPER_ADMIN' ? 'From: Support Team' : `From: ${getSenderName(selectedMessage)}`}
+                        {' • '}
+                        {new Date(selectedMessage.createdAt).toLocaleString()}
+                      </CardDescription>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedMessageId(null)}
+                    >
+                      <XCircle className="h-4 w-4" />
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
+                  {isLoadingMessage ? (
+                    <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+                      Loading conversation...
+                    </div>
+                  ) : (
+                    <>
+                      {/* Original Message */}
+                      <div className={cn(
+                        "p-4 rounded-lg",
+                        selectedMessage.sender.role === 'SUPER_ADMIN'
+                          ? "bg-blue-50 dark:bg-blue-900/20 ml-8"
+                          : "bg-gray-50 dark:bg-gray-800"
+                      )}>
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium text-sm text-gray-900 dark:text-white">
+                            {getSenderName(selectedMessage)}
+                            {selectedMessage.sender.role === 'SUPER_ADMIN' && (
+                              <Badge variant="outline" className="ml-2 text-xs">Admin</Badge>
+                            )}
+                          </span>
+                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                            {new Date(selectedMessage.createdAt).toLocaleString()}
+                          </span>
+                        </div>
+                        <p className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 text-sm">
+                          {selectedMessage.message}
+                        </p>
+                      </div>
+
+                      {/* Replies */}
+                      {selectedMessage.replies?.map((reply) => (
+                        <div
+                          key={reply.id}
+                          className={cn(
+                            "p-4 rounded-lg",
+                            reply.sender.role === 'SUPER_ADMIN'
+                              ? "bg-blue-50 dark:bg-blue-900/20 ml-8"
+                              : "bg-gray-50 dark:bg-gray-800"
+                          )}
+                        >
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="font-medium text-sm text-gray-900 dark:text-white">
+                              {getSenderName(reply)}
+                              {reply.sender.role === 'SUPER_ADMIN' && (
+                                <Badge variant="outline" className="ml-2 text-xs">Admin</Badge>
+                              )}
+                            </span>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {new Date(reply.createdAt).toLocaleString()}
+                            </span>
+                          </div>
+                          <p className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 text-sm">
+                            {reply.message}
+                          </p>
+                        </div>
+                      ))}
+                    </>
+                  )}
+                </CardContent>
+                {/* Reply Input */}
+                <div className="p-4 border-t dark:border-gray-800">
+                  <div className="flex gap-2">
+                    <Textarea
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      placeholder="Type your reply..."
+                      className="resize-none"
+                      rows={2}
+                    />
+                    <Button
+                      onClick={handleSendReply}
+                      disabled={!replyText.trim() || replyMutation.isPending}
+                      className="self-end"
+                    >
+                      <Reply className="h-4 w-4 mr-1" />
+                      Reply
+                    </Button>
+                  </div>
+                </div>
+              </>
+            ) : (
+              <div className="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
+                <div className="text-center">
+                  <Inbox className="h-12 w-12 mx-auto mb-3 opacity-50" />
+                  <p className="font-medium">Select a conversation</p>
+                  <p className="text-sm mt-1">Choose a message from the list to view details</p>
+                </div>
+              </div>
+            )}
+          </Card>
+        </div>
+      )}
+
+      {/* Compose Dialog */}
+      <AlertDialog open={isComposeOpen} onOpenChange={setIsComposeOpen}>
+        <AlertDialogContent className="max-w-lg">
+          <AlertDialogHeader>
+            <AlertDialogTitle>Contact Support</AlertDialogTitle>
+            <AlertDialogDescription>
+              Send a message to the administrator. They will respond as soon as possible.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-4 py-4">
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Subject
+              </label>
+              <Input
+                value={composeSubject}
+                onChange={(e) => setComposeSubject(e.target.value)}
+                placeholder="What do you need help with?"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Priority
+              </label>
+              <select
+                value={composePriority}
+                onChange={(e) => setComposePriority(e.target.value as MessagePriority)}
+                className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+              >
+                <option value="LOW">Low</option>
+                <option value="NORMAL">Normal</option>
+                <option value="HIGH">High</option>
+                <option value="URGENT">Urgent</option>
+              </select>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                Message
+              </label>
+              <Textarea
+                value={composeMessage}
+                onChange={(e) => setComposeMessage(e.target.value)}
+                placeholder="Describe your issue or question..."
+                className="mt-1"
+                rows={4}
+              />
+            </div>
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleCompose}
+              disabled={!composeSubject.trim() || !composeMessage.trim() || sendMessage.isPending}
+            >
+              <Send className="h-4 w-4 mr-2" />
+              Send Message
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
