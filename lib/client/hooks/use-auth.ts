@@ -13,6 +13,7 @@ import { useRouter } from 'next/navigation';
 import { 
   get, 
   post, 
+  patch,
   setAccessToken, 
   setRefreshToken, 
   clearTokens,
@@ -32,6 +33,7 @@ interface AuthUser {
   email: string;
   firstName: string;
   lastName: string;
+  phone?: string | null;
   role: string;
   tenantId: string | null;
   tenant?: {
@@ -40,6 +42,18 @@ interface AuthUser {
     slug: string;
     logo?: string;
   } | null;
+}
+
+interface UpdateProfileInput {
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phone?: string | null;
+}
+
+interface ChangePasswordInput {
+  currentPassword: string;
+  newPassword: string;
 }
 
 interface LoginResponse {
@@ -146,3 +160,33 @@ export function useRegister() {
     },
   });
 }
+
+/**
+ * Update current user's profile
+ */
+export function useUpdateProfile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: UpdateProfileInput) => {
+      const response = await patch<AuthUser>('/api/auth/me', data);
+      return response.data!;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(authKeys.me(), data);
+    },
+  });
+}
+
+/**
+ * Change password mutation
+ */
+export function useChangePassword() {
+  return useMutation({
+    mutationFn: async (data: ChangePasswordInput) => {
+      const response = await post<{ message: string }>('/api/auth/change-password', data);
+      return response.data!;
+    },
+  });
+}
+

@@ -35,22 +35,7 @@ export function Header() {
       {/* Separator */}
       <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 lg:hidden" />
 
-      <div className="flex flex-1 gap-x-4 self-stretch lg:gap-x-6">
-        {/* Search */}
-        <form className="relative flex flex-1" action="#" method="GET">
-          <label htmlFor="search-field" className="sr-only">
-            Search
-          </label>
-          <Search className="pointer-events-none absolute inset-y-0 left-0 h-full w-5 text-gray-400" />
-          <Input
-            id="search-field"
-            className="block h-full w-full border-0 py-0 pl-8 pr-0 text-gray-900 dark:text-white placeholder:text-gray-400 focus:ring-0 sm:text-sm bg-transparent"
-            placeholder="Search..."
-            type="search"
-            name="search"
-          />
-        </form>
-
+      <div className="flex flex-1 justify-end gap-x-4 self-stretch lg:gap-x-6">
         <div className="flex items-center gap-x-4 lg:gap-x-6">
           {/* Notifications */}
           <Button variant="ghost" size="icon" className="relative">

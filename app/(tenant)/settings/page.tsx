@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { 
   Building2, 
   User, 
@@ -14,13 +14,16 @@ import {
   Shield, 
   Palette,
   Save,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useCurrentUser } from '@/lib/client';
+import { useCurrentUser, useUpdateProfile, useChangePassword, useUpdateTenant, useTenant } from '@/lib/client';
 import { cn } from '@/lib/utils';
 
 const settingsTabs = [
@@ -33,12 +36,168 @@ const settingsTabs = [
 
 type SettingsTab = typeof settingsTabs[number]['id'];
 
+// Toast notification component
+function Toast({ message, type, onClose }: { message: string; type: 'success' | 'error'; onClose: () => void }) {
+  useEffect(() => {
+    const timer = setTimeout(onClose, 4000);
+    return () => clearTimeout(timer);
+  }, [onClose]);
+
+  return (
+    <div className={cn(
+      "fixed bottom-4 right-4 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg z-50",
+      type === 'success' ? "bg-green-600 text-white" : "bg-red-600 text-white"
+    )}>
+      {type === 'success' ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
+      {message}
+    </div>
+  );
+}
+
 export default function SettingsPage() {
   const { data: user } = useCurrentUser();
+  const { data: tenant } = useTenant(user?.tenantId || '');
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
+  
+  // Toast state
+  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  // Profile form state
+  const [profileForm, setProfileForm] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+  });
+
+  // Organization form state
+  const [orgForm, setOrgForm] = useState({
+    name: '',
+    address: '',
+    phone: '',
+    email: '',
+    website: '',
+  });
+
+  // Password form state
+  const [passwordForm, setPasswordForm] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: '',
+  });
+
+  // Notification preferences state
+  const [notifications, setNotifications] = useState({
+    emailNotifications: true,
+    newMemberAlerts: true,
+    prayerRequestUpdates: false,
+    offeringReports: true,
+  });
+
+  // Initialize profile form when user data loads
+  useEffect(() => {
+    if (user) {
+      setProfileForm({
+        firstName: user.firstName || '',
+        lastName: user.lastName || '',
+        email: user.email || '',
+        phone: user.phone || '',
+      });
+    }
+  }, [user]);
+
+  // Initialize organization form when tenant data loads
+  useEffect(() => {
+    if (tenant) {
+      setOrgForm({
+        name: tenant.name || '',
+        address: tenant.address || '',
+        phone: tenant.phone || '',
+        email: tenant.email || '',
+        website: tenant.website || '',
+      });
+    }
+  }, [tenant]);
+
+  // Mutations
+  const updateProfile = useUpdateProfile();
+  const changePassword = useChangePassword();
+  const updateTenant = useUpdateTenant(user?.tenantId || '');
+
+  // Handle profile save
+  const handleSaveProfile = async () => {
+    try {
+      await updateProfile.mutateAsync({
+        firstName: profileForm.firstName,
+        lastName: profileForm.lastName,
+        email: profileForm.email,
+        phone: profileForm.phone || null,
+      });
+      setToast({ message: 'Profile updated successfully', type: 'success' });
+    } catch (error) {
+      setToast({ message: error instanceof Error ? error.message : 'Failed to update profile', type: 'error' });
+    }
+  };
+
+  // Handle organization save
+  const handleSaveOrganization = async () => {
+    if (!user?.tenantId) {
+      setToast({ message: 'No organization associated with your account', type: 'error' });
+      return;
+    }
+    try {
+      await updateTenant.mutateAsync({
+        name: orgForm.name,
+        address: orgForm.address || undefined,
+        phone: orgForm.phone || undefined,
+        email: orgForm.email || undefined,
+        website: orgForm.website || undefined,
+      });
+      setToast({ message: 'Organization updated successfully', type: 'success' });
+    } catch (error) {
+      setToast({ message: error instanceof Error ? error.message : 'Failed to update organization', type: 'error' });
+    }
+  };
+
+  // Handle password change
+  const handleChangePassword = async () => {
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setToast({ message: 'New passwords do not match', type: 'error' });
+      return;
+    }
+    if (passwordForm.newPassword.length < 8) {
+      setToast({ message: 'Password must be at least 8 characters', type: 'error' });
+      return;
+    }
+    try {
+      await changePassword.mutateAsync({
+        currentPassword: passwordForm.currentPassword,
+        newPassword: passwordForm.newPassword,
+      });
+      setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
+      setToast({ message: 'Password changed successfully', type: 'success' });
+    } catch (error) {
+      setToast({ message: error instanceof Error ? error.message : 'Failed to change password', type: 'error' });
+    }
+  };
+
+  // Handle notification preferences save
+  const handleSaveNotifications = async () => {
+    // TODO: Implement notification preferences API
+    setToast({ message: 'Notification preferences saved', type: 'success' });
+  };
 
   return (
     <div className="space-y-6">
+      {/* Toast notification */}
+      {toast && (
+        <Toast 
+          message={toast.message} 
+          type={toast.type} 
+          onClose={() => setToast(null)} 
+        />
+      )}
+      
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
@@ -86,7 +245,8 @@ export default function SettingsPage() {
                     <Label htmlFor="firstName">First Name</Label>
                     <Input 
                       id="firstName" 
-                      defaultValue={user?.firstName || ''} 
+                      value={profileForm.firstName}
+                      onChange={(e) => setProfileForm(prev => ({ ...prev, firstName: e.target.value }))}
                       placeholder="Enter first name"
                     />
                   </div>
@@ -94,7 +254,8 @@ export default function SettingsPage() {
                     <Label htmlFor="lastName">Last Name</Label>
                     <Input 
                       id="lastName" 
-                      defaultValue={user?.lastName || ''} 
+                      value={profileForm.lastName}
+                      onChange={(e) => setProfileForm(prev => ({ ...prev, lastName: e.target.value }))}
                       placeholder="Enter last name"
                     />
                   </div>
@@ -104,7 +265,8 @@ export default function SettingsPage() {
                   <Input 
                     id="email" 
                     type="email" 
-                    defaultValue={user?.email || ''} 
+                    value={profileForm.email}
+                    onChange={(e) => setProfileForm(prev => ({ ...prev, email: e.target.value }))}
                     placeholder="Enter email"
                   />
                 </div>
@@ -113,12 +275,18 @@ export default function SettingsPage() {
                   <Input 
                     id="phone" 
                     type="tel" 
+                    value={profileForm.phone}
+                    onChange={(e) => setProfileForm(prev => ({ ...prev, phone: e.target.value }))}
                     placeholder="Enter phone number"
                   />
                 </div>
                 <div className="flex justify-end">
-                  <Button>
-                    <Save className="mr-2 h-4 w-4" />
+                  <Button onClick={handleSaveProfile} disabled={updateProfile.isPending}>
+                    {updateProfile.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
                     Save Changes
                   </Button>
                 </div>
@@ -139,6 +307,8 @@ export default function SettingsPage() {
                   <Label htmlFor="orgName">Organization Name</Label>
                   <Input 
                     id="orgName" 
+                    value={orgForm.name}
+                    onChange={(e) => setOrgForm(prev => ({ ...prev, name: e.target.value }))}
                     placeholder="Enter organization name"
                   />
                 </div>
@@ -146,6 +316,8 @@ export default function SettingsPage() {
                   <Label htmlFor="orgAddress">Address</Label>
                   <Textarea 
                     id="orgAddress" 
+                    value={orgForm.address}
+                    onChange={(e) => setOrgForm(prev => ({ ...prev, address: e.target.value }))}
                     placeholder="Enter organization address"
                     rows={3}
                   />
@@ -156,6 +328,8 @@ export default function SettingsPage() {
                     <Input 
                       id="orgPhone" 
                       type="tel" 
+                      value={orgForm.phone}
+                      onChange={(e) => setOrgForm(prev => ({ ...prev, phone: e.target.value }))}
                       placeholder="Enter phone"
                     />
                   </div>
@@ -164,6 +338,8 @@ export default function SettingsPage() {
                     <Input 
                       id="orgEmail" 
                       type="email" 
+                      value={orgForm.email}
+                      onChange={(e) => setOrgForm(prev => ({ ...prev, email: e.target.value }))}
                       placeholder="Enter email"
                     />
                   </div>
@@ -173,12 +349,18 @@ export default function SettingsPage() {
                   <Input 
                     id="orgWebsite" 
                     type="url" 
+                    value={orgForm.website}
+                    onChange={(e) => setOrgForm(prev => ({ ...prev, website: e.target.value }))}
                     placeholder="https://yourchurch.com"
                   />
                 </div>
                 <div className="flex justify-end">
-                  <Button>
-                    <Save className="mr-2 h-4 w-4" />
+                  <Button onClick={handleSaveOrganization} disabled={updateTenant.isPending}>
+                    {updateTenant.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
                     Save Changes
                   </Button>
                 </div>
@@ -203,7 +385,12 @@ export default function SettingsPage() {
                         Receive email updates about activity
                       </p>
                     </div>
-                    <input type="checkbox" defaultChecked className="h-4 w-4" />
+                    <input 
+                      type="checkbox" 
+                      checked={notifications.emailNotifications}
+                      onChange={(e) => setNotifications(prev => ({ ...prev, emailNotifications: e.target.checked }))}
+                      className="h-4 w-4" 
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
@@ -212,7 +399,12 @@ export default function SettingsPage() {
                         Get notified when new members join
                       </p>
                     </div>
-                    <input type="checkbox" defaultChecked className="h-4 w-4" />
+                    <input 
+                      type="checkbox" 
+                      checked={notifications.newMemberAlerts}
+                      onChange={(e) => setNotifications(prev => ({ ...prev, newMemberAlerts: e.target.checked }))}
+                      className="h-4 w-4" 
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
@@ -221,7 +413,12 @@ export default function SettingsPage() {
                         Receive updates on prayer requests
                       </p>
                     </div>
-                    <input type="checkbox" className="h-4 w-4" />
+                    <input 
+                      type="checkbox" 
+                      checked={notifications.prayerRequestUpdates}
+                      onChange={(e) => setNotifications(prev => ({ ...prev, prayerRequestUpdates: e.target.checked }))}
+                      className="h-4 w-4" 
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
@@ -230,11 +427,16 @@ export default function SettingsPage() {
                         Weekly and monthly offering summaries
                       </p>
                     </div>
-                    <input type="checkbox" defaultChecked className="h-4 w-4" />
+                    <input 
+                      type="checkbox" 
+                      checked={notifications.offeringReports}
+                      onChange={(e) => setNotifications(prev => ({ ...prev, offeringReports: e.target.checked }))}
+                      className="h-4 w-4" 
+                    />
                   </div>
                 </div>
                 <div className="flex justify-end">
-                  <Button>
+                  <Button onClick={handleSaveNotifications}>
                     <Save className="mr-2 h-4 w-4" />
                     Save Preferences
                   </Button>
@@ -257,6 +459,8 @@ export default function SettingsPage() {
                   <Input 
                     id="currentPassword" 
                     type="password" 
+                    value={passwordForm.currentPassword}
+                    onChange={(e) => setPasswordForm(prev => ({ ...prev, currentPassword: e.target.value }))}
                     placeholder="Enter current password"
                   />
                 </div>
@@ -265,20 +469,34 @@ export default function SettingsPage() {
                   <Input 
                     id="newPassword" 
                     type="password" 
+                    value={passwordForm.newPassword}
+                    onChange={(e) => setPasswordForm(prev => ({ ...prev, newPassword: e.target.value }))}
                     placeholder="Enter new password"
                   />
+                  <p className="text-xs text-muted-foreground">
+                    Must be at least 8 characters with uppercase, lowercase, and a number.
+                  </p>
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="confirmPassword">Confirm New Password</Label>
                   <Input 
                     id="confirmPassword" 
                     type="password" 
+                    value={passwordForm.confirmPassword}
+                    onChange={(e) => setPasswordForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
                     placeholder="Confirm new password"
                   />
                 </div>
                 <div className="flex justify-end">
-                  <Button>
-                    <Shield className="mr-2 h-4 w-4" />
+                  <Button 
+                    onClick={handleChangePassword} 
+                    disabled={changePassword.isPending || !passwordForm.currentPassword || !passwordForm.newPassword || !passwordForm.confirmPassword}
+                  >
+                    {changePassword.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Shield className="mr-2 h-4 w-4" />
+                    )}
                     Update Password
                   </Button>
                 </div>
