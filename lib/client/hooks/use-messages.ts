@@ -70,6 +70,7 @@ export interface CreateMessageInput {
   priority?: MessagePriority;
   receiverId?: string;
   parentId?: string;
+  tenantId?: string; // For Super Admin to send to specific tenant
 }
 
 export interface UpdateMessageInput {

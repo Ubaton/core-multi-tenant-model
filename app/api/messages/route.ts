@@ -40,6 +40,7 @@ const createMessageSchema = z.object({
   priority: z.nativeEnum(MessagePriority).default(MessagePriority.NORMAL),
   receiverId: z.string().cuid().optional(), // Specific user, or null for Super Admin team
   parentId: z.string().cuid().optional(), // For replies
+  tenantId: z.string().cuid().optional(), // For Super Admin to send to specific tenant
 });
 
 /**
@@ -222,11 +223,26 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Determine the tenant ID for the message
+    // Super Admin can specify a tenant, otherwise use user's tenant
+    let messageTenantId = user.tenantId || null;
+    if (isSuperAdmin && data.tenantId) {
+      // Validate the tenant exists
+      const tenant = await prisma.tenant.findUnique({
+        where: { id: data.tenantId },
+        select: { id: true },
+      });
+      if (!tenant) {
+        return errorResponse('NOT_FOUND', 'Tenant not found', 404);
+      }
+      messageTenantId = data.tenantId;
+    }
+
     const message = await prisma.internalMessage.create({
       data: {
         senderId: user.id,
         receiverId: data.receiverId || null,
-        tenantId: user.tenantId || null,
+        tenantId: messageTenantId,
         subject: data.subject,
         message: data.message,
         priority: data.priority,

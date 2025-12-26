@@ -199,22 +199,24 @@ export default function SuperAdminCommunicationsPage() {
   }, [selectedMessage, replyText, replyMutation]);
 
   const handleCompose = useCallback(async () => {
-    if (!composeSubject.trim() || !composeMessage.trim()) return;
+    if (!composeSubject.trim() || !composeMessage.trim() || !composeTenantId) return;
 
     try {
       await sendMessage.mutateAsync({
         subject: composeSubject.trim(),
         message: composeMessage.trim(),
         priority: composePriority,
+        tenantId: composeTenantId,
       });
       setIsComposeOpen(false);
       setComposeSubject('');
       setComposeMessage('');
       setComposePriority('NORMAL');
+      setComposeTenantId('');
     } catch (error) {
       console.error('Failed to send message:', error);
     }
-  }, [composeSubject, composeMessage, composePriority, sendMessage]);
+  }, [composeSubject, composeMessage, composePriority, composeTenantId, sendMessage]);
 
   const handleDelete = useCallback(async () => {
     if (!deleteConfirmId) return;
@@ -502,7 +504,7 @@ export default function SuperAdminCommunicationsPage() {
           <Card className="w-full max-w-lg m-4">
             <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle>New Message</CardTitle>
+                <CardTitle>New Message to Tenant</CardTitle>
                 <Button
                   variant="ghost"
                   size="sm"
@@ -513,6 +515,23 @@ export default function SuperAdminCommunicationsPage() {
               </div>
             </CardHeader>
             <CardContent className="space-y-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Select Tenant
+                </label>
+                <select
+                  value={composeTenantId}
+                  onChange={(e) => setComposeTenantId(e.target.value)}
+                  className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                >
+                  <option value="">Choose a tenant...</option>
+                  {tenants.map((tenant) => (
+                    <option key={tenant.id} value={tenant.id}>
+                      {tenant.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
               <div>
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   Subject
@@ -560,7 +579,7 @@ export default function SuperAdminCommunicationsPage() {
                 </Button>
                 <Button
                   onClick={handleCompose}
-                  disabled={!composeSubject.trim() || !composeMessage.trim() || sendMessage.isPending}
+                  disabled={!composeTenantId || !composeSubject.trim() || !composeMessage.trim() || sendMessage.isPending}
                 >
                   <SendIcon />
                   Send Message
