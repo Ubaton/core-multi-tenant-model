@@ -85,7 +85,7 @@ export default function SuperAdminSettingsPage() {
                   <Label htmlFor="platformName">Platform Name</Label>
                   <Input 
                     id="platformName" 
-                    defaultValue="ChurchHub" 
+                    defaultValue="Unity Fellowship Church" 
                     placeholder="Enter platform name"
                   />
                 </div>
@@ -104,7 +104,7 @@ export default function SuperAdminSettingsPage() {
                     <Input 
                       id="supportEmail" 
                       type="email" 
-                      defaultValue="support@churchhub.com"
+                      defaultValue="support@Unity Fellowship Church.com"
                       placeholder="support@example.com"
                     />
                   </div>
@@ -189,14 +189,14 @@ export default function SuperAdminSettingsPage() {
                   <Input 
                     id="fromEmail" 
                     type="email"
-                    placeholder="noreply@churchhub.com"
+                    placeholder="noreply@Unity Fellowship Church.com"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="fromName">From Name</Label>
                   <Input 
                     id="fromName" 
-                    placeholder="ChurchHub"
+                    placeholder="Unity Fellowship Church"
                   />
                 </div>
                 <div className="flex items-center gap-3">

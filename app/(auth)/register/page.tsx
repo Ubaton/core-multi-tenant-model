@@ -205,7 +205,7 @@ export default function RegisterPage() {
                 <div className="space-y-2">
                   <Label htmlFor="churchSlug">Church URL Slug</Label>
                   <div className="flex items-center">
-                    <span className="text-sm text-muted-foreground mr-2">churchhub.com/</span>
+                    <span className="text-sm text-muted-foreground mr-2">unityfellowshipchurch.com/</span>
                     <Input
                       id="churchSlug"
                       name="churchSlug"

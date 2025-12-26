@@ -43,13 +43,13 @@ const features = [
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900">
+    <div className="min-h-screen bg-linear-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900">
       {/* Header */}
       <header className="border-b bg-white/80 dark:bg-gray-950/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Church className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold">ChurchHub</span>
+            <span className="text-xl font-bold">Unity Fellowship Church</span>
           </div>
           <div className="flex items-center gap-4">
             <Link href="/login">
@@ -119,7 +119,7 @@ export default function HomePage() {
               Ready to Transform Your Church Management?
             </h2>
             <p className="text-lg opacity-90 mb-8 max-w-xl mx-auto">
-              Join hundreds of churches already using ChurchHub to grow their ministry.
+              Join hundreds of churches already using Unity Fellowship Church to grow their ministry.
             </p>
             <Link href="/login">
               <Button size="lg" variant="secondary" className="gap-2">
@@ -137,10 +137,10 @@ export default function HomePage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <div className="flex items-center gap-2">
               <Church className="h-6 w-6 text-primary" />
-              <span className="font-semibold">ChurchHub</span>
+              <span className="font-semibold">Unity Fellowship Church</span>
             </div>
             <p className="text-sm text-gray-500 dark:text-gray-400">
-              © {new Date().getFullYear()} ChurchHub. All rights reserved.
+              © {new Date().getFullYear()} Unity Fellowship Church. All rights reserved.
             </p>
           </div>
         </div>

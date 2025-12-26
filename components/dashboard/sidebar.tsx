@@ -50,7 +50,7 @@ export function Sidebar() {
                 <span className="text-white font-bold text-lg">C</span>
               </div>
               <span className="text-lg font-semibold text-gray-900 dark:text-white">
-                ChurchHub
+                Unity Fellowship Church
               </span>
             </Link>
           </div>
