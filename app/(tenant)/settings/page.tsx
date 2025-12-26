@@ -308,7 +308,7 @@ export default function SettingsPage() {
                         <span className="text-sm">Dark</span>
                       </button>
                       <button className="flex flex-col items-center gap-2 p-3 rounded-lg border-2 border-muted">
-                        <div className="w-16 h-10 rounded bg-gradient-to-r from-white to-gray-900"></div>
+                        <div className="w-16 h-10 rounded bg-linear-to-r from-white to-gray-900"></div>
                         <span className="text-sm">System</span>
                       </button>
                     </div>
