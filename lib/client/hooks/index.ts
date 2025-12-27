@@ -15,4 +15,11 @@ export * from './use-users';
 export * from './use-permissions';
 export * from './use-settings';
 export * from './use-user-permissions';
-export * from './use-user-permissions-admin';
+
+// Explicit re-exports to avoid naming conflicts with use-permissions.ts
+export {
+  useUserPermissionsAdmin,
+  useUpdateUserPermissionAdmin,
+  userPermissionsAdminKeys,
+  type UserPermissionsAdminResponse,
+} from './use-user-permissions-admin';
