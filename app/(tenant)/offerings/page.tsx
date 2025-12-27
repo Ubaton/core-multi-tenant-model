@@ -12,8 +12,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useOfferings } from '@/lib/client';
+import { useOfferings, useModulePermissions } from '@/lib/client';
 import { cn } from '@/lib/utils';
+import { RequireCreate, AccessDenied } from '@/components/permission-gate';
 
 const typeColors: Record<string, string> = {
   TITHE: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
@@ -37,6 +38,7 @@ export default function OfferingsPage() {
   const [search, setSearch] = useState('');
   const [type, setType] = useState<string>('');
   const [page, setPage] = useState(1);
+  const { canView, isLoading: permissionsLoading } = useModulePermissions();
 
   const { data, isLoading } = useOfferings({
     search: search || undefined,
@@ -49,6 +51,11 @@ export default function OfferingsPage() {
   const summary = data?.summary;
   const meta = data?.meta;
 
+  // Check for view permission
+  if (!permissionsLoading && !canView('offerings')) {
+    return <AccessDenied message="You do not have permission to view offerings." />;
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -59,10 +66,12 @@ export default function OfferingsPage() {
             Track and manage church offerings
           </p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Record Offering
-        </Button>
+        <RequireCreate module="offerings">
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Record Offering
+          </Button>
+        </RequireCreate>
       </div>
 
       {/* Summary Cards */}

@@ -23,8 +23,10 @@ import {
   usePrayerRequests, 
   useDeletePrayerRequest, 
   useUpdatePrayerRequest,
+  useModulePermissions,
 } from '@/lib/client';
 import { cn } from '@/lib/utils';
+import { RequireCreate, AccessDenied } from '@/components/permission-gate';
 
 const statusColors: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
@@ -37,6 +39,7 @@ export default function PrayerRequestsPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<string>('');
   const [page, setPage] = useState(1);
+  const { canView, canEdit, canDelete, isLoading: permissionsLoading } = useModulePermissions();
 
   const { data, isLoading } = usePrayerRequests({
     search: search || undefined,
@@ -50,6 +53,11 @@ export default function PrayerRequestsPage() {
   const prayerRequests = data?.data ?? [];
   const meta = data?.meta;
 
+  // Check for view permission
+  if (!permissionsLoading && !canView('prayer_requests')) {
+    return <AccessDenied message="You do not have permission to view prayer requests." />;
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -60,10 +68,12 @@ export default function PrayerRequestsPage() {
             Manage prayer requests from members and visitors
           </p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          Add Request
-        </Button>
+        <RequireCreate module="prayer_requests">
+          <Button>
+            <Plus className="h-4 w-4 mr-2" />
+            Add Request
+          </Button>
+        </RequireCreate>
       </div>
 
       {/* Filters */}
@@ -122,6 +132,8 @@ export default function PrayerRequestsPage() {
               key={request.id} 
               request={request}
               onDelete={() => deletePrayerRequest.mutate(request.id)}
+              canEdit={canEdit('prayer_requests')}
+              canDelete={canDelete('prayer_requests')}
             />
           ))
         )}
@@ -157,7 +169,7 @@ export default function PrayerRequestsPage() {
   );
 }
 
-function PrayerRequestCard({ request, onDelete }: { request: any; onDelete: () => void }) {
+function PrayerRequestCard({ request, onDelete, canEdit, canDelete }: { request: any; onDelete: () => void; canEdit: boolean; canDelete: boolean }) {
   const updateRequest = useUpdatePrayerRequest(request.id);
 
   const handleMarkAnswered = () => {
@@ -207,11 +219,13 @@ function PrayerRequestCard({ request, onDelete }: { request: any; onDelete: () =
                 <Eye className="h-4 w-4 mr-2" />
                 View Details
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Pencil className="h-4 w-4 mr-2" />
-                Edit
-              </DropdownMenuItem>
-              {request.status !== 'ANSWERED' && (
+              {canEdit && (
+                <DropdownMenuItem>
+                  <Pencil className="h-4 w-4 mr-2" />
+                  Edit
+                </DropdownMenuItem>
+              )}
+              {request.status !== 'ANSWERED' && canEdit && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
@@ -223,18 +237,22 @@ function PrayerRequestCard({ request, onDelete }: { request: any; onDelete: () =
                   </DropdownMenuItem>
                 </>
               )}
-              <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onClick={() => {
-                  if (confirm('Are you sure you want to delete this prayer request?')) {
-                    onDelete();
-                  }
-                }}
-                className="text-red-600 dark:text-red-400"
-              >
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete
-              </DropdownMenuItem>
+              {canDelete && (
+                <>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => {
+                      if (confirm('Are you sure you want to delete this prayer request?')) {
+                        onDelete();
+                      }
+                    }}
+                    className="text-red-600 dark:text-red-400"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete
+                  </DropdownMenuItem>
+                </>
+              )}
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

@@ -23,9 +23,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useCurrentUser, useUpdateProfile, useChangePassword, useUpdateTenant, useTenant } from '@/lib/client';
+import { useCurrentUser, useUpdateProfile, useChangePassword, useUpdateTenant, useTenant, useModulePermissions } from '@/lib/client';
 import { useTheme } from '@/context';
 import { cn } from '@/lib/utils';
+import { AccessDenied } from '@/components/permission-gate';
 
 const settingsTabs = [
   { id: 'profile', label: 'Profile', icon: User },
@@ -59,6 +60,7 @@ export default function SettingsPage() {
   const { data: user } = useCurrentUser();
   const { data: tenant } = useTenant(user?.tenantId || '');
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
+  const { canView, isLoading: permissionsLoading } = useModulePermissions();
   
   // Toast state
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -187,6 +189,11 @@ export default function SettingsPage() {
     // TODO: Implement notification preferences API
     setToast({ message: 'Notification preferences saved', type: 'success' });
   };
+
+  // Check for view permission
+  if (!permissionsLoading && !canView('settings')) {
+    return <AccessDenied message="You do not have permission to view settings." />;
+  }
 
   return (
     <div className="space-y-6">

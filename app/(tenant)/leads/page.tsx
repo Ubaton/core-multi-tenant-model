@@ -20,8 +20,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { useLeads, useDeleteLead, useConvertLead } from '@/lib/client';
+import { useLeads, useDeleteLead, useConvertLead, useModulePermissions } from '@/lib/client';
 import { cn } from '@/lib/utils';
+import { RequireCreate, AccessDenied } from '@/components/permission-gate';
 
 const statusColors: Record<string, string> = {
   NEW: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
@@ -45,6 +46,7 @@ export default function LeadsPage() {
   const [status, setStatus] = useState<string>('');
   const [source, setSource] = useState<string>('');
   const [page, setPage] = useState(1);
+  const { canView, canEdit, canDelete, isLoading: permissionsLoading } = useModulePermissions();
 
   const { data, isLoading } = useLeads({
     search: search || undefined,
@@ -59,6 +61,11 @@ export default function LeadsPage() {
   const leads = data?.data ?? [];
   const meta = data?.meta;
 
+  // Check for view permission
+  if (!permissionsLoading && !canView('leads')) {
+    return <AccessDenied message="You do not have permission to view leads." />;
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -69,12 +76,14 @@ export default function LeadsPage() {
             Track and convert potential members
           </p>
         </div>
-        <Link href="/leads/new">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Lead
-          </Button>
-        </Link>
+        <RequireCreate module="leads">
+          <Link href="/leads/new">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Lead
+            </Button>
+          </Link>
+        </RequireCreate>
       </div>
 
       {/* Filters */}
@@ -171,6 +180,8 @@ export default function LeadsPage() {
                       key={lead.id} 
                       lead={lead} 
                       onDelete={() => deleteLead.mutate(lead.id)}
+                      canEdit={canEdit('leads')}
+                      canDelete={canDelete('leads')}
                     />
                   ))}
                 </tbody>
@@ -210,7 +221,7 @@ export default function LeadsPage() {
   );
 }
 
-function LeadRow({ lead, onDelete }: { lead: any; onDelete: () => void }) {
+function LeadRow({ lead, onDelete, canEdit, canDelete }: { lead: any; onDelete: () => void; canEdit: boolean; canDelete: boolean }) {
   const convertLead = useConvertLead(lead.id);
 
   return (
@@ -255,11 +266,13 @@ function LeadRow({ lead, onDelete }: { lead: any; onDelete: () => void }) {
               <Eye className="h-4 w-4 mr-2" />
               View
             </DropdownMenuItem>
-            <DropdownMenuItem onClick={() => window.location.href = `/leads/${lead.id}/edit`}>
-              <Pencil className="h-4 w-4 mr-2" />
-              Edit
-            </DropdownMenuItem>
-            {lead.status !== 'CONVERTED' && (
+            {canEdit && (
+              <DropdownMenuItem onClick={() => window.location.href = `/leads/${lead.id}/edit`}>
+                <Pencil className="h-4 w-4 mr-2" />
+                Edit
+              </DropdownMenuItem>
+            )}
+            {lead.status !== 'CONVERTED' && canEdit && (
               <>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
@@ -275,18 +288,22 @@ function LeadRow({ lead, onDelete }: { lead: any; onDelete: () => void }) {
                 </DropdownMenuItem>
               </>
             )}
-            <DropdownMenuSeparator />
-            <DropdownMenuItem
-              onClick={() => {
-                if (confirm('Are you sure you want to delete this lead?')) {
-                  onDelete();
-                }
-              }}
-              className="text-red-600 dark:text-red-400"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete
-            </DropdownMenuItem>
+            {canDelete && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  onClick={() => {
+                    if (confirm('Are you sure you want to delete this lead?')) {
+                      onDelete();
+                    }
+                  }}
+                  className="text-red-600 dark:text-red-400"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete
+                </DropdownMenuItem>
+              </>
+            )}
           </DropdownMenuContent>
         </DropdownMenu>
       </td>

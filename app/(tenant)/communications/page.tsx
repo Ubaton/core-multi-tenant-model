@@ -46,7 +46,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { useCommunications, useDeleteCommunication } from '@/lib/client';
+import { useCommunications, useDeleteCommunication, useModulePermissions } from '@/lib/client';
 import { 
   useMessages, 
   useMessage, 
@@ -57,6 +57,7 @@ import {
   type MessagePriority,
 } from '@/lib/client/hooks/use-messages';
 import { cn } from '@/lib/utils';
+import { RequireCreate, AccessDenied } from '@/components/permission-gate';
 
 const typeIcons = {
   SMS: MessageSquare,
@@ -111,6 +112,7 @@ function getSenderName(message: InternalMessage) {
 export default function CommunicationsPage() {
   // Tab state
   const [activeTab, setActiveTab] = useState<TabType>('messages');
+  const { canView, canCreate, canDelete, isLoading: permissionsLoading } = useModulePermissions();
 
   // Member communications state
   const [search, setSearch] = useState('');
@@ -153,6 +155,11 @@ export default function CommunicationsPage() {
   const communications = data?.data ?? [];
   const meta = data?.meta;
   const supportMessages = messagesData?.data ?? [];
+
+  // Check for view permission
+  if (!permissionsLoading && !canView('communications')) {
+    return <AccessDenied message="You do not have permission to view communications." />;
+  }
 
   // Handlers
   const handleSendReply = useCallback(async () => {

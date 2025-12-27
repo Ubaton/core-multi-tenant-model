@@ -16,8 +16,9 @@ import {
   TrendingDown,
 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useDashboardStats } from '@/lib/client';
+import { useDashboardStats, useModulePermissions } from '@/lib/client';
 import { cn } from '@/lib/utils';
+import { AccessDenied } from '@/components/permission-gate';
 
 function formatCurrency(amount: string | number) {
   const num = typeof amount === 'string' ? parseFloat(amount) : amount;
@@ -73,6 +74,12 @@ function StatCard({
 
 export default function DashboardPage() {
   const { data: stats, isLoading } = useDashboardStats();
+  const { canView, isLoading: permissionsLoading } = useModulePermissions();
+
+  // Check for view permission
+  if (!permissionsLoading && !canView('dashboard')) {
+    return <AccessDenied message="You do not have permission to view the dashboard." />;
+  }
 
   if (isLoading) {
     return (

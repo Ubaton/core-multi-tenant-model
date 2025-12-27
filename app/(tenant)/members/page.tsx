@@ -1,6 +1,7 @@
 /**
  * ════════════════════════════════════════════════════════════════════════════
  * MEMBERS LIST PAGE
+ * Permission-aware member management
  * ════════════════════════════════════════════════════════════════════════════
  */
 
@@ -20,6 +21,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { useMembers, useDeleteMember } from '@/lib/client';
+import { useModulePermissions } from '@/lib/client/hooks/use-user-permissions';
+import { RequireCreate, RequireEdit, RequireDelete, AccessDenied } from '@/components/permission-gate';
 import { cn } from '@/lib/utils';
 
 const statusColors: Record<string, string> = {
@@ -34,6 +37,8 @@ export default function MembersPage() {
   const [status, setStatus] = useState<string>('');
   const [page, setPage] = useState(1);
 
+  const { canView, canEdit, canDelete, isLoading: permissionsLoading } = useModulePermissions();
+
   const { data, isLoading } = useMembers({
     search: search || undefined,
     status: status || undefined,
@@ -46,6 +51,11 @@ export default function MembersPage() {
   const members = data?.data ?? [];
   const meta = data?.meta;
 
+  // Check if user can view members
+  if (!permissionsLoading && !canView('members')) {
+    return <AccessDenied message="You don't have permission to view members." />;
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -56,12 +66,14 @@ export default function MembersPage() {
             Manage your church members
           </p>
         </div>
-        <Link href="/members/new">
-          <Button>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Member
-          </Button>
-        </Link>
+        <RequireCreate module="members">
+          <Link href="/members/new">
+            <Button>
+              <Plus className="h-4 w-4 mr-2" />
+              Add Member
+            </Button>
+          </Link>
+        </RequireCreate>
       </div>
 
       {/* Filters */}
@@ -172,21 +184,25 @@ export default function MembersPage() {
                               <Eye className="h-4 w-4 mr-2" />
                               View
                             </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => window.location.href = `/members/${member.id}/edit`}>
-                              <Pencil className="h-4 w-4 mr-2" />
-                              Edit
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => {
-                                if (confirm('Are you sure you want to delete this member?')) {
-                                  deleteMember.mutate(member.id);
-                                }
-                              }}
-                              className="text-red-600 dark:text-red-400"
-                            >
-                              <Trash2 className="h-4 w-4 mr-2" />
-                              Delete
-                            </DropdownMenuItem>
+                            {canEdit('members') && (
+                              <DropdownMenuItem onClick={() => window.location.href = `/members/${member.id}/edit`}>
+                                <Pencil className="h-4 w-4 mr-2" />
+                                Edit
+                              </DropdownMenuItem>
+                            )}
+                            {canDelete('members') && (
+                              <DropdownMenuItem
+                                onClick={() => {
+                                  if (confirm('Are you sure you want to delete this member?')) {
+                                    deleteMember.mutate(member.id);
+                                  }
+                                }}
+                                className="text-red-600 dark:text-red-400"
+                              >
+                                <Trash2 className="h-4 w-4 mr-2" />
+                                Delete
+                              </DropdownMenuItem>
+                            )}
                           </DropdownMenuContent>
                         </DropdownMenu>
                       </td>
