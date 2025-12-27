@@ -11,88 +11,9 @@ import {
   successResponse, 
 } from '@/lib/api';
 import { UserRole } from '@/lib/generated/prisma';
+import { DEFAULT_MODULE_PERMISSIONS } from '@/lib/permissions-matrix';
 
-// Default permissions matrix (used as fallback)
-const defaultPermissions: Record<string, Record<string, { view: boolean; create: boolean; edit: boolean; delete: boolean }>> = {
-  SUPER_ADMIN: {
-    dashboard: { view: true, create: true, edit: true, delete: true },
-    members: { view: true, create: true, edit: true, delete: true },
-    leads: { view: true, create: true, edit: true, delete: true },
-    offerings: { view: true, create: true, edit: true, delete: true },
-    prayer_requests: { view: true, create: true, edit: true, delete: true },
-    communications: { view: true, create: true, edit: true, delete: true },
-    calls: { view: true, create: true, edit: true, delete: true },
-    reports: { view: true, create: true, edit: true, delete: true },
-    settings: { view: true, create: true, edit: true, delete: true },
-    users: { view: true, create: true, edit: true, delete: true },
-    tenants: { view: true, create: true, edit: true, delete: true },
-  },
-  CHURCH_ADMIN: {
-    dashboard: { view: true, create: true, edit: true, delete: true },
-    members: { view: true, create: true, edit: true, delete: true },
-    leads: { view: true, create: true, edit: true, delete: true },
-    offerings: { view: true, create: true, edit: true, delete: true },
-    prayer_requests: { view: true, create: true, edit: true, delete: true },
-    communications: { view: true, create: true, edit: true, delete: true },
-    calls: { view: true, create: true, edit: true, delete: true },
-    reports: { view: true, create: true, edit: true, delete: true },
-    settings: { view: true, create: true, edit: true, delete: false },
-    users: { view: true, create: true, edit: true, delete: false },
-    tenants: { view: false, create: false, edit: false, delete: false },
-  },
-  STAFF: {
-    dashboard: { view: true, create: false, edit: false, delete: false },
-    members: { view: true, create: true, edit: true, delete: false },
-    leads: { view: true, create: true, edit: true, delete: false },
-    offerings: { view: true, create: true, edit: false, delete: false },
-    prayer_requests: { view: true, create: true, edit: true, delete: false },
-    communications: { view: true, create: true, edit: false, delete: false },
-    calls: { view: true, create: true, edit: true, delete: false },
-    reports: { view: true, create: false, edit: false, delete: false },
-    settings: { view: false, create: false, edit: false, delete: false },
-    users: { view: false, create: false, edit: false, delete: false },
-    tenants: { view: false, create: false, edit: false, delete: false },
-  },
-  CALL_CENTER: {
-    dashboard: { view: true, create: false, edit: false, delete: false },
-    members: { view: true, create: false, edit: false, delete: false },
-    leads: { view: true, create: true, edit: true, delete: false },
-    offerings: { view: false, create: false, edit: false, delete: false },
-    prayer_requests: { view: true, create: true, edit: true, delete: false },
-    communications: { view: true, create: true, edit: false, delete: false },
-    calls: { view: true, create: true, edit: true, delete: false },
-    reports: { view: false, create: false, edit: false, delete: false },
-    settings: { view: false, create: false, edit: false, delete: false },
-    users: { view: false, create: false, edit: false, delete: false },
-    tenants: { view: false, create: false, edit: false, delete: false },
-  },
-  SUBSCRIBER: {
-    dashboard: { view: true, create: false, edit: false, delete: false },
-    members: { view: true, create: false, edit: false, delete: false },
-    leads: { view: false, create: false, edit: false, delete: false },
-    offerings: { view: true, create: false, edit: false, delete: false },
-    prayer_requests: { view: true, create: true, edit: false, delete: false },
-    communications: { view: true, create: false, edit: false, delete: false },
-    calls: { view: false, create: false, edit: false, delete: false },
-    reports: { view: false, create: false, edit: false, delete: false },
-    settings: { view: false, create: false, edit: false, delete: false },
-    users: { view: false, create: false, edit: false, delete: false },
-    tenants: { view: false, create: false, edit: false, delete: false },
-  },
-  MEMBER: {
-    dashboard: { view: true, create: false, edit: false, delete: false },
-    members: { view: false, create: false, edit: false, delete: false },
-    leads: { view: false, create: false, edit: false, delete: false },
-    offerings: { view: true, create: true, edit: false, delete: false },
-    prayer_requests: { view: true, create: true, edit: false, delete: false },
-    communications: { view: true, create: false, edit: false, delete: false },
-    calls: { view: false, create: false, edit: false, delete: false },
-    reports: { view: false, create: false, edit: false, delete: false },
-    settings: { view: false, create: false, edit: false, delete: false },
-    users: { view: false, create: false, edit: false, delete: false },
-    tenants: { view: false, create: false, edit: false, delete: false },
-  },
-};
+const defaultPermissions = DEFAULT_MODULE_PERMISSIONS;
 
 /**
  * GET /api/permissions/me
@@ -100,17 +21,76 @@ const defaultPermissions: Record<string, Record<string, { view: boolean; create:
  */
 export const GET = withAuth(async (request, { user }) => {
   const userRole = user.role as UserRole;
-
-  // Try to get permissions from database for this role
-  const dbPermissions = await prisma.rolePermission.findMany({
-    where: { role: userRole },
-  });
+  const userTenantId = user.tenantId;
 
   // Start with default permissions for this role
   const rolePermissions = JSON.parse(JSON.stringify(defaultPermissions[userRole] || {}));
 
-  // Override with database permissions
-  for (const perm of dbPermissions) {
+  // SUPER_ADMIN always gets full default permissions (no tenant-specific overrides)
+  if (userRole === 'SUPER_ADMIN') {
+    return successResponse({
+      role: userRole,
+      permissions: rolePermissions,
+    });
+  }
+
+  // For tenant users, we apply permissions in layers:
+  // 1. Start with hardcoded defaults (done above)
+  // 2. Apply global overrides (tenantId = null)
+  // 3. Apply tenant-specific overrides (if user has a tenant)
+  // 4. Apply user-specific overrides (always last)
+
+  // Objective: Church Admin permissions should be user-specific (not shared across all Church Admins)
+  // So for CHURCH_ADMIN we skip RolePermission overrides entirely.
+  const applyRoleOverrides = userRole !== 'CHURCH_ADMIN';
+
+  if (applyRoleOverrides) {
+    // Step 2: Apply global permission overrides
+    const globalPermissions = await prisma.rolePermission.findMany({
+      where: {
+        role: userRole,
+        tenantId: null,
+      },
+    });
+
+    for (const perm of globalPermissions) {
+      rolePermissions[perm.module] = {
+        view: perm.canView,
+        create: perm.canCreate,
+        edit: perm.canEdit,
+        delete: perm.canDelete,
+      };
+    }
+
+    // Step 3: Apply tenant-specific overrides (these take precedence)
+    if (userTenantId) {
+      const tenantPermissions = await prisma.rolePermission.findMany({
+        where: {
+          role: userRole,
+          tenantId: userTenantId,
+        },
+      });
+
+      // Tenant-specific permissions override global ones for specific modules
+      for (const perm of tenantPermissions) {
+        rolePermissions[perm.module] = {
+          view: perm.canView,
+          create: perm.canCreate,
+          edit: perm.canEdit,
+          delete: perm.canDelete,
+        };
+      }
+    }
+  }
+
+  // Step 4: Apply user-specific overrides (these take final precedence)
+  const userOverrides = await prisma.userPermission.findMany({
+    where: {
+      userId: user.id,
+    },
+  });
+
+  for (const perm of userOverrides) {
     rolePermissions[perm.module] = {
       view: perm.canView,
       create: perm.canCreate,

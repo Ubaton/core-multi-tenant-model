@@ -149,6 +149,7 @@ model Tenant {
   departments Department[]
   auditLogs   AuditLog[]
   internalMessages InternalMessage[]
+  rolePermissions RolePermission[]
 
   @@index([slug])
   @@index([parentId])
@@ -187,6 +188,7 @@ model User {
   auditLogs     AuditLog[]
   sentMessages  InternalMessage[] @relation("MessageSender")
   receivedMessages InternalMessage[] @relation("MessageReceiver")
+  userPermissions UserPermission[]
 
   @@index([email])
   @@index([tenantId])
@@ -194,11 +196,13 @@ model User {
 }
 
 // ════════════════════════════════════════════════════════════════════════════
-// ROLE PERMISSION - Configurable permissions per role and module
+// ROLE PERMISSION - Configurable permissions per role, module, and tenant
 // ════════════════════════════════════════════════════════════════════════════
 
 model RolePermission {
   id        String   @id @default(cuid())
+  tenantId  String?  // NULL = global default, specific ID = tenant-specific override
+  tenant    Tenant?  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   role      UserRole // The role this permission applies to
   module    String   // Module identifier (e.g., 'members', 'leads', 'offerings')
   
@@ -211,8 +215,33 @@ model RolePermission {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@unique([role, module])
+  @@unique([tenantId, role, module])
+  @@index([tenantId])
   @@index([role])
+  @@index([module])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// USER PERMISSION - Configurable permissions per user and module (overrides)
+// ════════════════════════════════════════════════════════════════════════════
+
+model UserPermission {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  module    String   // Module identifier (e.g., 'members', 'leads', 'offerings')
+
+  // Permission flags
+  canView   Boolean  @default(false)
+  canCreate Boolean  @default(false)
+  canEdit   Boolean  @default(false)
+  canDelete Boolean  @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([userId, module])
+  @@index([userId])
   @@index([module])
 }
 

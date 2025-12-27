@@ -15,3 +15,4 @@ export * from './use-users';
 export * from './use-permissions';
 export * from './use-settings';
 export * from './use-user-permissions';
+export * from './use-user-permissions-admin';

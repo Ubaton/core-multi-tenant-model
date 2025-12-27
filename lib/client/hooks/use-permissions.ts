@@ -24,16 +24,20 @@ interface UpdatePermissionParams {
   module: string;
   permission: PermissionType;
   granted: boolean;
+  tenantId?: string; // Optional - if not provided, updates global permission
 }
 
 /**
- * Fetch all role permissions
+ * Fetch all role permissions (optionally for a specific tenant)
  */
-export function usePermissions() {
+export function usePermissions(tenantId?: string | null) {
   return useQuery({
-    queryKey: ['permissions'],
+    queryKey: ['permissions', tenantId ?? 'global'],
     queryFn: async () => {
-      const response = await get<PermissionsMatrix>('/api/permissions');
+      const url = tenantId 
+        ? `/api/permissions?tenantId=${tenantId}`
+        : '/api/permissions';
+      const response = await get<PermissionsMatrix>(url);
       return response.data;
     },
   });
@@ -51,11 +55,13 @@ export function useUpdatePermission() {
       return response.data;
     },
     onMutate: async (params) => {
+      const queryKey = ['permissions', params.tenantId ?? 'global'];
+      
       // Cancel outgoing refetches
-      await queryClient.cancelQueries({ queryKey: ['permissions'] });
+      await queryClient.cancelQueries({ queryKey });
 
       // Snapshot the previous value
-      const previousPermissions = queryClient.getQueryData<PermissionsMatrix>(['permissions']);
+      const previousPermissions = queryClient.getQueryData<PermissionsMatrix>(queryKey);
 
       // Optimistically update
       if (previousPermissions) {
@@ -69,20 +75,22 @@ export function useUpdatePermission() {
             },
           };
         }
-        queryClient.setQueryData(['permissions'], updated);
+        queryClient.setQueryData(queryKey, updated);
       }
 
-      return { previousPermissions };
+      return { previousPermissions, queryKey };
     },
-    onError: (_err, _params, context) => {
+    onError: (_err, params, context) => {
       // Rollback on error
       if (context?.previousPermissions) {
-        queryClient.setQueryData(['permissions'], context.previousPermissions);
+        queryClient.setQueryData(context.queryKey, context.previousPermissions);
       }
     },
-    onSettled: () => {
+    onSettled: (_data, _error, params) => {
       // Refetch after mutation
-      queryClient.invalidateQueries({ queryKey: ['permissions'] });
+      queryClient.invalidateQueries({ queryKey: ['permissions', params.tenantId ?? 'global'] });
+      // Also invalidate user permissions to reflect changes
+      queryClient.invalidateQueries({ queryKey: ['userPermissions'] });
     },
   });
 }

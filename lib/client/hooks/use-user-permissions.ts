@@ -38,7 +38,7 @@ export function useUserPermissions() {
       const response = await get<UserPermissionsResponse>('/api/permissions/me');
       return response.data!;
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    staleTime: 30 * 1000, // 30 seconds - shorter to catch permission changes faster
     retry: 1,
   });
 }

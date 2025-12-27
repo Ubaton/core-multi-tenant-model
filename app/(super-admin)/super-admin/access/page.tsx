@@ -1,7 +1,7 @@
 /**
  * ════════════════════════════════════════════════════════════════════════════
  * ACCESS CONTROL PAGE (Super Admin)
- * Interactive role-based permissions management
+ * Interactive role-based permissions management with tenant selection
  * ════════════════════════════════════════════════════════════════════════════
  */
 
@@ -20,12 +20,22 @@ import {
   Check,
   Loader2,
   RefreshCw,
+  Building2,
+  Globe,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
-import { usePermissions, useUpdatePermission, type PermissionType } from '@/lib/client';
+import {
+  usePermissions,
+  useUpdatePermission,
+  useUserPermissionsAdmin,
+  useUpdateUserPermissionAdmin,
+  useUsers,
+  type PermissionType,
+} from '@/lib/client';
+import { useTenants } from '@/lib/client/hooks/use-tenants';
 
 // Role permissions matrix
 const roles = [
@@ -181,18 +191,58 @@ function PermissionToggle({ granted, onClick, isLoading, disabled }: PermissionT
 }
 
 export default function AccessControlPage() {
+  const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
+  const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [updatingKey, setUpdatingKey] = useState<string | null>(null);
   
-  const { data: permissions, isLoading, refetch, isRefetching } = usePermissions();
+  // Fetch tenants for selection
+  const { data: tenantsData, isLoading: isLoadingTenants } = useTenants({ limit: 100 });
+  const tenants = tenantsData?.data ?? [];
+
+  // Fetch Church Admin users for the selected tenant (used only when editing CHURCH_ADMIN)
+  // When no tenant is selected, force an empty result by using a non-existent tenantId.
+  const churchAdminsQuery = useUsers({
+    role: 'CHURCH_ADMIN',
+    tenantId: selectedTenantId ?? 'no-tenant-selected',
+    pageSize: 100,
+  });
+  const churchAdmins = churchAdminsQuery.data?.data ?? [];
+  
+  const rolePermissionsQuery = usePermissions(selectedTenantId);
+  const userPermissionsQuery = useUserPermissionsAdmin(selectedUserId);
+
+  const { data: permissions } = rolePermissionsQuery;
+  const isLoadingRolePermissions = rolePermissionsQuery.isLoading;
+  const isLoadingUserPermissions = userPermissionsQuery.isLoading;
+
   const updatePermission = useUpdatePermission();
+  const updateUserPermission = useUpdateUserPermissionAdmin();
 
   // Get the selected role details
   const selectedRoleDetails = roles.find(r => r.id === selectedRole);
+  const selectedTenant = tenants.find(t => t.id === selectedTenantId);
+  const selectedUser = churchAdmins.find(u => u.id === selectedUserId);
+
+  const isChurchAdminRole = selectedRole === 'CHURCH_ADMIN';
+  const isEditingChurchAdminUser = isChurchAdminRole && !!selectedUserId;
+
+  const isRefetching = isEditingChurchAdminUser
+    ? userPermissionsQuery.isRefetching
+    : rolePermissionsQuery.isRefetching;
+
+  const handleRefresh = () => {
+    if (isEditingChurchAdminUser) {
+      return userPermissionsQuery.refetch();
+    }
+    return rolePermissionsQuery.refetch();
+  };
 
   // Use fetched permissions or fallback to defaults
   const permissionsMatrix = permissions || defaultPermissions;
-  const currentPermissions = selectedRole ? (permissionsMatrix[selectedRole] || {}) : {};
+  const currentPermissions = isEditingChurchAdminUser
+    ? (userPermissionsQuery.data?.permissions || defaultPermissions.CHURCH_ADMIN)
+    : (selectedRole ? (permissionsMatrix[selectedRole] || {}) : {});
 
   const handleTogglePermission = async (
     moduleId: string, 
@@ -200,17 +250,32 @@ export default function AccessControlPage() {
     currentValue: boolean
   ) => {
     if (!selectedRole) return;
+
+    // For Church Admin, permissions must be applied to a specific Church Admin user
+    if (selectedRole === 'CHURCH_ADMIN') {
+      if (!selectedUserId) return;
+    }
     
     const key = `${selectedRole}:${moduleId}:${permission}`;
     setUpdatingKey(key);
     
     try {
-      await updatePermission.mutateAsync({
-        role: selectedRole,
-        module: moduleId,
-        permission,
-        granted: !currentValue,
-      });
+      if (selectedRole === 'CHURCH_ADMIN' && selectedUserId) {
+        await updateUserPermission.mutateAsync({
+          userId: selectedUserId,
+          module: moduleId,
+          permission,
+          granted: !currentValue,
+        });
+      } else {
+        await updatePermission.mutateAsync({
+          role: selectedRole,
+          module: moduleId,
+          permission,
+          granted: !currentValue,
+          tenantId: selectedTenantId || undefined,
+        });
+      }
     } finally {
       setUpdatingKey(null);
     }
@@ -222,6 +287,13 @@ export default function AccessControlPage() {
 
   const handleSelectRole = (roleId: string) => {
     setSelectedRole(roleId);
+    setSelectedUserId(null);
+  };
+
+  const handleSelectTenant = (tenantId: string | null) => {
+    setSelectedTenantId(tenantId);
+    setSelectedRole(null); // Reset role selection when tenant changes
+    setSelectedUserId(null);
   };
 
   return (
@@ -237,7 +309,7 @@ export default function AccessControlPage() {
         <Button 
           variant="outline" 
           size="sm" 
-          onClick={() => refetch()}
+          onClick={handleRefresh}
           disabled={isRefetching}
         >
           <RefreshCw className={cn("h-4 w-4 mr-2", isRefetching && "animate-spin")} />
@@ -245,12 +317,118 @@ export default function AccessControlPage() {
         </Button>
       </div>
 
-      {/* Step 1: Role Selection */}
+      {/* Step 1: Tenant Selection */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Building2 className="h-5 w-5" />
+            Step 1: Select Scope
+          </CardTitle>
+          <CardDescription>
+            Choose whether to configure global defaults or tenant-specific permissions
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {isLoadingTenants ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {/* Global Defaults Option */}
+              <button
+                onClick={() => handleSelectTenant(null)}
+                className={cn(
+                  "w-full p-4 rounded-lg border text-left transition-all",
+                  selectedTenantId === null
+                    ? "border-primary bg-primary/5 ring-2 ring-primary shadow-md"
+                    : "border-border hover:border-primary/50 hover:bg-muted/50"
+                )}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/30">
+                      <Globe className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    </div>
+                    <div>
+                      <p className="font-medium">Global Defaults</p>
+                      <p className="text-sm text-muted-foreground">
+                        Default permissions for all tenants that don't have specific overrides
+                      </p>
+                    </div>
+                  </div>
+                  {selectedTenantId === null && (
+                    <Check className="h-5 w-5 text-primary" />
+                  )}
+                </div>
+              </button>
+
+              {/* Tenant Selection */}
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {tenants.map((tenant) => (
+                  <button
+                    key={tenant.id}
+                    onClick={() => handleSelectTenant(tenant.id)}
+                    className={cn(
+                      "p-4 rounded-lg border text-left transition-all",
+                      selectedTenantId === tenant.id
+                        ? "border-primary bg-primary/5 ring-2 ring-primary shadow-md"
+                        : "border-border hover:border-primary/50 hover:bg-muted/50"
+                    )}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge variant={tenant.isActive ? "default" : "secondary"}>
+                        {tenant.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                      {selectedTenantId === tenant.id && (
+                        <Check className="h-4 w-4 text-primary" />
+                      )}
+                    </div>
+                    <p className="font-medium truncate">{tenant.name}</p>
+                    <p className="text-xs text-muted-foreground mt-1 font-mono truncate">
+                      ID: {tenant.id}
+                    </p>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Current Scope Indicator */}
+      {(selectedTenantId !== null || selectedTenantId === null) && (
+        <div className={cn(
+          "rounded-lg p-4 border",
+          selectedTenantId === null 
+            ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
+            : "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800"
+        )}>
+          <p className={cn(
+            "text-sm font-medium",
+            selectedTenantId === null ? "text-blue-800 dark:text-blue-200" : "text-purple-800 dark:text-purple-200"
+          )}>
+            {selectedTenantId === null ? (
+              <>
+                <Globe className="h-4 w-4 inline mr-2" />
+                Editing Global Default Permissions
+              </>
+            ) : (
+              <>
+                <Building2 className="h-4 w-4 inline mr-2" />
+                Editing permissions for: <strong>{selectedTenant?.name}</strong>
+              </>
+            )}
+          </p>
+        </div>
+      )}
+
+      {/* Step 2: Role Selection */}
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Shield className="h-5 w-5" />
-            Step 1: Select a Role
+            Step 2: Select a Role
           </CardTitle>
           <CardDescription>
             Choose which role you want to configure permissions for
@@ -287,19 +465,84 @@ export default function AccessControlPage() {
         </CardContent>
       </Card>
 
-      {/* Step 2: Permissions Matrix - Only show when a role is selected */}
-      {selectedRole && selectedRoleDetails ? (
+      {/* Step 2b: Church Admin User Selection (only for CHURCH_ADMIN) */}
+      {selectedRole === 'CHURCH_ADMIN' ? (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="h-5 w-5" />
+              Step 2b: Select a Church Admin
+            </CardTitle>
+            <CardDescription>
+              Permissions for Church Admin are applied per user (not all Church Admins)
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            {selectedTenantId === null ? (
+              <div className="text-sm text-muted-foreground">
+                Select a tenant scope first to list Church Admin users.
+              </div>
+            ) : churchAdminsQuery.isLoading ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : churchAdmins.length === 0 ? (
+              <div className="text-sm text-muted-foreground">
+                No Church Admin users found for this tenant.
+              </div>
+            ) : (
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                {churchAdmins.map((u) => (
+                  <button
+                    key={u.id}
+                    onClick={() => setSelectedUserId(u.id)}
+                    className={cn(
+                      "p-4 rounded-lg border text-left transition-all",
+                      selectedUserId === u.id
+                        ? "border-primary bg-primary/5 ring-2 ring-primary shadow-md"
+                        : "border-border hover:border-primary/50 hover:bg-muted/50"
+                    )}
+                  >
+                    <div className="flex items-center justify-between mb-2">
+                      <Badge variant={u.isActive ? 'default' : 'secondary'}>
+                        {u.isActive ? 'Active' : 'Inactive'}
+                      </Badge>
+                      {selectedUserId === u.id && <Check className="h-4 w-4 text-primary" />}
+                    </div>
+                    <p className="font-medium truncate">{u.firstName} {u.lastName}</p>
+                    <p className="text-xs text-muted-foreground mt-1 truncate">{u.email}</p>
+                    <p className="text-xs text-muted-foreground mt-2 font-mono truncate">ID: {u.id}</p>
+                  </button>
+                ))}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {/* Step 3: Permissions Matrix - Only show when target is selected */}
+      {selectedRole && selectedRoleDetails && (!isChurchAdminRole || isEditingChurchAdminUser) ? (
         <Card className="border-primary/50">
           <CardHeader className="bg-primary/5">
             <div className="flex items-center justify-between">
               <div>
                 <CardTitle className="flex items-center gap-2">
                   <Key className="h-5 w-5" />
-                  Step 2: Configure Permissions
+                  Step 3: Configure Permissions
                 </CardTitle>
                 <CardDescription className="mt-1">
                   Managing permissions for role: <strong className="text-foreground">{selectedRoleDetails.name}</strong>
                   <span className="ml-2 font-mono text-xs">({selectedRole})</span>
+                  {isChurchAdminRole && selectedUser && (
+                    <span className="ml-2">
+                      for user: <strong className="text-foreground">{selectedUser.firstName} {selectedUser.lastName}</strong>
+                    </span>
+                  )}
+                  {selectedTenantId && selectedTenant && (
+                    <span className="ml-2">
+                      in tenant: <strong className="text-foreground">{selectedTenant.name}</strong>
+                    </span>
+                  )}
                 </CardDescription>
               </div>
               <Badge className={cn(roleColors[selectedRole], "text-sm px-3 py-1")}>
@@ -308,7 +551,7 @@ export default function AccessControlPage() {
             </div>
           </CardHeader>
         <CardContent>
-          {isLoading ? (
+          {(isEditingChurchAdminUser ? isLoadingUserPermissions : isLoadingRolePermissions) ? (
             <div className="flex items-center justify-center py-8">
               <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
             </div>
@@ -430,8 +673,8 @@ export default function AccessControlPage() {
       {/* Info */}
       <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4">
         <p className="text-sm text-blue-800 dark:text-blue-200">
-          <strong>Tip:</strong> Select a role first, then click on permission icons to toggle access. 
-          Changes are saved automatically to the database for the selected role.
+          <strong>Tip:</strong> First select a scope (Global or specific Tenant), then select a role, and finally click on permission icons to toggle access. 
+          Changes are saved automatically. Tenant-specific permissions override global defaults.
         </p>
       </div>
     </div>

@@ -14,6 +14,7 @@ import {
   parseBody,
   logAudit,
 } from '@/lib/api';
+import { DEFAULT_MODULE_PERMISSIONS } from '@/lib/permissions-matrix';
 import { z } from 'zod';
 
 const updatePermissionSchema = z.object({
@@ -21,120 +22,80 @@ const updatePermissionSchema = z.object({
   module: z.string(),
   permission: z.enum(['view', 'create', 'edit', 'delete']),
   granted: z.boolean(),
+  tenantId: z.string().optional(), // Optional - if not provided, updates global permission
 });
 
-// Default permissions matrix (used as fallback)
-const defaultPermissions: Record<string, Record<string, { view: boolean; create: boolean; edit: boolean; delete: boolean }>> = {
-  SUPER_ADMIN: {
-    dashboard: { view: true, create: true, edit: true, delete: true },
-    members: { view: true, create: true, edit: true, delete: true },
-    leads: { view: true, create: true, edit: true, delete: true },
-    offerings: { view: true, create: true, edit: true, delete: true },
-    prayer_requests: { view: true, create: true, edit: true, delete: true },
-    communications: { view: true, create: true, edit: true, delete: true },
-    calls: { view: true, create: true, edit: true, delete: true },
-    reports: { view: true, create: true, edit: true, delete: true },
-    settings: { view: true, create: true, edit: true, delete: true },
-    users: { view: true, create: true, edit: true, delete: true },
-    tenants: { view: true, create: true, edit: true, delete: true },
-  },
-  CHURCH_ADMIN: {
-    dashboard: { view: true, create: true, edit: true, delete: true },
-    members: { view: true, create: true, edit: true, delete: true },
-    leads: { view: true, create: true, edit: true, delete: true },
-    offerings: { view: true, create: true, edit: true, delete: true },
-    prayer_requests: { view: true, create: true, edit: true, delete: true },
-    communications: { view: true, create: true, edit: true, delete: true },
-    calls: { view: true, create: true, edit: true, delete: true },
-    reports: { view: true, create: true, edit: true, delete: true },
-    settings: { view: true, create: true, edit: true, delete: false },
-    users: { view: true, create: true, edit: true, delete: false },
-    tenants: { view: false, create: false, edit: false, delete: false },
-  },
-  STAFF: {
-    dashboard: { view: true, create: false, edit: false, delete: false },
-    members: { view: true, create: true, edit: true, delete: false },
-    leads: { view: true, create: true, edit: true, delete: false },
-    offerings: { view: true, create: true, edit: false, delete: false },
-    prayer_requests: { view: true, create: true, edit: true, delete: false },
-    communications: { view: true, create: true, edit: false, delete: false },
-    calls: { view: true, create: true, edit: true, delete: false },
-    reports: { view: true, create: false, edit: false, delete: false },
-    settings: { view: false, create: false, edit: false, delete: false },
-    users: { view: false, create: false, edit: false, delete: false },
-    tenants: { view: false, create: false, edit: false, delete: false },
-  },
-  CALL_CENTER: {
-    dashboard: { view: true, create: false, edit: false, delete: false },
-    members: { view: true, create: false, edit: false, delete: false },
-    leads: { view: true, create: true, edit: true, delete: false },
-    offerings: { view: false, create: false, edit: false, delete: false },
-    prayer_requests: { view: true, create: true, edit: true, delete: false },
-    communications: { view: true, create: true, edit: false, delete: false },
-    calls: { view: true, create: true, edit: true, delete: false },
-    reports: { view: false, create: false, edit: false, delete: false },
-    settings: { view: false, create: false, edit: false, delete: false },
-    users: { view: false, create: false, edit: false, delete: false },
-    tenants: { view: false, create: false, edit: false, delete: false },
-  },
-  SUBSCRIBER: {
-    dashboard: { view: true, create: false, edit: false, delete: false },
-    members: { view: true, create: false, edit: false, delete: false },
-    leads: { view: false, create: false, edit: false, delete: false },
-    offerings: { view: true, create: false, edit: false, delete: false },
-    prayer_requests: { view: true, create: true, edit: false, delete: false },
-    communications: { view: true, create: false, edit: false, delete: false },
-    calls: { view: false, create: false, edit: false, delete: false },
-    reports: { view: false, create: false, edit: false, delete: false },
-    settings: { view: false, create: false, edit: false, delete: false },
-    users: { view: false, create: false, edit: false, delete: false },
-    tenants: { view: false, create: false, edit: false, delete: false },
-  },
-  MEMBER: {
-    dashboard: { view: true, create: false, edit: false, delete: false },
-    members: { view: false, create: false, edit: false, delete: false },
-    leads: { view: false, create: false, edit: false, delete: false },
-    offerings: { view: true, create: true, edit: false, delete: false },
-    prayer_requests: { view: true, create: true, edit: false, delete: false },
-    communications: { view: true, create: false, edit: false, delete: false },
-    calls: { view: false, create: false, edit: false, delete: false },
-    reports: { view: false, create: false, edit: false, delete: false },
-    settings: { view: false, create: false, edit: false, delete: false },
-    users: { view: false, create: false, edit: false, delete: false },
-    tenants: { view: false, create: false, edit: false, delete: false },
-  },
-};
+const defaultPermissions = DEFAULT_MODULE_PERMISSIONS;
 
 /**
  * GET /api/permissions
- * Get all role permissions
+ * Get all role permissions (optionally filtered by tenantId query param)
+ * When tenantId is provided, returns tenant-specific overrides merged with defaults
  */
-export const GET = withSuperAdmin(async () => {
-  // Try to get permissions from database
-  const dbPermissions = await prisma.rolePermission.findMany();
+export const GET = withSuperAdmin(async (request: NextRequest) => {
+  const { searchParams } = new URL(request.url);
+  const tenantId = searchParams.get('tenantId');
 
-  if (dbPermissions.length === 0) {
-    // Return default permissions if none in database
-    return successResponse(defaultPermissions);
-  }
-
-  // Build permissions matrix from database
+  // Start with default permissions
   const permissions: Record<string, Record<string, { view: boolean; create: boolean; edit: boolean; delete: boolean }>> = 
     JSON.parse(JSON.stringify(defaultPermissions));
 
-  for (const perm of dbPermissions) {
-    if (!permissions[perm.role]) {
-      permissions[perm.role] = {};
+  // If requesting for a specific tenant, layer permissions:
+  // 1. Start with defaults (done above)
+  // 2. Apply global overrides
+  // 3. Apply tenant-specific overrides
+  
+  if (tenantId) {
+    // First, apply global overrides
+    const globalPermissions = await prisma.rolePermission.findMany({
+      where: { tenantId: null },
+    });
+
+    for (const perm of globalPermissions) {
+      if (!permissions[perm.role]) {
+        permissions[perm.role] = {};
+      }
+      permissions[perm.role][perm.module] = {
+        view: perm.canView,
+        create: perm.canCreate,
+        edit: perm.canEdit,
+        delete: perm.canDelete,
+      };
     }
-    if (!permissions[perm.role][perm.module]) {
-      permissions[perm.role][perm.module] = { view: false, create: false, edit: false, delete: false };
+
+    // Then, apply tenant-specific overrides
+    const tenantPermissions = await prisma.rolePermission.findMany({
+      where: { tenantId },
+    });
+
+    for (const perm of tenantPermissions) {
+      if (!permissions[perm.role]) {
+        permissions[perm.role] = {};
+      }
+      permissions[perm.role][perm.module] = {
+        view: perm.canView,
+        create: perm.canCreate,
+        edit: perm.canEdit,
+        delete: perm.canDelete,
+      };
     }
-    permissions[perm.role][perm.module] = {
-      view: perm.canView,
-      create: perm.canCreate,
-      edit: perm.canEdit,
-      delete: perm.canDelete,
-    };
+  } else {
+    // For global permissions view, just apply global overrides
+    const globalPermissions = await prisma.rolePermission.findMany({
+      where: { tenantId: null },
+    });
+
+    for (const perm of globalPermissions) {
+      if (!permissions[perm.role]) {
+        permissions[perm.role] = {};
+      }
+      permissions[perm.role][perm.module] = {
+        view: perm.canView,
+        create: perm.canCreate,
+        edit: perm.canEdit,
+        delete: perm.canDelete,
+      };
+    }
   }
 
   return successResponse(permissions);
@@ -142,19 +103,19 @@ export const GET = withSuperAdmin(async () => {
 
 /**
  * PUT /api/permissions
- * Update a single permission
+ * Update a single permission (optionally for a specific tenant)
  */
 export const PUT = withSuperAdmin(async (request: NextRequest, { user }) => {
   const body = await parseBody(request, updatePermissionSchema);
-  const { role, module, permission, granted } = body;
+  const { role, module, permission, granted, tenantId } = body;
 
   // Get or create the permission record
-  const existing = await prisma.rolePermission.findUnique({
+  // Use findFirst since compound unique with nullable field doesn't work well with findUnique
+  const existing = await prisma.rolePermission.findFirst({
     where: {
-      role_module: {
-        role,
-        module,
-      },
+      role,
+      module,
+      tenantId: tenantId ?? null,
     },
   });
 
@@ -168,13 +129,10 @@ export const PUT = withSuperAdmin(async (request: NextRequest, { user }) => {
   let updatedPermission;
 
   if (existing) {
-    // Update existing permission
+    // Update existing permission by ID
     updatedPermission = await prisma.rolePermission.update({
       where: {
-        role_module: {
-          role,
-          module,
-        },
+        id: existing.id,
       },
       data: {
         [permissionField]: granted,
@@ -185,6 +143,7 @@ export const PUT = withSuperAdmin(async (request: NextRequest, { user }) => {
     const defaults = defaultPermissions[role]?.[module] || { view: false, create: false, edit: false, delete: false };
     updatedPermission = await prisma.rolePermission.create({
       data: {
+        tenantId: tenantId ?? null,
         role,
         module,
         canView: permission === 'view' ? granted : defaults.view,
@@ -200,12 +159,13 @@ export const PUT = withSuperAdmin(async (request: NextRequest, { user }) => {
     user.tenantId,
     'UPDATE',
     'RolePermission',
-    `${role}:${module}`,
+    `${tenantId || 'global'}:${role}:${module}`,
     { [permission]: !granted },
     { [permission]: granted }
   );
 
   return successResponse({
+    tenantId: tenantId ?? null,
     role,
     module,
     view: updatedPermission.canView,
