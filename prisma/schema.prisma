@@ -124,8 +124,8 @@ model Tenant {
   address     String?
   city        String?
   state       String?
-  country     String   @default("Nigeria")
-  timezone    String   @default("Africa/Lagos")
+  country     String   @default("South Africa")
+  timezone    String   @default("Africa/Johannesburg")
   isActive    Boolean  @default(true)
   isHQ        Boolean  @default(false) // Is this the headquarters?
   parentId    String?  // For branch churches under HQ
@@ -237,7 +237,7 @@ model Member {
   address       String?
   city          String?
   state         String?
-  country       String       @default("Nigeria")
+  country       String       @default("South Africa")
   occupation    String?
   employer      String?
   
@@ -694,7 +694,7 @@ model SystemSettings {
   platformDescription   String?   @default("Multi-Tenant Church Management System")
   supportEmail          String?
   supportPhone          String?
-  defaultTimezone       String    @default("Africa/Lagos")
+  defaultTimezone       String    @default("Africa/Johannesburg")
   
   // Email/SMTP Settings
   smtpHost              String?

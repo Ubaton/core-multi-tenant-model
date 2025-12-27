@@ -199,11 +199,11 @@ export default function SuperAdminSettingsPage() {
                   <Label htmlFor="timezone">Default Timezone</Label>
                   <select
                     id="timezone"
-                    value={formData.defaultTimezone || 'Africa/Lagos'}
+                    value={formData.defaultTimezone || 'Africa/Johannesburg'}
                     onChange={(e) => handleInputChange('defaultTimezone', e.target.value)}
                     className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   >
-                    <option value="Africa/Lagos">Africa/Lagos (WAT)</option>
+                    <option value="Africa/Johannesburg">Africa/Johannesburg (WAT)</option>
                     <option value="Africa/Johannesburg">Africa/Johannesburg (SAST)</option>
                     <option value="Europe/London">Europe/London (GMT/BST)</option>
                     <option value="America/New_York">America/New_York (EST/EDT)</option>

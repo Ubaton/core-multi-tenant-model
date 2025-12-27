@@ -33,7 +33,7 @@ export default function NewMemberPage() {
     address: '',
     city: '',
     state: '',
-    country: 'Nigeria',
+    country: 'South Africa',
     occupation: '',
     employer: '',
     membershipId: '',
@@ -248,7 +248,7 @@ export default function NewMemberPage() {
                 name="state"
                 value={formData.state}
                 onChange={handleChange}
-                placeholder="Enter state"
+                placeholder="Enter state: Gauteng"
               />
             </div>
             <div className="space-y-2">
@@ -258,7 +258,7 @@ export default function NewMemberPage() {
                 name="country"
                 value={formData.country}
                 onChange={handleChange}
-                placeholder="Enter country"
+                placeholder="Enter country: South Africa"
               />
             </div>
           </CardContent>

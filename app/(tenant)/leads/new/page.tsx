@@ -191,7 +191,7 @@ export default function NewLeadPage() {
                 name="city"
                 value={formData.city}
                 onChange={handleChange}
-                placeholder="Enter city"
+                placeholder="Enter city: Johannesburg"
               />
             </div>
             <div className="space-y-2">
@@ -201,7 +201,7 @@ export default function NewLeadPage() {
                 name="state"
                 value={formData.state}
                 onChange={handleChange}
-                placeholder="Enter state"
+                placeholder="Enter state: Gauteng"
               />
             </div>
           </CardContent>

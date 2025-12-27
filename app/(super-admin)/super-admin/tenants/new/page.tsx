@@ -34,8 +34,8 @@ export default function NewTenantPage() {
     address: '',
     city: '',
     state: '',
-    country: 'Nigeria',
-    timezone: 'Africa/Lagos',
+    country: 'South Africa',
+    timezone: 'Africa/Johannesburg',
     isHQ: true,
     parentId: '',
     isActive: true,
@@ -274,7 +274,7 @@ export default function NewTenantPage() {
                   name="city"
                   value={formData.city}
                   onChange={handleChange}
-                  placeholder="Lagos"
+                  placeholder="Johannesburg"
                 />
               </div>
               <div className="space-y-2">
@@ -284,7 +284,7 @@ export default function NewTenantPage() {
                   name="state"
                   value={formData.state}
                   onChange={handleChange}
-                  placeholder="Lagos"
+                  placeholder="Gauteng"
                 />
               </div>
               <div className="space-y-2">
@@ -294,7 +294,7 @@ export default function NewTenantPage() {
                   name="country"
                   value={formData.country}
                   onChange={handleChange}
-                  placeholder="Nigeria"
+                  placeholder="South Africa"
                 />
               </div>
             </div>
@@ -308,7 +308,7 @@ export default function NewTenantPage() {
                 onChange={handleChange}
                 className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
               >
-                <option value="Africa/Lagos">Africa/Lagos (WAT)</option>
+                <option value="Africa/Johannesburg">Africa/Johannesburg (WAT)</option>
                 <option value="Africa/Johannesburg">Africa/Johannesburg (SAST)</option>
                 <option value="Africa/Nairobi">Africa/Nairobi (EAT)</option>
                 <option value="Europe/London">Europe/London (GMT/BST)</option>
