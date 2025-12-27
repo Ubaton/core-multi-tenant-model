@@ -682,3 +682,46 @@ model InternalMessage {
   @@index([createdAt])
 }
 
+// ════════════════════════════════════════════════════════════════════════════
+// SYSTEM SETTINGS - Global platform settings (Super Admin only)
+// ════════════════════════════════════════════════════════════════════════════
+
+model SystemSettings {
+  id                    String    @id @default("system_settings")
+  
+  // General Settings
+  platformName          String    @default("Unity Fellowship Church")
+  platformDescription   String?   @default("Multi-Tenant Church Management System")
+  supportEmail          String?
+  supportPhone          String?
+  defaultTimezone       String    @default("Africa/Lagos")
+  
+  // Email/SMTP Settings
+  smtpHost              String?
+  smtpPort              Int       @default(587)
+  smtpUser              String?
+  smtpPass              String?   // Encrypted
+  smtpFromEmail         String?
+  smtpFromName          String?
+  smtpSecure            Boolean   @default(true)
+  
+  // Notification Settings
+  notifyNewTenant       Boolean   @default(true)
+  notifySystemErrors    Boolean   @default(true)
+  notifyDailySummary    Boolean   @default(false)
+  notifySecurityAlerts  Boolean   @default(true)
+  
+  // Security Settings
+  sessionTimeoutMins    Int       @default(60)
+  maxLoginAttempts      Int       @default(5)
+  lockoutDurationMins   Int       @default(15)
+  passwordMinLength     Int       @default(8)
+  requireUppercase      Boolean   @default(true)
+  requireNumber         Boolean   @default(true)
+  requireSpecialChar    Boolean   @default(true)
+  require2FA            Boolean   @default(false)
+  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
+

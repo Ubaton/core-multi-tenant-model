@@ -6,16 +6,18 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { 
   Settings, 
-  Globe, 
   Bell, 
   Shield, 
   Database,
   Mail,
   Server,
   Save,
+  Loader2,
+  CheckCircle,
+  AlertCircle,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,6 +25,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { useSettings, useUpdateSettings, type SystemSettings } from '@/lib/client/hooks/use-settings';
+import type { UpdateSystemSettingsInput } from '@/lib/validations';
 
 const settingsTabs = [
   { id: 'general', label: 'General', icon: Settings },
@@ -36,6 +40,75 @@ type SettingsTab = typeof settingsTabs[number]['id'];
 
 export default function SuperAdminSettingsPage() {
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
+  const [formData, setFormData] = useState<Partial<UpdateSystemSettingsInput>>({});
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  
+  const { data: settings, isLoading, error } = useSettings();
+  const updateSettings = useUpdateSettings();
+
+  // Populate form when settings are loaded
+  useEffect(() => {
+    if (settings) {
+      setFormData({
+        platformName: settings.platformName,
+        platformDescription: settings.platformDescription ?? '',
+        supportEmail: settings.supportEmail ?? '',
+        supportPhone: settings.supportPhone ?? '',
+        defaultTimezone: settings.defaultTimezone,
+        smtpHost: settings.smtpHost ?? '',
+        smtpPort: settings.smtpPort,
+        smtpUser: settings.smtpUser ?? '',
+        smtpFromEmail: settings.smtpFromEmail ?? '',
+        smtpFromName: settings.smtpFromName ?? '',
+        smtpSecure: settings.smtpSecure,
+        notifyNewTenant: settings.notifyNewTenant,
+        notifySystemErrors: settings.notifySystemErrors,
+        notifyDailySummary: settings.notifyDailySummary,
+        notifySecurityAlerts: settings.notifySecurityAlerts,
+        sessionTimeoutMins: settings.sessionTimeoutMins,
+        maxLoginAttempts: settings.maxLoginAttempts,
+        lockoutDurationMins: settings.lockoutDurationMins,
+        passwordMinLength: settings.passwordMinLength,
+        requireUppercase: settings.requireUppercase,
+        requireNumber: settings.requireNumber,
+        requireSpecialChar: settings.requireSpecialChar,
+        require2FA: settings.require2FA,
+      });
+    }
+  }, [settings]);
+
+  const handleInputChange = (field: keyof UpdateSystemSettingsInput, value: string | number | boolean) => {
+    setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  const handleSave = async (section: string) => {
+    try {
+      await updateSettings.mutateAsync(formData);
+      setSaveSuccess(section);
+      setTimeout(() => setSaveSuccess(null), 3000);
+    } catch (err) {
+      console.error('Failed to save settings:', err);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center">
+          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
+          <p className="text-red-500">Failed to load settings</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -85,7 +158,8 @@ export default function SuperAdminSettingsPage() {
                   <Label htmlFor="platformName">Platform Name</Label>
                   <Input 
                     id="platformName" 
-                    defaultValue="Unity Fellowship Church" 
+                    value={formData.platformName || ''} 
+                    onChange={(e) => handleInputChange('platformName', e.target.value)}
                     placeholder="Enter platform name"
                   />
                 </div>
@@ -93,7 +167,8 @@ export default function SuperAdminSettingsPage() {
                   <Label htmlFor="platformDescription">Platform Description</Label>
                   <Textarea 
                     id="platformDescription" 
-                    defaultValue="Multi-Tenant Church Management System"
+                    value={formData.platformDescription || ''}
+                    onChange={(e) => handleInputChange('platformDescription', e.target.value)}
                     placeholder="Enter platform description"
                     rows={3}
                   />
@@ -104,7 +179,8 @@ export default function SuperAdminSettingsPage() {
                     <Input 
                       id="supportEmail" 
                       type="email" 
-                      defaultValue="support@Unity Fellowship Church.com"
+                      value={formData.supportEmail || ''}
+                      onChange={(e) => handleInputChange('supportEmail', e.target.value)}
                       placeholder="support@example.com"
                     />
                   </div>
@@ -113,6 +189,8 @@ export default function SuperAdminSettingsPage() {
                     <Input 
                       id="supportPhone" 
                       type="tel" 
+                      value={formData.supportPhone || ''}
+                      onChange={(e) => handleInputChange('supportPhone', e.target.value)}
                       placeholder="+234 800 000 0000"
                     />
                   </div>
@@ -121,7 +199,8 @@ export default function SuperAdminSettingsPage() {
                   <Label htmlFor="timezone">Default Timezone</Label>
                   <select
                     id="timezone"
-                    defaultValue="Africa/Lagos"
+                    value={formData.defaultTimezone || 'Africa/Lagos'}
+                    onChange={(e) => handleInputChange('defaultTimezone', e.target.value)}
                     className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   >
                     <option value="Africa/Lagos">Africa/Lagos (WAT)</option>
@@ -130,9 +209,22 @@ export default function SuperAdminSettingsPage() {
                     <option value="America/New_York">America/New_York (EST/EDT)</option>
                   </select>
                 </div>
-                <div className="flex justify-end">
-                  <Button>
-                    <Save className="mr-2 h-4 w-4" />
+                <div className="flex justify-end items-center gap-3">
+                  {saveSuccess === 'general' && (
+                    <span className="flex items-center text-sm text-green-600">
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Saved successfully
+                    </span>
+                  )}
+                  <Button 
+                    onClick={() => handleSave('general')}
+                    disabled={updateSettings.isPending}
+                  >
+                    {updateSettings.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
                     Save Changes
                   </Button>
                 </div>
@@ -154,6 +246,8 @@ export default function SuperAdminSettingsPage() {
                     <Label htmlFor="smtpHost">SMTP Host</Label>
                     <Input 
                       id="smtpHost" 
+                      value={formData.smtpHost || ''}
+                      onChange={(e) => handleInputChange('smtpHost', e.target.value)}
                       placeholder="smtp.example.com"
                     />
                   </div>
@@ -162,7 +256,8 @@ export default function SuperAdminSettingsPage() {
                     <Input 
                       id="smtpPort" 
                       type="number"
-                      defaultValue="587"
+                      value={formData.smtpPort || 587}
+                      onChange={(e) => handleInputChange('smtpPort', parseInt(e.target.value) || 587)}
                       placeholder="587"
                     />
                   </div>
@@ -172,6 +267,8 @@ export default function SuperAdminSettingsPage() {
                     <Label htmlFor="smtpUser">SMTP Username</Label>
                     <Input 
                       id="smtpUser" 
+                      value={formData.smtpUser || ''}
+                      onChange={(e) => handleInputChange('smtpUser', e.target.value)}
                       placeholder="username"
                     />
                   </div>
@@ -180,42 +277,65 @@ export default function SuperAdminSettingsPage() {
                     <Input 
                       id="smtpPass" 
                       type="password"
-                      placeholder="••••••••"
+                      value={formData.smtpPass || ''}
+                      onChange={(e) => handleInputChange('smtpPass', e.target.value)}
+                      placeholder={settings?.hasSmtpPassword ? '••••••••' : 'Enter password'}
                     />
+                    {settings?.hasSmtpPassword && (
+                      <p className="text-xs text-muted-foreground">Leave empty to keep current password</p>
+                    )}
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="fromEmail">From Email</Label>
+                  <Label htmlFor="smtpFromEmail">From Email</Label>
                   <Input 
-                    id="fromEmail" 
+                    id="smtpFromEmail" 
                     type="email"
-                    placeholder="noreply@Unity Fellowship Church.com"
+                    value={formData.smtpFromEmail || ''}
+                    onChange={(e) => handleInputChange('smtpFromEmail', e.target.value)}
+                    placeholder="noreply@example.com"
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="fromName">From Name</Label>
+                  <Label htmlFor="smtpFromName">From Name</Label>
                   <Input 
-                    id="fromName" 
-                    placeholder="Unity Fellowship Church"
+                    id="smtpFromName" 
+                    value={formData.smtpFromName || ''}
+                    onChange={(e) => handleInputChange('smtpFromName', e.target.value)}
+                    placeholder="Your Platform Name"
                   />
                 </div>
                 <div className="flex items-center gap-3">
                   <input
                     type="checkbox"
                     id="smtpSecure"
-                    defaultChecked
+                    checked={formData.smtpSecure ?? true}
+                    onChange={(e) => handleInputChange('smtpSecure', e.target.checked)}
                     className="h-4 w-4 rounded border-gray-300"
                   />
                   <Label htmlFor="smtpSecure" className="font-normal">
                     Use TLS/SSL
                   </Label>
                 </div>
-                <div className="flex justify-end gap-3">
+                <div className="flex justify-end items-center gap-3">
+                  {saveSuccess === 'email' && (
+                    <span className="flex items-center text-sm text-green-600">
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Saved successfully
+                    </span>
+                  )}
                   <Button variant="outline">
                     Test Connection
                   </Button>
-                  <Button>
-                    <Save className="mr-2 h-4 w-4" />
+                  <Button 
+                    onClick={() => handleSave('email')}
+                    disabled={updateSettings.isPending}
+                  >
+                    {updateSettings.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
                     Save Changes
                   </Button>
                 </div>
@@ -240,7 +360,12 @@ export default function SuperAdminSettingsPage() {
                         Notify when a new tenant is created
                       </p>
                     </div>
-                    <input type="checkbox" defaultChecked className="h-4 w-4" />
+                    <input 
+                      type="checkbox" 
+                      checked={formData.notifyNewTenant ?? true} 
+                      onChange={(e) => handleInputChange('notifyNewTenant', e.target.checked)}
+                      className="h-4 w-4" 
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
@@ -249,7 +374,12 @@ export default function SuperAdminSettingsPage() {
                         Receive alerts for critical system errors
                       </p>
                     </div>
-                    <input type="checkbox" defaultChecked className="h-4 w-4" />
+                    <input 
+                      type="checkbox" 
+                      checked={formData.notifySystemErrors ?? true} 
+                      onChange={(e) => handleInputChange('notifySystemErrors', e.target.checked)}
+                      className="h-4 w-4" 
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
@@ -258,7 +388,12 @@ export default function SuperAdminSettingsPage() {
                         Receive daily platform activity summary
                       </p>
                     </div>
-                    <input type="checkbox" className="h-4 w-4" />
+                    <input 
+                      type="checkbox" 
+                      checked={formData.notifyDailySummary ?? false} 
+                      onChange={(e) => handleInputChange('notifyDailySummary', e.target.checked)}
+                      className="h-4 w-4" 
+                    />
                   </div>
                   <div className="flex items-center justify-between">
                     <div>
@@ -267,12 +402,30 @@ export default function SuperAdminSettingsPage() {
                         Get notified of suspicious activities
                       </p>
                     </div>
-                    <input type="checkbox" defaultChecked className="h-4 w-4" />
+                    <input 
+                      type="checkbox" 
+                      checked={formData.notifySecurityAlerts ?? true} 
+                      onChange={(e) => handleInputChange('notifySecurityAlerts', e.target.checked)}
+                      className="h-4 w-4" 
+                    />
                   </div>
                 </div>
-                <div className="flex justify-end">
-                  <Button>
-                    <Save className="mr-2 h-4 w-4" />
+                <div className="flex justify-end items-center gap-3">
+                  {saveSuccess === 'notifications' && (
+                    <span className="flex items-center text-sm text-green-600">
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Saved successfully
+                    </span>
+                  )}
+                  <Button 
+                    onClick={() => handleSave('notifications')}
+                    disabled={updateSettings.isPending}
+                  >
+                    {updateSettings.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
                     Save Preferences
                   </Button>
                 </div>
@@ -295,7 +448,8 @@ export default function SuperAdminSettingsPage() {
                     <Input 
                       id="sessionTimeout" 
                       type="number"
-                      defaultValue="60"
+                      value={formData.sessionTimeoutMins || 60}
+                      onChange={(e) => handleInputChange('sessionTimeoutMins', parseInt(e.target.value) || 60)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -303,7 +457,8 @@ export default function SuperAdminSettingsPage() {
                     <Input 
                       id="maxLoginAttempts" 
                       type="number"
-                      defaultValue="5"
+                      value={formData.maxLoginAttempts || 5}
+                      onChange={(e) => handleInputChange('maxLoginAttempts', parseInt(e.target.value) || 5)}
                     />
                   </div>
                 </div>
@@ -313,7 +468,8 @@ export default function SuperAdminSettingsPage() {
                     <Input 
                       id="lockoutDuration" 
                       type="number"
-                      defaultValue="15"
+                      value={formData.lockoutDurationMins || 15}
+                      onChange={(e) => handleInputChange('lockoutDurationMins', parseInt(e.target.value) || 15)}
                     />
                   </div>
                   <div className="space-y-2">
@@ -321,7 +477,8 @@ export default function SuperAdminSettingsPage() {
                     <Input 
                       id="passwordMinLength" 
                       type="number"
-                      defaultValue="8"
+                      value={formData.passwordMinLength || 8}
+                      onChange={(e) => handleInputChange('passwordMinLength', parseInt(e.target.value) || 8)}
                     />
                   </div>
                 </div>
@@ -330,7 +487,8 @@ export default function SuperAdminSettingsPage() {
                     <input
                       type="checkbox"
                       id="requireUppercase"
-                      defaultChecked
+                      checked={formData.requireUppercase ?? true}
+                      onChange={(e) => handleInputChange('requireUppercase', e.target.checked)}
                       className="h-4 w-4 rounded border-gray-300"
                     />
                     <Label htmlFor="requireUppercase" className="font-normal">
@@ -341,7 +499,8 @@ export default function SuperAdminSettingsPage() {
                     <input
                       type="checkbox"
                       id="requireNumber"
-                      defaultChecked
+                      checked={formData.requireNumber ?? true}
+                      onChange={(e) => handleInputChange('requireNumber', e.target.checked)}
                       className="h-4 w-4 rounded border-gray-300"
                     />
                     <Label htmlFor="requireNumber" className="font-normal">
@@ -352,7 +511,8 @@ export default function SuperAdminSettingsPage() {
                     <input
                       type="checkbox"
                       id="requireSpecial"
-                      defaultChecked
+                      checked={formData.requireSpecialChar ?? true}
+                      onChange={(e) => handleInputChange('requireSpecialChar', e.target.checked)}
                       className="h-4 w-4 rounded border-gray-300"
                     />
                     <Label htmlFor="requireSpecial" className="font-normal">
@@ -363,6 +523,8 @@ export default function SuperAdminSettingsPage() {
                     <input
                       type="checkbox"
                       id="enable2FA"
+                      checked={formData.require2FA ?? false}
+                      onChange={(e) => handleInputChange('require2FA', e.target.checked)}
                       className="h-4 w-4 rounded border-gray-300"
                     />
                     <Label htmlFor="enable2FA" className="font-normal">
@@ -370,9 +532,22 @@ export default function SuperAdminSettingsPage() {
                     </Label>
                   </div>
                 </div>
-                <div className="flex justify-end">
-                  <Button>
-                    <Save className="mr-2 h-4 w-4" />
+                <div className="flex justify-end items-center gap-3">
+                  {saveSuccess === 'security' && (
+                    <span className="flex items-center text-sm text-green-600">
+                      <CheckCircle className="h-4 w-4 mr-1" />
+                      Saved successfully
+                    </span>
+                  )}
+                  <Button 
+                    onClick={() => handleSave('security')}
+                    disabled={updateSettings.isPending}
+                  >
+                    {updateSettings.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
                     Save Security Settings
                   </Button>
                 </div>

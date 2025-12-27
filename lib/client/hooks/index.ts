@@ -13,3 +13,4 @@ export * from './use-stats';
 export * from './use-tenants';
 export * from './use-users';
 export * from './use-permissions';
+export * from './use-settings';

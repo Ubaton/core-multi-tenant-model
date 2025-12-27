@@ -367,6 +367,41 @@ export const acceptInvitationSchema = z.object({
 });
 
 // ════════════════════════════════════════════════════════════════════════════
+// SYSTEM SETTINGS SCHEMAS
+// ════════════════════════════════════════════════════════════════════════════
+
+export const updateSystemSettingsSchema = z.object({
+  // General Settings
+  platformName: z.string().min(1).max(200).optional(),
+  platformDescription: z.string().max(1000).optional().nullable(),
+  supportEmail: z.string().email().optional().nullable(),
+  supportPhone: z.string().max(20).optional().nullable(),
+  defaultTimezone: z.string().optional(),
+  // Email/SMTP Settings
+  smtpHost: z.string().max(200).optional().nullable(),
+  smtpPort: z.coerce.number().int().min(1).max(65535).optional(),
+  smtpUser: z.string().max(200).optional().nullable(),
+  smtpPass: z.string().max(200).optional().nullable(),
+  smtpFromEmail: z.string().email().optional().nullable(),
+  smtpFromName: z.string().max(200).optional().nullable(),
+  smtpSecure: z.boolean().optional(),
+  // Notification Settings
+  notifyNewTenant: z.boolean().optional(),
+  notifySystemErrors: z.boolean().optional(),
+  notifyDailySummary: z.boolean().optional(),
+  notifySecurityAlerts: z.boolean().optional(),
+  // Security Settings
+  sessionTimeoutMins: z.coerce.number().int().min(5).max(1440).optional(),
+  maxLoginAttempts: z.coerce.number().int().min(1).max(20).optional(),
+  lockoutDurationMins: z.coerce.number().int().min(1).max(1440).optional(),
+  passwordMinLength: z.coerce.number().int().min(6).max(128).optional(),
+  requireUppercase: z.boolean().optional(),
+  requireNumber: z.boolean().optional(),
+  requireSpecialChar: z.boolean().optional(),
+  require2FA: z.boolean().optional(),
+});
+
+// ════════════════════════════════════════════════════════════════════════════
 // EXPORT TYPE INFERENCES
 // ════════════════════════════════════════════════════════════════════════════
 
@@ -391,3 +426,4 @@ export type CreateCallLogInput = z.infer<typeof createCallLogSchema>;
 export type CreateServiceInput = z.infer<typeof createServiceSchema>;
 export type CreateDepartmentInput = z.infer<typeof createDepartmentSchema>;
 export type CreateInvitationInput = z.infer<typeof createInvitationSchema>;
+export type UpdateSystemSettingsInput = z.infer<typeof updateSystemSettingsSchema>;
