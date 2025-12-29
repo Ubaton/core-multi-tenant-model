@@ -51,6 +51,12 @@ interface Tenant {
     users: number;
     members: number;
     branches: number;
+    offerings?: number;
+  };
+  totalOfferings?: string;
+  thisMonthOfferings?: {
+    total: string;
+    count: number;
   };
   createdAt: string;
   updatedAt: string;

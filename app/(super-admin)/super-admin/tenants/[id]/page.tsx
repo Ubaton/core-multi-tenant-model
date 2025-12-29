@@ -27,6 +27,7 @@ import {
   Search,
   ChevronLeft,
   ChevronRight,
+  DollarSign,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -458,6 +459,35 @@ export default function TenantDetailPage() {
                 </div>
                 <span className="text-xl font-semibold">{tenant._count?.branches ?? 0}</span>
               </div>
+
+              <Separator />
+
+              <div className="flex items-center justify-between p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
+                <div className="flex items-center gap-3">
+                  <DollarSign className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  <span className="text-gray-600 dark:text-gray-300">Total Offerings</span>
+                </div>
+                <span className="text-xl font-semibold text-green-600 dark:text-green-400">
+                  ${parseFloat(tenant.totalOfferings ?? '0').toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </span>
+              </div>
+
+              {tenant.thisMonthOfferings && (
+                <div className="flex items-center justify-between p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20">
+                  <div className="flex items-center gap-3">
+                    <DollarSign className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                    <div>
+                      <span className="text-gray-600 dark:text-gray-300">This Month</span>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                        {tenant.thisMonthOfferings.count} offering{tenant.thisMonthOfferings.count !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-xl font-semibold text-blue-600 dark:text-blue-400">
+                    ${parseFloat(tenant.thisMonthOfferings.total ?? '0').toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              )}
             </CardContent>
           </Card>
 

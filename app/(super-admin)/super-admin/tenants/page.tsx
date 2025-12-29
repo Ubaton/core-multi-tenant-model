@@ -190,7 +190,7 @@ export default function TenantsPage() {
                     )}
                   </div>
                   
-                  <div className="grid grid-cols-3 gap-4 pt-3 border-t dark:border-gray-800">
+                  <div className="grid grid-cols-4 gap-4 pt-3 border-t dark:border-gray-800">
                     <div className="text-center">
                       <p className="text-lg font-semibold">{tenant._count?.members ?? 0}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">Members</p>
@@ -202,6 +202,12 @@ export default function TenantsPage() {
                     <div className="text-center">
                       <p className="text-lg font-semibold">{tenant._count?.branches ?? 0}</p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">Branches</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="text-lg font-semibold text-green-600 dark:text-green-400">
+                        ${parseFloat(tenant.totalOfferings ?? '0').toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                      </p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">Offerings</p>
                     </div>
                   </div>
                 </div>

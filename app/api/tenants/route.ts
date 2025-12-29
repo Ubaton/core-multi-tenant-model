@@ -56,6 +56,7 @@ export const GET = withSuperAdmin(async (request, { user }) => {
             users: true,
             members: true,
             branches: true,
+            offerings: true,
           },
         },
         parent: {
@@ -70,7 +71,25 @@ export const GET = withSuperAdmin(async (request, { user }) => {
     prisma.tenant.count({ where }),
   ]);
 
-  return successResponse(tenants, createPaginationMeta(page, pageSize, totalCount));
+  // Get offering totals for each tenant
+  const tenantIds = tenants.map(t => t.id);
+  const offeringTotals = await prisma.offering.groupBy({
+    by: ['tenantId'],
+    where: { tenantId: { in: tenantIds } },
+    _sum: { amount: true },
+  });
+
+  // Map offering totals to tenants
+  const offeringTotalMap = new Map(
+    offeringTotals.map(o => [o.tenantId, o._sum.amount?.toString() ?? '0'])
+  );
+
+  const tenantsWithOfferings = tenants.map(tenant => ({
+    ...tenant,
+    totalOfferings: offeringTotalMap.get(tenant.id) ?? '0',
+  }));
+
+  return successResponse(tenantsWithOfferings, createPaginationMeta(page, pageSize, totalCount));
 });
 
 /**

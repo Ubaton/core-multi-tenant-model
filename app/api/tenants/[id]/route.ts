@@ -62,7 +62,32 @@ export const GET = withSuperAdmin<RouteParams>(async (request, { user }, params)
     return errorResponse('NOT_FOUND', 'Tenant not found', 404);
   }
 
-  return successResponse(tenant);
+  // Get total offerings amount for this tenant
+  const offeringTotal = await prisma.offering.aggregate({
+    where: { tenantId: id },
+    _sum: { amount: true },
+  });
+
+  // Get this month's offerings
+  const now = new Date();
+  const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+  const thisMonthOfferings = await prisma.offering.aggregate({
+    where: { 
+      tenantId: id,
+      givenAt: { gte: startOfMonth },
+    },
+    _sum: { amount: true },
+    _count: true,
+  });
+
+  return successResponse({
+    ...tenant,
+    totalOfferings: offeringTotal._sum.amount?.toString() ?? '0',
+    thisMonthOfferings: {
+      total: thisMonthOfferings._sum.amount?.toString() ?? '0',
+      count: thisMonthOfferings._count,
+    },
+  });
 });
 
 /**
