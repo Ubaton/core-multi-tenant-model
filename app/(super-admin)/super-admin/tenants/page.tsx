@@ -149,7 +149,7 @@ export default function TenantsPage() {
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => window.location.href = `/super-admin/tenants/${tenant.id}`}>
                         <Eye className="h-4 w-4 mr-2" />
-                        View Details
+                        View Detail
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={() => window.location.href = `/super-admin/tenants/${tenant.id}/edit`}>
                         <Pencil className="h-4 w-4 mr-2" />
