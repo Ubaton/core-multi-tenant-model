@@ -128,3 +128,73 @@ export function useDeleteTenant() {
     },
   });
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// TENANT MEMBERS (Super Admin)
+// ════════════════════════════════════════════════════════════════════════════
+
+interface TenantMember {
+  id: string;
+  firstName: string;
+  lastName: string;
+  middleName?: string;
+  email?: string;
+  phone: string;
+  alternatePhone?: string;
+  gender?: string;
+  dateOfBirth?: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  country: string;
+  occupation?: string;
+  employer?: string;
+  membershipId?: string;
+  status: string;
+  joinDate: string;
+  baptismDate?: string;
+  photo?: string;
+  departments?: Array<{
+    department: { id: string; name: string };
+    role?: string;
+  }>;
+  _count?: {
+    offerings: number;
+    prayerRequests: number;
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface TenantMembersFilters {
+  search?: string;
+  status?: string;
+  gender?: string;
+  page?: number;
+  pageSize?: number;
+}
+
+interface TenantMembersResponse {
+  data: TenantMember[];
+  meta: PaginationMeta;
+}
+
+/**
+ * Fetch members for a specific tenant (Super Admin only)
+ */
+export function useTenantMembers(tenantId: string, filters: TenantMembersFilters = {}) {
+  return useQuery({
+    queryKey: [...tenantKeys.detail(tenantId), 'members', filters],
+    queryFn: async () => {
+      const response = await get<TenantMember[]>(
+        `/api/tenants/${tenantId}/members`,
+        filters as Record<string, string | number | boolean>
+      );
+      return {
+        data: response.data!,
+        meta: response.meta!,
+      } as TenantMembersResponse;
+    },
+    enabled: !!tenantId,
+  });
+}

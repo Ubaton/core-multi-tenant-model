@@ -6,6 +6,7 @@
 
 'use client';
 
+import { useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -23,12 +24,16 @@ import {
   Trash2,
   ExternalLink,
   Clock,
+  Search,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { useTenant, useDeleteTenant } from '@/lib/client';
+import { Input } from '@/components/ui/input';
+import { useTenant, useDeleteTenant, useTenantMembers } from '@/lib/client';
 import { cn } from '@/lib/utils';
 
 export default function TenantDetailPage() {
@@ -36,7 +41,16 @@ export default function TenantDetailPage() {
   const router = useRouter();
   const id = params.id as string;
 
+  // State for members filters
+  const [membersPage, setMembersPage] = useState(1);
+  const [membersSearch, setMembersSearch] = useState('');
+
   const { data: tenant, isLoading, error } = useTenant(id);
+  const { data: membersData, isLoading: membersLoading } = useTenantMembers(id, {
+    page: membersPage,
+    pageSize: 10,
+    search: membersSearch || undefined,
+  });
   const deleteTenant = useDeleteTenant();
 
   const handleDelete = () => {
@@ -291,6 +305,126 @@ export default function TenantDetailPage() {
               </CardContent>
             </Card>
           )}
+
+          {/* Members */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg flex items-center gap-2">
+                  <Users className="h-5 w-5 text-blue-500" />
+                  Members ({membersData?.meta?.total ?? tenant._count?.members ?? 0})
+                </CardTitle>
+              </div>
+              <div className="relative mt-4">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Input
+                  placeholder="Search members..."
+                  value={membersSearch}
+                  onChange={(e) => {
+                    setMembersSearch(e.target.value);
+                    setMembersPage(1);
+                  }}
+                  className="pl-9"
+                />
+              </div>
+            </CardHeader>
+            <CardContent>
+              {membersLoading ? (
+                <div className="space-y-3">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="flex items-center gap-3 p-3 rounded-lg border dark:border-gray-800 animate-pulse">
+                      <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
+                        <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : membersData?.data && membersData.data.length > 0 ? (
+                <>
+                  <div className="space-y-3">
+                    {membersData.data.map((member) => (
+                      <div
+                        key={member.id}
+                        className="flex items-center justify-between p-3 rounded-lg border dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                      >
+                        <div className="flex items-center gap-3">
+                          <div className="h-10 w-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
+                            {member.photo ? (
+                              <img src={member.photo} alt={`${member.firstName} ${member.lastName}`} className="h-full w-full object-cover" />
+                            ) : (
+                              <UserCircle className="h-6 w-6 text-gray-400" />
+                            )}
+                          </div>
+                          <div>
+                            <p className="font-medium text-gray-900 dark:text-white">
+                              {member.firstName} {member.lastName}
+                            </p>
+                            <div className="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+                              {member.email && <span>{member.email}</span>}
+                              {member.email && member.phone && <span>•</span>}
+                              {member.phone && <span>{member.phone}</span>}
+                            </div>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          {member.membershipId && (
+                            <span className="text-xs text-gray-500 dark:text-gray-400 font-mono">
+                              {member.membershipId}
+                            </span>
+                          )}
+                          <Badge className={cn(
+                            member.status === 'ACTIVE'
+                              ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                              : member.status === 'INACTIVE'
+                              ? 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300'
+                          )}>
+                            {member.status}
+                          </Badge>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Pagination */}
+                  {membersData.meta && membersData.meta.totalPages > 1 && (
+                    <div className="flex items-center justify-between mt-4 pt-4 border-t dark:border-gray-800">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        Page {membersData.meta.page} of {membersData.meta.totalPages}
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setMembersPage((p) => Math.max(1, p - 1))}
+                          disabled={!membersData.meta.hasPrevPage}
+                        >
+                          <ChevronLeft className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => setMembersPage((p) => p + 1)}
+                          disabled={!membersData.meta.hasNextPage}
+                        >
+                          <ChevronRight className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center py-8">
+                  <Users className="h-12 w-12 mx-auto text-gray-400 mb-4" />
+                  <p className="text-gray-500 dark:text-gray-400">
+                    {membersSearch ? 'No members found matching your search' : 'No members in this tenant yet'}
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Right Column - Stats & Meta */}
