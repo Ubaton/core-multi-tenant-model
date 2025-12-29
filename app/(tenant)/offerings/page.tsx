@@ -31,9 +31,9 @@ const typeColors: Record<string, string> = {
   TITHE: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
   OFFERING: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
   FIRST_FRUIT: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-  THANKSGIVING: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
-  SEED: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-  DONATION: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-300',
+  SPECIAL_SEED: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+  BUILDING_PROJECT: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
+  MISSIONS: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-300',
   OTHER: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
 };
 
@@ -49,9 +49,9 @@ const OFFERING_TYPES = [
   { value: 'TITHE', label: 'Tithe' },
   { value: 'OFFERING', label: 'Offering' },
   { value: 'FIRST_FRUIT', label: 'First Fruit' },
-  { value: 'THANKSGIVING', label: 'Thanksgiving' },
-  { value: 'SEED', label: 'Seed' },
-  { value: 'DONATION', label: 'Donation' },
+  { value: 'SPECIAL_SEED', label: 'Special Seed' },
+  { value: 'BUILDING_PROJECT', label: 'Building Project' },
+  { value: 'MISSIONS', label: 'Missions' },
   { value: 'OTHER', label: 'Other' },
 ];
 
@@ -158,7 +158,7 @@ export default function OfferingsPage() {
         memberId: giverType === 'member' && formData.memberId ? formData.memberId : undefined,
         giverName: giverType === 'guest' ? formData.giverName.trim() : undefined,
         giverPhone: giverType === 'guest' && formData.giverPhone ? formData.giverPhone.trim() : undefined,
-        type: formData.type as 'TITHE' | 'OFFERING' | 'FIRST_FRUIT' | 'THANKSGIVING' | 'SEED' | 'DONATION' | 'OTHER',
+        type: formData.type as 'TITHE' | 'OFFERING' | 'FIRST_FRUIT' | 'SPECIAL_SEED' | 'BUILDING_PROJECT' | 'MISSIONS' | 'OTHER',
         amount: parseFloat(formData.amount),
         currency: 'ZAR',
         description: formData.description.trim() || undefined,
@@ -394,7 +394,7 @@ export default function OfferingsPage() {
                   </>
                 ) : (
                   <>
-                    <DollarSign className="h-4 w-4 mr-2" />
+                    <Plus className="h-4 w-4 mr-2" />
                     Record Offering
                   </>
                 )}
@@ -478,9 +478,9 @@ export default function OfferingsPage() {
               <option value="TITHE">Tithe</option>
               <option value="OFFERING">Offering</option>
               <option value="FIRST_FRUIT">First Fruit</option>
-              <option value="THANKSGIVING">Thanksgiving</option>
-              <option value="SEED">Seed</option>
-              <option value="DONATION">Donation</option>
+              <option value="SPECIAL_SEED">Special Seed</option>
+              <option value="BUILDING_PROJECT">Building Project</option>
+              <option value="MISSIONS">Missions</option>
               <option value="OTHER">Other</option>
             </select>
           </div>

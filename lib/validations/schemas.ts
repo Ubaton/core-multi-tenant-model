@@ -424,6 +424,7 @@ export type UpdateOfferingInput = z.infer<typeof updateOfferingSchema>;
 export type CreateCommunicationInput = z.infer<typeof createCommunicationSchema>;
 export type CreateCallLogInput = z.infer<typeof createCallLogSchema>;
 export type CreateServiceInput = z.infer<typeof createServiceSchema>;
+export type UpdateServiceInput = z.infer<typeof updateServiceSchema>;
 export type CreateDepartmentInput = z.infer<typeof createDepartmentSchema>;
 export type CreateInvitationInput = z.infer<typeof createInvitationSchema>;
 export type UpdateSystemSettingsInput = z.infer<typeof updateSystemSettingsSchema>;
