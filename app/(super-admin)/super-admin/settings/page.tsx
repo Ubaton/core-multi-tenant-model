@@ -18,6 +18,10 @@ import {
   Loader2,
   CheckCircle,
   AlertCircle,
+  Palette,
+  Sun,
+  Moon,
+  Monitor,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -27,9 +31,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useSettings, useUpdateSettings, type SystemSettings } from '@/lib/client/hooks/use-settings';
 import type { UpdateSystemSettingsInput } from '@/lib/validations';
+import { useTheme } from '@/context/theme-context';
 
 const settingsTabs = [
   { id: 'general', label: 'General', icon: Settings },
+  { id: 'appearance', label: 'Appearance', icon: Palette },
   { id: 'email', label: 'Email', icon: Mail },
   { id: 'notifications', label: 'Notifications', icon: Bell },
   { id: 'security', label: 'Security', icon: Shield },
@@ -45,6 +51,7 @@ export default function SuperAdminSettingsPage() {
   
   const { data: settings, isLoading, error } = useSettings();
   const updateSettings = useUpdateSettings();
+  const { theme, setTheme } = useTheme();
 
   // Populate form when settings are loaded
   useEffect(() => {
@@ -227,6 +234,154 @@ export default function SuperAdminSettingsPage() {
                     )}
                     Save Changes
                   </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {activeTab === 'appearance' && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Appearance</CardTitle>
+                <CardDescription>
+                  Customize the look and feel of your dashboard
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {/* Theme Selection */}
+                <div className="space-y-4">
+                  <div>
+                    <Label className="text-base font-medium">Theme</Label>
+                    <p className="text-sm text-muted-foreground">
+                      Select your preferred color scheme for the dashboard
+                    </p>
+                  </div>
+                  
+                  <div className="grid gap-4 sm:grid-cols-3">
+                    {/* Light Theme */}
+                    <button
+                      onClick={() => setTheme('light')}
+                      className={cn(
+                        "relative flex flex-col items-center gap-3 p-6 rounded-xl border-2 transition-all hover:border-primary/50",
+                        theme === 'light' 
+                          ? "border-primary bg-primary/5" 
+                          : "border-border hover:bg-muted/50"
+                      )}
+                    >
+                      <div className="h-16 w-16 rounded-full bg-amber-100 flex items-center justify-center">
+                        <Sun className="h-8 w-8 text-amber-500" />
+                      </div>
+                      <div className="text-center">
+                        <p className="font-medium">Light</p>
+                        <p className="text-xs text-muted-foreground">Bright and clean</p>
+                      </div>
+                      {theme === 'light' && (
+                        <div className="absolute top-2 right-2">
+                          <CheckCircle className="h-5 w-5 text-primary" />
+                        </div>
+                      )}
+                    </button>
+
+                    {/* Dark Theme */}
+                    <button
+                      onClick={() => setTheme('dark')}
+                      className={cn(
+                        "relative flex flex-col items-center gap-3 p-6 rounded-xl border-2 transition-all hover:border-primary/50",
+                        theme === 'dark' 
+                          ? "border-primary bg-primary/5" 
+                          : "border-border hover:bg-muted/50"
+                      )}
+                    >
+                      <div className="h-16 w-16 rounded-full bg-slate-800 flex items-center justify-center">
+                        <Moon className="h-8 w-8 text-slate-300" />
+                      </div>
+                      <div className="text-center">
+                        <p className="font-medium">Dark</p>
+                        <p className="text-xs text-muted-foreground">Easy on the eyes</p>
+                      </div>
+                      {theme === 'dark' && (
+                        <div className="absolute top-2 right-2">
+                          <CheckCircle className="h-5 w-5 text-primary" />
+                        </div>
+                      )}
+                    </button>
+
+                    {/* System Theme */}
+                    <button
+                      onClick={() => setTheme('system')}
+                      className={cn(
+                        "relative flex flex-col items-center gap-3 p-6 rounded-xl border-2 transition-all hover:border-primary/50",
+                        theme === 'system' 
+                          ? "border-primary bg-primary/5" 
+                          : "border-border hover:bg-muted/50"
+                      )}
+                    >
+                      <div className="h-16 w-16 rounded-full bg-linear-to-br from-amber-100 to-slate-800 flex items-center justify-center">
+                        <Monitor className="h-8 w-8 text-gray-600" />
+                      </div>
+                      <div className="text-center">
+                        <p className="font-medium">System</p>
+                        <p className="text-xs text-muted-foreground">Match device settings</p>
+                      </div>
+                      {theme === 'system' && (
+                        <div className="absolute top-2 right-2">
+                          <CheckCircle className="h-5 w-5 text-primary" />
+                        </div>
+                      )}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Preview Section */}
+                <div className="space-y-4 pt-4 border-t">
+                  <div>
+                    <Label className="text-base font-medium">Preview</Label>
+                    <p className="text-sm text-muted-foreground">
+                      See how your dashboard looks with the selected theme
+                    </p>
+                  </div>
+                  
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="p-4 rounded-lg border bg-card">
+                      <div className="flex items-center gap-3 mb-3">
+                        <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
+                          <Palette className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-foreground">Sample Card</p>
+                          <p className="text-sm text-muted-foreground">With muted text</p>
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                          Active
+                        </span>
+                        <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                          Info
+                        </span>
+                      </div>
+                    </div>
+                    
+                    <div className="p-4 rounded-lg border bg-muted/50">
+                      <p className="text-sm text-muted-foreground mb-2">Statistics Preview</p>
+                      <div className="space-y-2">
+                        <div className="flex justify-between">
+                          <span className="text-foreground">Members</span>
+                          <span className="font-semibold">1,234</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-foreground">Active</span>
+                          <span className="font-semibold text-green-600 dark:text-green-400">98%</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4">
+                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                    <strong>Note:</strong> Theme preferences are saved locally in your browser and will persist across sessions.
+                  </p>
                 </div>
               </CardContent>
             </Card>
