@@ -205,7 +205,7 @@ export default function TenantsPage() {
                     </div>
                     <div className="text-center">
                       <p className="text-lg font-semibold text-green-600 dark:text-green-400">
-                        ${parseFloat(tenant.totalOfferings ?? '0').toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
+                        R {parseFloat(tenant.totalOfferings ?? '0').toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       </p>
                       <p className="text-xs text-gray-500 dark:text-gray-400">Offerings</p>
                     </div>

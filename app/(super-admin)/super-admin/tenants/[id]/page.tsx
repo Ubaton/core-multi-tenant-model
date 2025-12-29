@@ -468,7 +468,7 @@ export default function TenantDetailPage() {
                   <span className="text-gray-600 dark:text-gray-300">Total Offerings</span>
                 </div>
                 <span className="text-xl font-semibold text-green-600 dark:text-green-400">
-                  ${parseFloat(tenant.totalOfferings ?? '0').toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  R {parseFloat(tenant.totalOfferings ?? '0').toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </span>
               </div>
 
@@ -484,7 +484,7 @@ export default function TenantDetailPage() {
                     </div>
                   </div>
                   <span className="text-xl font-semibold text-blue-600 dark:text-blue-400">
-                    ${parseFloat(tenant.thisMonthOfferings.total ?? '0').toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    R {parseFloat(tenant.thisMonthOfferings.total ?? '0').toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
               )}
