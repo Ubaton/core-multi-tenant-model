@@ -119,14 +119,55 @@ export function handleError(error: unknown): NextResponse<ApiResponse> {
 
   // Prisma known errors
   if (error && typeof error === 'object' && 'code' in error) {
-    const prismaError = error as { code: string; meta?: { target?: string[] } };
+    const prismaError = error as { code: string; meta?: { target?: string | string[]; modelName?: string } };
     
     switch (prismaError.code) {
       case 'P2002': // Unique constraint violation
-        const fields = prismaError.meta?.target?.join(', ') || 'field';
+        const target = prismaError.meta?.target;
+        // target can be string[] or string (constraint name)
+        const fieldsArray = Array.isArray(target) ? target : [];
+        const targetStr = typeof target === 'string' ? target : fieldsArray.join(' ');
+        
+        // Check if phone is involved in the constraint (case-insensitive, handles quoted names)
+        if (targetStr.toLowerCase().includes('phone')) {
+          return errorResponse(
+            'DUPLICATE_PHONE',
+            'A member with this phone number already exists',
+            409
+          );
+        }
+        // Check if email is involved
+        if (targetStr.toLowerCase().includes('email')) {
+          return errorResponse(
+            'DUPLICATE_EMAIL',
+            'A record with this email address already exists',
+            409
+          );
+        }
+        // Check if membershipId is involved
+        if (targetStr.toLowerCase().includes('membershipid')) {
+          return errorResponse(
+            'DUPLICATE_MEMBERSHIP_ID',
+            'A member with this membership ID already exists',
+            409
+          );
+        }
+        // Check if slug is involved (for tenants)
+        if (targetStr.toLowerCase().includes('slug')) {
+          return errorResponse(
+            'DUPLICATE_SLUG',
+            'A tenant with this slug already exists',
+            409
+          );
+        }
+        
+        // Generic unique constraint message
+        const fieldNames = fieldsArray.length > 0 
+          ? fieldsArray.filter(f => f.toLowerCase() !== 'tenantid').join(', ') 
+          : 'field';
         return errorResponse(
           'DUPLICATE_ENTRY',
-          `A record with this ${fields} already exists`,
+          `A record with this ${fieldNames || 'value'} already exists`,
           409
         );
       case 'P2025': // Record not found

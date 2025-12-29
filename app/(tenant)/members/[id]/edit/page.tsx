@@ -1,12 +1,13 @@
 /**
  * ════════════════════════════════════════════════════════════════════════════
- * NEW MEMBER PAGE
+ * EDIT MEMBER PAGE
+ * Edit existing member details
  * ════════════════════════════════════════════════════════════════════════════
  */
 
 'use client';
 
-import { useState } from 'react';
+import { use, useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ArrowLeft, Save, Loader2 } from 'lucide-react';
@@ -15,12 +16,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useCreateMember } from '@/lib/client';
+import { useMember, useUpdateMember } from '@/lib/client';
+import { useModulePermissions } from '@/lib/client/hooks/use-user-permissions';
+import { AccessDenied } from '@/components/permission-gate';
 
-export default function NewMemberPage() {
+interface PageProps {
+  params: Promise<{ id: string }>;
+}
+
+export default function EditMemberPage({ params }: PageProps) {
+  const { id } = use(params);
   const router = useRouter();
-  const createMember = useCreateMember();
-  
+  const { data: member, isLoading: memberLoading } = useMember(id);
+  const updateMember = useUpdateMember(id);
+  const { canEdit, isLoading: permissionsLoading } = useModulePermissions();
+
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -38,13 +48,97 @@ export default function NewMemberPage() {
     employer: '',
     membershipId: '',
     status: 'ACTIVE',
-    joinDate: new Date().toISOString().split('T')[0],
+    joinDate: '',
     baptismDate: '',
     weddingDate: '',
     notes: '',
   });
 
   const [error, setError] = useState('');
+  const [initialized, setInitialized] = useState(false);
+
+  // Populate form when member data loads
+  useEffect(() => {
+    if (member && !initialized) {
+      setFormData({
+        firstName: member.firstName || '',
+        lastName: member.lastName || '',
+        middleName: member.middleName || '',
+        email: member.email || '',
+        phone: member.phone || '',
+        alternatePhone: member.alternatePhone || '',
+        gender: member.gender || '',
+        dateOfBirth: member.dateOfBirth ? new Date(member.dateOfBirth).toISOString().split('T')[0] : '',
+        address: member.address || '',
+        city: member.city || '',
+        state: member.state || '',
+        country: member.country || 'South Africa',
+        occupation: member.occupation || '',
+        employer: member.employer || '',
+        membershipId: member.membershipId || '',
+        status: member.status || 'ACTIVE',
+        joinDate: member.joinDate ? new Date(member.joinDate).toISOString().split('T')[0] : '',
+        baptismDate: member.baptismDate ? new Date(member.baptismDate).toISOString().split('T')[0] : '',
+        weddingDate: (member as any).weddingDate ? new Date((member as any).weddingDate).toISOString().split('T')[0] : '',
+        notes: (member as any).notes || '',
+      });
+      setInitialized(true);
+    }
+  }, [member, initialized]);
+
+  // Check permissions
+  if (!permissionsLoading && !canEdit('members')) {
+    return <AccessDenied message="You don't have permission to edit members." />;
+  }
+
+  if (memberLoading) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Link href={`/members/${id}`}>
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <div className="h-8 w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+        </div>
+        <div className="space-y-6">
+          {[1, 2, 3].map((i) => (
+            <Card key={i}>
+              <CardContent className="pt-6">
+                <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (!member) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <Link href="/members">
+            <Button variant="ghost" size="icon">
+              <ArrowLeft className="h-4 w-4" />
+            </Button>
+          </Link>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Member Not Found</h1>
+        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <p className="text-gray-500 dark:text-gray-400">
+              The member you are trying to edit does not exist or has been removed.
+            </p>
+            <Link href="/members" className="mt-4 inline-block">
+              <Button>Back to Members</Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
@@ -61,7 +155,7 @@ export default function NewMemberPage() {
     }
 
     try {
-      await createMember.mutateAsync({
+      await updateMember.mutateAsync({
         firstName: formData.firstName.trim(),
         lastName: formData.lastName.trim(),
         middleName: formData.middleName.trim() || undefined,
@@ -76,17 +170,16 @@ export default function NewMemberPage() {
         country: formData.country.trim(),
         occupation: formData.occupation.trim() || undefined,
         employer: formData.employer.trim() || undefined,
-        // membershipId is auto-generated by the API
+        membershipId: formData.membershipId.trim() || undefined,
         status: formData.status as 'ACTIVE' | 'INACTIVE' | 'DECEASED' | 'TRANSFERRED',
-        isHeadOfFamily: false,
         joinDate: formData.joinDate ? new Date(formData.joinDate) : undefined,
         baptismDate: formData.baptismDate ? new Date(formData.baptismDate) : undefined,
         weddingDate: formData.weddingDate ? new Date(formData.weddingDate) : undefined,
         notes: formData.notes.trim() || undefined,
       });
-      router.push('/members');
+      router.push(`/members/${id}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create member');
+      setError(err instanceof Error ? err.message : 'Failed to update member');
     }
   };
 
@@ -94,15 +187,17 @@ export default function NewMemberPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/members">
+        <Link href={`/members/${id}`}>
           <Button variant="ghost" size="icon">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Add New Member</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Edit Member
+          </h1>
           <p className="text-gray-500 dark:text-gray-400">
-            Register a new church member
+            Update {member.firstName} {member.lastName}&apos;s profile
           </p>
         </div>
       </div>
@@ -172,7 +267,7 @@ export default function NewMemberPage() {
                 type="tel"
                 value={formData.phone}
                 onChange={handleChange}
-                placeholder="+234..."
+                placeholder="+27..."
                 required
               />
             </div>
@@ -184,7 +279,7 @@ export default function NewMemberPage() {
                 type="tel"
                 value={formData.alternatePhone}
                 onChange={handleChange}
-                placeholder="+234..."
+                placeholder="+27..."
               />
             </div>
             <div className="space-y-2">
@@ -242,7 +337,7 @@ export default function NewMemberPage() {
               />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="state">State</Label>
+              <Label htmlFor="state">State/Province</Label>
               <Input
                 id="state"
                 name="state"
@@ -306,11 +401,11 @@ export default function NewMemberPage() {
               <Input
                 id="membershipId"
                 name="membershipId"
-                value="Auto-generated"
+                value={formData.membershipId || 'Not assigned'}
                 disabled
                 className="bg-gray-50 dark:bg-gray-800 text-gray-500"
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400">Will be assigned automatically</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Auto-generated, cannot be changed</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
@@ -383,13 +478,13 @@ export default function NewMemberPage() {
 
         {/* Actions */}
         <div className="flex items-center justify-end gap-4">
-          <Link href="/members">
+          <Link href={`/members/${id}`}>
             <Button type="button" variant="outline">
               Cancel
             </Button>
           </Link>
-          <Button type="submit" disabled={createMember.isPending}>
-            {createMember.isPending ? (
+          <Button type="submit" disabled={updateMember.isPending}>
+            {updateMember.isPending ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
                 Saving...
@@ -397,7 +492,7 @@ export default function NewMemberPage() {
             ) : (
               <>
                 <Save className="h-4 w-4 mr-2" />
-                Save Member
+                Save Changes
               </>
             )}
           </Button>

@@ -85,15 +85,46 @@ export const GET = withPermission('list', 'member', async (request, context) => 
 });
 
 /**
+ * Generate a unique membership ID
+ * Format: MBR-YYYYMMDD-XXXX (e.g., MBR-20251229-0001)
+ */
+async function generateMembershipId(tenantId: string): Promise<string> {
+  const today = new Date();
+  const dateStr = today.toISOString().slice(0, 10).replace(/-/g, '');
+  const prefix = `MBR-${dateStr}`;
+  
+  // Count members created today for this tenant to generate sequence
+  const startOfDay = new Date(today.setHours(0, 0, 0, 0));
+  const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+  
+  const todayCount = await prisma.member.count({
+    where: {
+      tenantId,
+      createdAt: {
+        gte: startOfDay,
+        lte: endOfDay,
+      },
+    },
+  });
+  
+  const sequence = String(todayCount + 1).padStart(4, '0');
+  return `${prefix}-${sequence}`;
+}
+
+/**
  * POST /api/members
  * Create a new member
  */
 export const POST = withPermission('create', 'member', async (request, context) => {
   const data = await parseBody(request, createMemberSchema);
 
+  // Auto-generate membership ID if not provided
+  const membershipId = data.membershipId || await generateMembershipId(context.tenantId);
+
   const member = await prisma.member.create({
     data: {
       ...data,
+      membershipId,
       tenantId: context.tenantId,
     },
     include: {
