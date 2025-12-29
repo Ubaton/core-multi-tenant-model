@@ -245,7 +245,7 @@ export const createOfferingSchema = z.object({
   giverPhone: z.string().max(20).optional(),
   type: z.nativeEnum(OfferingType),
   amount: z.coerce.number().positive('Amount must be positive'),
-  currency: z.string().length(3).default('NGN'),
+  currency: z.string().length(3).default('ZAR'),
   description: z.string().max(500).optional(),
   serviceId: z.string().cuid().optional(),
   paymentMethod: z.string().max(50).optional(),

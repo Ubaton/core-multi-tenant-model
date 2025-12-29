@@ -7,12 +7,23 @@
 'use client';
 
 import { useState } from 'react';
-import { Plus, Search, DollarSign, TrendingUp, Calendar } from 'lucide-react';
+import { Plus, Search, DollarSign, TrendingUp, Calendar, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useOfferings, useModulePermissions } from '@/lib/client';
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog';
+import { useOfferings, useCreateOffering, useMembers, useModulePermissions } from '@/lib/client';
 import { cn } from '@/lib/utils';
 import { RequireCreate, AccessDenied } from '@/components/permission-gate';
 
@@ -28,17 +39,70 @@ const typeColors: Record<string, string> = {
 
 function formatCurrency(amount: string | number) {
   const num = typeof amount === 'string' ? parseFloat(amount) : amount;
-  return new Intl.NumberFormat('en-US', {
+  return new Intl.NumberFormat('en-ZA', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'ZAR',
   }).format(num);
 }
+
+const OFFERING_TYPES = [
+  { value: 'TITHE', label: 'Tithe' },
+  { value: 'OFFERING', label: 'Offering' },
+  { value: 'FIRST_FRUIT', label: 'First Fruit' },
+  { value: 'THANKSGIVING', label: 'Thanksgiving' },
+  { value: 'SEED', label: 'Seed' },
+  { value: 'DONATION', label: 'Donation' },
+  { value: 'OTHER', label: 'Other' },
+];
+
+const PAYMENT_METHODS = [
+  { value: 'CASH', label: 'Cash' },
+  { value: 'CARD', label: 'Card' },
+  { value: 'EFT', label: 'EFT / Bank Transfer' },
+  { value: 'MOBILE', label: 'Mobile Payment' },
+  { value: 'CHEQUE', label: 'Cheque' },
+  { value: 'OTHER', label: 'Other' },
+];
+
+interface OfferingFormData {
+  memberId: string;
+  giverName: string;
+  giverPhone: string;
+  type: string;
+  amount: string;
+  description: string;
+  paymentMethod: string;
+  reference: string;
+  givenAt: string;
+}
+
+const initialFormData: OfferingFormData = {
+  memberId: '',
+  giverName: '',
+  giverPhone: '',
+  type: 'OFFERING',
+  amount: '',
+  description: '',
+  paymentMethod: 'CASH',
+  reference: '',
+  givenAt: new Date().toISOString().split('T')[0],
+};
 
 export default function OfferingsPage() {
   const [search, setSearch] = useState('');
   const [type, setType] = useState<string>('');
   const [page, setPage] = useState(1);
+  const [isAddDialogOpen, setIsAddDialogOpen] = useState(false);
+  const [formData, setFormData] = useState<OfferingFormData>(initialFormData);
+  const [formError, setFormError] = useState('');
+  const [giverType, setGiverType] = useState<'member' | 'guest'>('member');
+  
   const { canView, isLoading: permissionsLoading } = useModulePermissions();
+  const createOffering = useCreateOffering();
+  
+  // Fetch members for the dropdown
+  const { data: membersData } = useMembers({ limit: 100 });
+  const members = membersData?.data ?? [];
 
   const { data, isLoading } = useOfferings({
     search: search || undefined,
@@ -50,6 +114,63 @@ export default function OfferingsPage() {
   const offerings = data?.offerings ?? [];
   const summary = data?.summary;
   const meta = data?.meta;
+
+  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleOpenDialog = () => {
+    setFormData(initialFormData);
+    setFormError('');
+    setGiverType('member');
+    setIsAddDialogOpen(true);
+  };
+
+  const handleCloseDialog = () => {
+    setIsAddDialogOpen(false);
+    setFormData(initialFormData);
+    setFormError('');
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+
+    // Validation
+    if (!formData.amount || parseFloat(formData.amount) <= 0) {
+      setFormError('Please enter a valid amount');
+      return;
+    }
+
+    if (!formData.type) {
+      setFormError('Please select an offering type');
+      return;
+    }
+
+    if (giverType === 'guest' && !formData.giverName.trim()) {
+      setFormError('Please enter the giver\'s name');
+      return;
+    }
+
+    try {
+      await createOffering.mutateAsync({
+        memberId: giverType === 'member' && formData.memberId ? formData.memberId : undefined,
+        giverName: giverType === 'guest' ? formData.giverName.trim() : undefined,
+        giverPhone: giverType === 'guest' && formData.giverPhone ? formData.giverPhone.trim() : undefined,
+        type: formData.type as 'TITHE' | 'OFFERING' | 'FIRST_FRUIT' | 'THANKSGIVING' | 'SEED' | 'DONATION' | 'OTHER',
+        amount: parseFloat(formData.amount),
+        currency: 'ZAR',
+        description: formData.description.trim() || undefined,
+        paymentMethod: formData.paymentMethod || undefined,
+        reference: formData.reference.trim() || undefined,
+        givenAt: formData.givenAt ? new Date(formData.givenAt) : undefined,
+      });
+      handleCloseDialog();
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : 'Failed to record offering');
+    }
+  };
 
   // Check for view permission
   if (!permissionsLoading && !canView('offerings')) {
@@ -67,12 +188,221 @@ export default function OfferingsPage() {
           </p>
         </div>
         <RequireCreate module="offerings">
-          <Button>
+          <Button onClick={handleOpenDialog}>
             <Plus className="h-4 w-4 mr-2" />
             Record Offering
           </Button>
         </RequireCreate>
       </div>
+
+      {/* Add Offering Dialog */}
+      <AlertDialog open={isAddDialogOpen} onOpenChange={setIsAddDialogOpen}>
+        <AlertDialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <AlertDialogHeader>
+            <div className="flex items-center justify-between">
+              <AlertDialogTitle>Record New Offering</AlertDialogTitle>
+              <Button variant="ghost" size="icon" onClick={handleCloseDialog} className="h-6 w-6">
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+            <AlertDialogDescription>
+              Enter the offering details below. Amount will be recorded in South African Rand (ZAR).
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            {formError && (
+              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-3 py-2 rounded-lg text-sm">
+                {formError}
+              </div>
+            )}
+
+            {/* Giver Type Selection */}
+            <div className="space-y-2">
+              <Label>Giver Type</Label>
+              <div className="flex gap-4">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="giverType"
+                    value="member"
+                    checked={giverType === 'member'}
+                    onChange={() => setGiverType('member')}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm">Church Member</span>
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="giverType"
+                    value="guest"
+                    checked={giverType === 'guest'}
+                    onChange={() => setGiverType('guest')}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm">Guest / Anonymous</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Member Selection or Guest Details */}
+            {giverType === 'member' ? (
+              <div className="space-y-2">
+                <Label htmlFor="memberId">Select Member</Label>
+                <select
+                  id="memberId"
+                  name="memberId"
+                  value={formData.memberId}
+                  onChange={handleFormChange}
+                  className="w-full h-10 rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                >
+                  <option value="">-- Select a member (optional) --</option>
+                  {members.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.firstName} {member.lastName} {member.membershipId ? `(${member.membershipId})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="giverName">Giver Name *</Label>
+                  <Input
+                    id="giverName"
+                    name="giverName"
+                    value={formData.giverName}
+                    onChange={handleFormChange}
+                    placeholder="Enter name"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="giverPhone">Phone Number</Label>
+                  <Input
+                    id="giverPhone"
+                    name="giverPhone"
+                    value={formData.giverPhone}
+                    onChange={handleFormChange}
+                    placeholder="Enter phone"
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Offering Type and Amount */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="type">Offering Type *</Label>
+                <select
+                  id="type"
+                  name="type"
+                  value={formData.type}
+                  onChange={handleFormChange}
+                  className="w-full h-10 rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                  required
+                >
+                  {OFFERING_TYPES.map((t) => (
+                    <option key={t.value} value={t.value}>
+                      {t.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="amount">Amount (ZAR) *</Label>
+                <div className="relative">
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R</span>
+                  <Input
+                    id="amount"
+                    name="amount"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={formData.amount}
+                    onChange={handleFormChange}
+                    placeholder="0.00"
+                    className="pl-8"
+                    required
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Payment Method and Date */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label htmlFor="paymentMethod">Payment Method</Label>
+                <select
+                  id="paymentMethod"
+                  name="paymentMethod"
+                  value={formData.paymentMethod}
+                  onChange={handleFormChange}
+                  className="w-full h-10 rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                >
+                  {PAYMENT_METHODS.map((m) => (
+                    <option key={m.value} value={m.value}>
+                      {m.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="givenAt">Date Given</Label>
+                <Input
+                  id="givenAt"
+                  name="givenAt"
+                  type="date"
+                  value={formData.givenAt}
+                  onChange={handleFormChange}
+                />
+              </div>
+            </div>
+
+            {/* Reference */}
+            <div className="space-y-2">
+              <Label htmlFor="reference">Reference / Receipt No.</Label>
+              <Input
+                id="reference"
+                name="reference"
+                value={formData.reference}
+                onChange={handleFormChange}
+                placeholder="Enter reference number"
+              />
+            </div>
+
+            {/* Description */}
+            <div className="space-y-2">
+              <Label htmlFor="description">Description / Notes</Label>
+              <Textarea
+                id="description"
+                name="description"
+                value={formData.description}
+                onChange={handleFormChange}
+                placeholder="Add any additional notes..."
+                rows={3}
+              />
+            </div>
+
+            <AlertDialogFooter>
+              <AlertDialogCancel onClick={handleCloseDialog}>Cancel</AlertDialogCancel>
+              <Button type="submit" disabled={createOffering.isPending}>
+                {createOffering.isPending ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Recording...
+                  </>
+                ) : (
+                  <>
+                    <DollarSign className="h-4 w-4 mr-2" />
+                    Record Offering
+                  </>
+                )}
+              </Button>
+            </AlertDialogFooter>
+          </form>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Summary Cards */}
       <div className="grid gap-4 md:grid-cols-3">
@@ -85,7 +415,7 @@ export default function OfferingsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {summary ? formatCurrency(summary.totalAmount) : '$0.00'}
+              {summary ? formatCurrency(summary.totalAmount) : 'R 0.00'}
             </div>
             <p className="text-xs text-muted-foreground">
               {summary?.count ?? 0} offerings
@@ -101,7 +431,7 @@ export default function OfferingsPage() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {summary ? formatCurrency(summary.averageAmount) : '$0.00'}
+              {summary ? formatCurrency(summary.averageAmount) : 'R 0.00'}
             </div>
             <p className="text-xs text-muted-foreground">per offering</p>
           </CardContent>
@@ -172,7 +502,7 @@ export default function OfferingsPage() {
           ) : offerings.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-500 dark:text-gray-400">No offerings found</p>
-              <Button variant="outline" className="mt-4">
+              <Button variant="outline" className="mt-4" onClick={handleOpenDialog}>
                 <Plus className="h-4 w-4 mr-2" />
                 Record your first offering
               </Button>
