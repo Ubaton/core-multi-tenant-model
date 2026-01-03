@@ -67,27 +67,30 @@ export default function SuperAdminStatsPage() {
     },
     super_admin: {
       label: 'Super Admin',
-      color: 'hsl(var(--chart-1))',
+      color: 'var(--chart-1)',
     },
     church_admin: {
       label: 'Church Admin',
-      color: 'hsl(var(--chart-2))',
+      color: 'var(--chart-2)',
     },
     staff: {
       label: 'Staff',
-      color: 'hsl(var(--chart-3))',
+      color: 'var(--chart-3)',
     },
     call_center: {
       label: 'Call Center',
-      color: 'hsl(var(--chart-4))',
+      color: 'var(--chart-4)',
     },
     subscriber: {
       label: 'Subscriber',
-      color: 'hsl(var(--chart-5))',
+      color: 'var(--chart-5)',
     },
     member: {
       label: 'Member',
-      color: 'hsl(var(--chart-1))',
+      theme: {
+        light: 'color-mix(in oklab, var(--chart-1) 55%, var(--chart-3))',
+        dark: 'color-mix(in oklab, var(--chart-1) 55%, var(--chart-3))',
+      },
     },
   } satisfies ChartConfig;
 
@@ -106,11 +109,11 @@ export default function SuperAdminStatsPage() {
     },
     active: {
       label: 'Active',
-      color: 'hsl(var(--chart-2))',
+      color: 'var(--chart-2)',
     },
     inactive: {
       label: 'Inactive',
-      color: 'hsl(var(--chart-5))',
+      color: 'var(--chart-5)',
     },
   } satisfies ChartConfig;
 
@@ -127,7 +130,7 @@ export default function SuperAdminStatsPage() {
   const topTenantsChartConfig = {
     members: {
       label: 'Members',
-      color: 'hsl(var(--chart-1))',
+      color: 'var(--chart-1)',
     },
   } satisfies ChartConfig;
 
