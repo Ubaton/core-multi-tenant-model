@@ -6,9 +6,10 @@
 
 'use client';
 
+import * as React from 'react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
-import { Bell, Menu, User } from 'lucide-react';
+import { usePathname, useRouter } from 'next/navigation';
+import { Bell, Menu, User, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -19,27 +20,71 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Sheet, SheetClose, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { useCurrentUser, useLogout } from '@/lib/client';
 import { useUnreadMessageCount } from '@/lib/client/hooks';
 
-export function Header() {
+type MobileNavComponent = React.ComponentType<{ onNavigate?: () => void }>;
+
+export function Header({
+  MobileNav,
+}: {
+  MobileNav?: MobileNavComponent;
+}) {
   const { data: user } = useCurrentUser();
   const logout = useLogout();
   const pathname = usePathname();
+  const router = useRouter();
   const { data: unreadCount, isLoading: isLoadingCount } = useUnreadMessageCount();
+
+  const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
 
   // Determine the messages link based on current path
   const messagesLink = pathname?.startsWith('/super-admin') 
     ? '/super-admin/communications' 
     : '/communications';
 
+  const settingsLink = pathname?.startsWith('/super-admin')
+    ? '/super-admin/settings'
+    : '/settings';
+
+  // There isn't a dedicated /profile route; the tenant profile lives under Settings.
+  const profileLink = pathname?.startsWith('/super-admin')
+    ? '/super-admin/settings'
+    : '/settings?tab=profile';
+
   return (
     <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b bg-background/80 backdrop-blur supports-backdrop-filter:bg-background/60 px-4 sm:gap-x-6 sm:px-6 lg:px-8">
       {/* Mobile menu button */}
-      <Button variant="ghost" size="icon" className="lg:hidden">
-        <Menu className="h-5 w-5" />
-        <span className="sr-only">Open sidebar</span>
-      </Button>
+      {MobileNav ? (
+        <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
+          <SheetTrigger
+            render={
+              <Button variant="ghost" size="icon" className="lg:hidden" aria-label="Open sidebar">
+                <Menu className="h-5 w-5" />
+                <span className="sr-only">Open sidebar</span>
+              </Button>
+            }
+          />
+          <SheetContent className="p-0">
+            <div className="flex h-16 items-center justify-end border-b px-4">
+              <SheetClose
+                render={
+                  <Button variant="ghost" size="icon" aria-label="Close sidebar">
+                    <X className="h-5 w-5" />
+                  </Button>
+                }
+              />
+            </div>
+            <MobileNav onNavigate={() => setMobileNavOpen(false)} />
+          </SheetContent>
+        </Sheet>
+      ) : (
+        <Button variant="ghost" size="icon" className="lg:hidden" disabled>
+          <Menu className="h-5 w-5" />
+          <span className="sr-only">Open sidebar</span>
+        </Button>
+      )}
 
       {/* Separator */}
       <div className="h-6 w-px bg-border lg:hidden" />
@@ -88,8 +133,8 @@ export function Header() {
                 </DropdownMenuLabel>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>Your Profile</DropdownMenuItem>
-              <DropdownMenuItem>Settings</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push(profileLink)}>Your Profile</DropdownMenuItem>
+              <DropdownMenuItem onClick={() => router.push(settingsLink)}>Settings</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => logout.mutate()}

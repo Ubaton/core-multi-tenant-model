@@ -29,9 +29,45 @@ const navigation = [
   { name: 'Settings', href: '/super-admin/settings', icon: Settings },
 ];
 
-export function SuperAdminSidebar() {
+function SuperAdminNavList({
+  onNavigate,
+}: {
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
 
+  return (
+    <ul role="list" className="-mx-2 space-y-1">
+      {navigation.map((item) => {
+        const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+        return (
+          <li key={item.name}>
+            <Link
+              href={item.href}
+              onClick={onNavigate}
+              className={cn(
+                'group flex gap-x-3 rounded-md p-2 text-sm font-medium leading-6 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60',
+                isActive
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'
+              )}
+            >
+              <item.icon
+                className={cn(
+                  'h-5 w-5 shrink-0',
+                  isActive ? 'text-accent-foreground' : 'text-muted-foreground group-hover:text-foreground'
+                )}
+              />
+              {item.name}
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+export function SuperAdminSidebar() {
   return (
     <>
       {/* Desktop sidebar */}
@@ -53,37 +89,39 @@ export function SuperAdminSidebar() {
           <nav className="flex flex-1 flex-col">
             <ul role="list" className="flex flex-1 flex-col gap-y-7">
               <li>
-                <ul role="list" className="-mx-2 space-y-1">
-                  {navigation.map((item) => {
-                    const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-                    return (
-                      <li key={item.name}>
-                        <Link
-                          href={item.href}
-                          className={cn(
-                            'group flex gap-x-3 rounded-md p-2 text-sm font-medium leading-6 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60',
-                            isActive
-                              ? 'bg-accent text-accent-foreground'
-                              : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'
-                          )}
-                        >
-                          <item.icon
-                            className={cn(
-                              'h-5 w-5 shrink-0',
-                              isActive ? 'text-accent-foreground' : 'text-muted-foreground group-hover:text-foreground'
-                            )}
-                          />
-                          {item.name}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <SuperAdminNavList />
               </li>
             </ul>
           </nav>
         </div>
       </div>
     </>
+  );
+}
+
+export function SuperAdminMobileNav({
+  onNavigate,
+}: {
+  onNavigate?: () => void;
+}) {
+  return (
+    <div className="flex h-full flex-col gap-y-5 overflow-y-auto bg-background/80 backdrop-blur supports-backdrop-filter:bg-background/60 px-6 pb-4">
+      <div className="flex h-16 shrink-0 items-center">
+        <Link href="/super-admin/dashboard" onClick={onNavigate} className="flex items-center gap-2">
+          <div className="h-9 w-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shadow-sm ring-1 ring-border">
+            <Shield className="h-5 w-5" />
+          </div>
+          <span className="text-[15px] font-semibold text-foreground">Super Admin</span>
+        </Link>
+      </div>
+
+      <nav className="flex flex-1 flex-col">
+        <ul role="list" className="flex flex-1 flex-col gap-y-7">
+          <li>
+            <SuperAdminNavList onNavigate={onNavigate} />
+          </li>
+        </ul>
+      </nav>
+    </div>
   );
 }

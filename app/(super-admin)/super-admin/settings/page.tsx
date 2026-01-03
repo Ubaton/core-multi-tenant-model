@@ -7,6 +7,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
   Settings, 
   Bell, 
@@ -45,6 +46,7 @@ const settingsTabs = [
 type SettingsTab = typeof settingsTabs[number]['id'];
 
 export default function SuperAdminSettingsPage() {
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [formData, setFormData] = useState<Partial<UpdateSystemSettingsInput>>({});
   const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
@@ -83,6 +85,16 @@ export default function SuperAdminSettingsPage() {
       });
     }
   }, [settings]);
+
+  // Allow deep-linking to a settings tab via ?tab=
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (!tab) return;
+    const validTabs = new Set(settingsTabs.map((t) => t.id));
+    if (validTabs.has(tab as SettingsTab)) {
+      setActiveTab(tab as SettingsTab);
+    }
+  }, [searchParams]);
 
   const handleInputChange = (field: keyof UpdateSystemSettingsInput, value: string | number | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));

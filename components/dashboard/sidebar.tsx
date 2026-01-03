@@ -46,27 +46,87 @@ const navigation: NavigationItem[] = [
   { name: 'Settings', href: '/settings', icon: Settings, module: 'settings' },
 ];
 
-export function Sidebar() {
+function TenantNavList({
+  onNavigate,
+}: {
+  onNavigate?: () => void;
+}) {
   const pathname = usePathname();
-  const { isLoading, hasAnyPermission, isModuleLocked, canView } = useModulePermissions();
+  const { hasAnyPermission, isModuleLocked, canView } = useModulePermissions();
 
   // Filter navigation items based on permissions
-  const getNavigationItems = () => {
-    return navigation.map(item => {
-      const locked = isModuleLocked(item.module);
-      const hasViewAccess = canView(item.module);
-      
-      return {
-        ...item,
-        isLocked: locked,
-        isDisabled: !hasViewAccess,
-        hasAccess: hasAnyPermission(item.module),
-      };
-    });
-  };
+  const navItems = navigation.map((item) => {
+    const locked = isModuleLocked(item.module);
+    const hasViewAccess = canView(item.module);
 
-  const navItems = getNavigationItems();
+    return {
+      ...item,
+      isLocked: locked,
+      isDisabled: !hasViewAccess,
+      hasAccess: hasAnyPermission(item.module),
+    };
+  });
 
+  return (
+    <ul role="list" className="-mx-2 space-y-1">
+      {navItems.map((item) => {
+        const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
+
+        // If module is completely locked, hide it from sidebar
+        if (item.isLocked) {
+          return null;
+        }
+
+        // If user doesn't have view access, show grayed out with lock icon
+        if (item.isDisabled) {
+          return (
+            <li key={item.name}>
+              <div
+                className={cn(
+                  'group flex gap-x-3 rounded-md p-2 text-sm font-medium leading-6 cursor-not-allowed',
+                  'text-muted-foreground opacity-50'
+                )}
+                title={`You don't have permission to access ${item.name}`}
+              >
+                <item.icon className="h-5 w-5 shrink-0 text-muted-foreground/70" />
+                <span className="flex-1">{item.name}</span>
+                <Lock className="h-4 w-4 text-muted-foreground/70" />
+              </div>
+            </li>
+          );
+        }
+
+        // Normal accessible item
+        return (
+          <li key={item.name}>
+            <Link
+              href={item.href}
+              onClick={onNavigate}
+              className={cn(
+                'group flex gap-x-3 rounded-md p-2 text-sm font-medium leading-6 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60',
+                isActive
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'
+              )}
+            >
+              <item.icon
+                className={cn(
+                  'h-5 w-5 shrink-0',
+                  isActive
+                    ? 'text-accent-foreground'
+                    : 'text-muted-foreground group-hover:text-foreground'
+                )}
+              />
+              {item.name}
+            </Link>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+export function Sidebar() {
   return (
     <>
       {/* Desktop sidebar */}
@@ -88,65 +148,39 @@ export function Sidebar() {
           <nav className="flex flex-1 flex-col">
             <ul role="list" className="flex flex-1 flex-col gap-y-7">
               <li>
-                <ul role="list" className="-mx-2 space-y-1">
-                  {navItems.map((item) => {
-                    const isActive = pathname === item.href || pathname.startsWith(item.href + '/');
-                    
-                    // If module is completely locked, hide it from sidebar
-                    if (item.isLocked) {
-                      return null;
-                    }
-
-                    // If user doesn't have view access, show grayed out with lock icon
-                    if (item.isDisabled) {
-                      return (
-                        <li key={item.name}>
-                          <div
-                            className={cn(
-                              'group flex gap-x-3 rounded-md p-2 text-sm font-medium leading-6 cursor-not-allowed',
-                              'text-muted-foreground opacity-50'
-                            )}
-                            title={`You don't have permission to access ${item.name}`}
-                          >
-                            <item.icon className="h-5 w-5 shrink-0 text-muted-foreground/70" />
-                            <span className="flex-1">{item.name}</span>
-                            <Lock className="h-4 w-4 text-muted-foreground/70" />
-                          </div>
-                        </li>
-                      );
-                    }
-
-                    // Normal accessible item
-                    return (
-                      <li key={item.name}>
-                        <Link
-                          href={item.href}
-                          className={cn(
-                            'group flex gap-x-3 rounded-md p-2 text-sm font-medium leading-6 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60',
-                            isActive
-                              ? 'bg-accent text-accent-foreground'
-                              : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'
-                          )}
-                        >
-                          <item.icon
-                            className={cn(
-                              'h-5 w-5 shrink-0',
-                              isActive
-                                ? 'text-accent-foreground'
-                                : 'text-muted-foreground group-hover:text-foreground'
-                            )}
-                          />
-                          {item.name}
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
+                <TenantNavList />
               </li>
             </ul>
           </nav>
         </div>
       </div>
     </>
+  );
+}
+
+export function TenantMobileNav({
+  onNavigate,
+}: {
+  onNavigate?: () => void;
+}) {
+  return (
+    <div className="flex h-full flex-col gap-y-5 overflow-y-auto bg-background/80 backdrop-blur supports-backdrop-filter:bg-background/60 px-6 pb-4">
+      <div className="flex h-16 shrink-0 items-center">
+        <Link href="/dashboard" onClick={onNavigate} className="flex items-center gap-2">
+          <div className="h-9 w-9 rounded-xl bg-primary text-primary-foreground flex items-center justify-center shadow-sm ring-1 ring-border">
+            <span className="font-bold text-base">C</span>
+          </div>
+          <span className="text-[15px] font-semibold text-foreground">Unity Fellowship Church</span>
+        </Link>
+      </div>
+
+      <nav className="flex flex-1 flex-col">
+        <ul role="list" className="flex flex-1 flex-col gap-y-7">
+          <li>
+            <TenantNavList onNavigate={onNavigate} />
+          </li>
+        </ul>
+      </nav>
+    </div>
   );
 }

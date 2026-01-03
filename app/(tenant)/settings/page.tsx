@@ -7,6 +7,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { 
   Building2, 
   User, 
@@ -57,6 +58,7 @@ function Toast({ message, type, onClose }: { message: string; type: 'success' | 
 }
 
 export default function SettingsPage() {
+  const searchParams = useSearchParams();
   const { data: user } = useCurrentUser();
   const { data: tenant } = useTenant(user?.tenantId || '');
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
@@ -121,6 +123,16 @@ export default function SettingsPage() {
       });
     }
   }, [tenant]);
+
+  // Allow deep-linking to a settings tab via ?tab=
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (!tab) return;
+    const validTabs = new Set(settingsTabs.map((t) => t.id));
+    if (validTabs.has(tab as SettingsTab)) {
+      setActiveTab(tab as SettingsTab);
+    }
+  }, [searchParams]);
 
   // Mutations
   const updateProfile = useUpdateProfile();
