@@ -34,7 +34,7 @@ export function Header() {
     : '/communications';
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b border-gray-200 dark:border-gray-800 bg-white dark:bg-gray-950 px-4 shadow-sm sm:gap-x-6 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b bg-background/80 backdrop-blur supports-backdrop-filter:bg-background/60 px-4 sm:gap-x-6 sm:px-6 lg:px-8">
       {/* Mobile menu button */}
       <Button variant="ghost" size="icon" className="lg:hidden">
         <Menu className="h-5 w-5" />
@@ -42,7 +42,7 @@ export function Header() {
       </Button>
 
       {/* Separator */}
-      <div className="h-6 w-px bg-gray-200 dark:bg-gray-800 lg:hidden" />
+      <div className="h-6 w-px bg-border lg:hidden" />
 
       <div className="flex flex-1 justify-end gap-x-4 self-stretch lg:gap-x-6">
         <div className="flex items-center gap-x-4 lg:gap-x-6">
@@ -50,7 +50,7 @@ export function Header() {
           <Link href={messagesLink}>
             <Button variant="ghost" size="icon" className="relative">
               <span className="sr-only">View messages</span>
-              <Bell className={`h-5 w-5 ${unreadCount && unreadCount > 0 ? 'text-gray-600 dark:text-gray-300' : 'text-gray-400'}`} />
+              <Bell className={`h-5 w-5 ${unreadCount && unreadCount > 0 ? 'text-foreground' : 'text-muted-foreground'}`} />
               {typeof unreadCount === 'number' && unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 flex items-center justify-center rounded-full bg-red-500 text-white text-xs font-medium animate-pulse">
                   {unreadCount > 99 ? '99+' : unreadCount}
@@ -60,17 +60,17 @@ export function Header() {
           </Link>
 
           {/* Separator */}
-          <div className="hidden lg:block lg:h-6 lg:w-px lg:bg-gray-200 dark:lg:bg-gray-800" />
+          <div className="hidden lg:block lg:h-6 lg:w-px lg:bg-border" />
 
           {/* Profile dropdown */}
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-x-3 p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-              <div className="h-8 w-8 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                <User className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+            <DropdownMenuTrigger className="flex items-center gap-x-3 p-1.5 rounded-md hover:bg-accent/60 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60">
+              <div className="h-8 w-8 rounded-full bg-muted/60 ring-1 ring-border flex items-center justify-center">
+                <User className="h-5 w-5 text-muted-foreground" />
               </div>
               {user && (
                 <span className="hidden lg:flex lg:items-center">
-                  <span className="text-sm font-medium text-gray-900 dark:text-white">
+                  <span className="text-sm font-medium text-foreground">
                     {user.firstName} {user.lastName}
                   </span>
                 </span>

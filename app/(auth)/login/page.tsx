@@ -66,7 +66,7 @@ function LoginForm() {
               <Label htmlFor="password">Password</Label>
               <Link
                 href="/forgot-password"
-                className="text-sm text-primary-600 hover:underline"
+                className="text-sm text-primary hover:underline"
               >
                 Forgot password?
               </Link>
@@ -95,10 +95,10 @@ function LoginForm() {
         </form>
 
         <div className="mt-6 text-center text-sm">
-          <span className="text-gray-500 dark:text-gray-400">
+          <span className="text-muted-foreground">
             Don&apos;t have an account?{' '}
           </span>
-          <Link href="/register" className="text-primary-600 hover:underline font-medium">
+          <Link href="/register" className="text-primary hover:underline font-medium">
             Sign up
           </Link>
         </div>
@@ -132,7 +132,7 @@ function LoginFormSkeleton() {
 
 export default function LoginPage() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4">
       <Suspense fallback={<LoginFormSkeleton />}>
         <LoginForm />
       </Suspense>

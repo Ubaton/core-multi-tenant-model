@@ -13,7 +13,7 @@ export default function SuperAdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="min-h-screen bg-muted/30">
       <SuperAdminSidebar />
       <div className="lg:pl-72">
         <Header />
