@@ -24,7 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { useCurrentUser, useUpdateProfile, useChangePassword, useUpdateTenant, useTenant, useModulePermissions } from '@/lib/client';
+import { useCurrentUser, useUpdateProfile, useChangePassword, useTenantProfile, useUpdateTenantProfile, useModulePermissions } from '@/lib/client';
 import { useTheme } from '@/context';
 import { cn } from '@/lib/utils';
 import { AccessDenied } from '@/components/permission-gate';
@@ -60,7 +60,7 @@ function Toast({ message, type, onClose }: { message: string; type: 'success' | 
 export default function SettingsPage() {
   const searchParams = useSearchParams();
   const { data: user } = useCurrentUser();
-  const { data: tenant } = useTenant(user?.tenantId || '');
+  const { data: tenant } = useTenantProfile();
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const { canView, isLoading: permissionsLoading } = useModulePermissions();
   
@@ -149,7 +149,7 @@ export default function SettingsPage() {
   // Mutations
   const updateProfile = useUpdateProfile();
   const changePassword = useChangePassword();
-  const updateTenant = useUpdateTenant(user?.tenantId || '');
+  const updateTenantProfile = useUpdateTenantProfile();
 
   // Handle profile save
   const handleSaveProfile = async () => {
@@ -168,12 +168,8 @@ export default function SettingsPage() {
 
   // Handle organization save
   const handleSaveOrganization = async () => {
-    if (!user?.tenantId) {
-      setToast({ message: 'No organization associated with your account', type: 'error' });
-      return;
-    }
     try {
-      await updateTenant.mutateAsync({
+      await updateTenantProfile.mutateAsync({
         name: orgForm.name,
         description: orgForm.description || undefined,
         address: orgForm.address || undefined,
@@ -476,8 +472,8 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="flex justify-end pt-4">
-                  <Button onClick={handleSaveOrganization} disabled={updateTenant.isPending}>
-                    {updateTenant.isPending ? (
+                  <Button onClick={handleSaveOrganization} disabled={updateTenantProfile.isPending}>
+                    {updateTenantProfile.isPending ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     ) : (
                       <Save className="mr-2 h-4 w-4" />

@@ -271,3 +271,47 @@ export function useCreateTenantAdmin(tenantId: string) {
     },
   });
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// TENANT PROFILE (For Tenant Users - access their own organization)
+// ════════════════════════════════════════════════════════════════════════════
+
+export const tenantProfileKeys = {
+  profile: ['tenant', 'profile'] as const,
+};
+
+/**
+ * Fetch the current user's tenant profile
+ * This works for any authenticated tenant user
+ */
+export function useTenantProfile() {
+  return useQuery({
+    queryKey: tenantProfileKeys.profile,
+    queryFn: async () => {
+      const response = await get<Tenant>('/api/tenant/profile');
+      return response.data!;
+    },
+  });
+}
+
+/**
+ * Update the current user's tenant profile
+ * Requires admin role permissions
+ */
+export function useUpdateTenantProfile() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: UpdateTenantInput) => {
+      const response = await patch<Tenant>('/api/tenant/profile', data);
+      return response.data!;
+    },
+    onSuccess: (data) => {
+      queryClient.setQueryData(tenantProfileKeys.profile, data);
+      // Also invalidate tenant detail if it exists
+      if (data.id) {
+        queryClient.invalidateQueries({ queryKey: tenantKeys.detail(data.id) });
+      }
+    },
+  });
+}
