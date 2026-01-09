@@ -37,6 +37,7 @@ export async function POST(request: NextRequest) {
         role: true,
         tenantId: true,
         isActive: true,
+        mustChangePassword: true,
         tenant: {
           select: {
             id: true,
@@ -97,6 +98,7 @@ export async function POST(request: NextRequest) {
         lastName: user.lastName,
         role: user.role,
         tenantId: user.tenantId,
+        mustChangePassword: user.mustChangePassword,
         tenant: user.tenant ? {
           id: user.tenant.id,
           name: user.tenant.name,

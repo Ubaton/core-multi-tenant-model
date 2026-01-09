@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
         tenantId: true,
         isActive: true,
         emailVerified: true,
+        mustChangePassword: true,
         lastLoginAt: true,
         createdAt: true,
         tenant: {

@@ -6,16 +6,45 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, Building2 } from 'lucide-react';
+import { ArrowLeft, Save, Building2, UserPlus, RefreshCw, Eye, EyeOff, Copy, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCreateTenant, useTenants } from '@/lib/client';
+
+// Default email domain as required
+const DEFAULT_EMAIL_DOMAIN = 'unityfellowship.org.za';
+
+/**
+ * Generate a secure random password
+ */
+function generatePassword(length: number = 12): string {
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+  const numbers = '0123456789';
+  const special = '!@#$%^&*';
+  const allChars = uppercase + lowercase + numbers + special;
+  
+  // Ensure at least one of each required type
+  let password = '';
+  password += uppercase[Math.floor(Math.random() * uppercase.length)];
+  password += lowercase[Math.floor(Math.random() * lowercase.length)];
+  password += numbers[Math.floor(Math.random() * numbers.length)];
+  password += special[Math.floor(Math.random() * special.length)];
+  
+  // Fill the rest randomly
+  for (let i = password.length; i < length; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)];
+  }
+  
+  // Shuffle the password
+  return password.split('').sort(() => Math.random() - 0.5).join('');
+}
 
 export default function NewTenantPage() {
   const router = useRouter();
@@ -41,6 +70,25 @@ export default function NewTenantPage() {
     parentId: '',
     isActive: true,
   });
+
+  // Admin user state
+  const [createAdminUser, setCreateAdminUser] = useState(true);
+  const [adminUser, setAdminUser] = useState({
+    firstName: '',
+    lastName: '',
+    email: `info@${DEFAULT_EMAIL_DOMAIN}`,
+    phone: '',
+    password: generatePassword(),
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordCopied, setPasswordCopied] = useState(false);
+
+  // Success state to show credentials after creation
+  const [createdCredentials, setCreatedCredentials] = useState<{
+    email: string;
+    password: string;
+    tenantName: string;
+  } | null>(null);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -71,6 +119,44 @@ export default function NewTenantPage() {
     }
   };
 
+  // Handle admin user field changes
+  const handleAdminChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setAdminUser(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    // Clear error when field is edited
+    if (errors[`admin_${name}`]) {
+      setErrors(prev => {
+        const next = { ...prev };
+        delete next[`admin_${name}`];
+        return next;
+      });
+    }
+  };
+
+  // Generate new password
+  const handleGeneratePassword = useCallback(() => {
+    setAdminUser(prev => ({
+      ...prev,
+      password: generatePassword(),
+    }));
+    setPasswordCopied(false);
+  }, []);
+
+  // Copy password to clipboard
+  const handleCopyPassword = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(adminUser.password);
+      setPasswordCopied(true);
+      setTimeout(() => setPasswordCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy password:', err);
+    }
+  }, [adminUser.password]);
+
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
@@ -92,6 +178,24 @@ export default function NewTenantPage() {
       newErrors.parentId = 'Parent organization is required for branches';
     }
 
+    // Validate admin user fields if creating admin
+    if (createAdminUser) {
+      if (!adminUser.firstName.trim()) {
+        newErrors.admin_firstName = 'Admin first name is required';
+      }
+      if (!adminUser.lastName.trim()) {
+        newErrors.admin_lastName = 'Admin last name is required';
+      }
+      if (!adminUser.email.trim()) {
+        newErrors.admin_email = 'Admin email is required';
+      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminUser.email)) {
+        newErrors.admin_email = 'Invalid email format';
+      }
+      if (!adminUser.password || adminUser.password.length < 8) {
+        newErrors.admin_password = 'Password must be at least 8 characters';
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -102,7 +206,7 @@ export default function NewTenantPage() {
     if (!validateForm()) return;
 
     try {
-      await createTenant.mutateAsync({
+      const result = await createTenant.mutateAsync({
         name: formData.name,
         slug: formData.slug,
         description: formData.description || undefined,
@@ -117,13 +221,110 @@ export default function NewTenantPage() {
         timezone: formData.timezone,
         isHQ: formData.isHQ,
         parentId: formData.isHQ ? undefined : formData.parentId || undefined,
+        // Include admin user if checkbox is checked
+        adminUser: createAdminUser ? {
+          firstName: adminUser.firstName,
+          lastName: adminUser.lastName,
+          email: adminUser.email,
+          password: adminUser.password,
+          phone: adminUser.phone || undefined,
+        } : undefined,
       });
 
-      router.push('/super-admin/tenants');
+      // If admin user was created, show credentials modal
+      if (createAdminUser && result.adminUser) {
+        setCreatedCredentials({
+          email: adminUser.email,
+          password: adminUser.password,
+          tenantName: formData.name,
+        });
+      } else {
+        router.push('/super-admin/tenants');
+      }
     } catch (error) {
       // Error is handled by the mutation
     }
   };
+
+  // If credentials were just created, show success modal
+  if (createdCredentials) {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              Tenant Created Successfully
+            </h1>
+            <p className="text-gray-500 dark:text-gray-400">
+              Share these credentials with the tenant administrator
+            </p>
+          </div>
+        </div>
+
+        <Card className="border-green-200 dark:border-green-800">
+          <CardHeader className="bg-green-50 dark:bg-green-900/20">
+            <CardTitle className="text-green-800 dark:text-green-200 flex items-center gap-2">
+              <Check className="h-5 w-5" />
+              Admin Account Created for {createdCredentials.tenantName}
+            </CardTitle>
+            <CardDescription className="text-green-700 dark:text-green-300">
+              The following credentials have been generated. Make sure to securely share these with the tenant.
+              The user will be required to change their password on first login.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="pt-6 space-y-4">
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Email (Login Identifier)</Label>
+              <div className="flex items-center gap-2">
+                <Input 
+                  value={createdCredentials.email} 
+                  readOnly 
+                  className="font-mono bg-gray-50 dark:bg-gray-800"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => navigator.clipboard.writeText(createdCredentials.email)}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-sm font-medium">Temporary Password</Label>
+              <div className="flex items-center gap-2">
+                <Input 
+                  type="text"
+                  value={createdCredentials.password} 
+                  readOnly 
+                  className="font-mono bg-gray-50 dark:bg-gray-800"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="icon"
+                  onClick={() => navigator.clipboard.writeText(createdCredentials.password)}
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              </div>
+              <p className="text-xs text-amber-600 dark:text-amber-400">
+                ⚠️ This password will not be shown again. Make sure to copy and share it securely.
+              </p>
+            </div>
+
+            <div className="pt-4 border-t">
+              <Button onClick={() => router.push('/super-admin/tenants')}>
+                Continue to Tenants List
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -403,6 +604,162 @@ export default function NewTenantPage() {
                 Organization is active
               </Label>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Admin User Account */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5" />
+              Admin User Account
+            </CardTitle>
+            <CardDescription>
+              Create an administrator account for this tenant. They will be required to change their password on first login.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex items-center gap-3">
+              <input
+                type="checkbox"
+                id="createAdminUser"
+                checked={createAdminUser}
+                onChange={(e) => setCreateAdminUser(e.target.checked)}
+                className="h-4 w-4 rounded border-gray-300"
+              />
+              <Label htmlFor="createAdminUser" className="font-normal">
+                Create admin user account for this tenant
+              </Label>
+            </div>
+
+            {createAdminUser && (
+              <div className="space-y-4 pt-4 border-t">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="admin_firstName">
+                      First Name <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="admin_firstName"
+                      name="firstName"
+                      value={adminUser.firstName}
+                      onChange={handleAdminChange}
+                      placeholder="Enter first name"
+                    />
+                    {errors.admin_firstName && (
+                      <p className="text-sm text-red-500">{errors.admin_firstName}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="admin_lastName">
+                      Last Name <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="admin_lastName"
+                      name="lastName"
+                      value={adminUser.lastName}
+                      onChange={handleAdminChange}
+                      placeholder="Enter last name"
+                    />
+                    {errors.admin_lastName && (
+                      <p className="text-sm text-red-500">{errors.admin_lastName}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="admin_email">
+                      Email (Login Identifier) <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="admin_email"
+                      name="email"
+                      type="email"
+                      value={adminUser.email}
+                      onChange={handleAdminChange}
+                      placeholder={`info@${DEFAULT_EMAIL_DOMAIN}`}
+                    />
+                    {errors.admin_email && (
+                      <p className="text-sm text-red-500">{errors.admin_email}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Default: info@{DEFAULT_EMAIL_DOMAIN}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="admin_phone">Phone</Label>
+                    <Input
+                      id="admin_phone"
+                      name="phone"
+                      type="tel"
+                      value={adminUser.phone}
+                      onChange={handleAdminChange}
+                      placeholder="+27 12 345 6789"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="admin_password">
+                    Generated Password <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <Input
+                        id="admin_password"
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        value={adminUser.password}
+                        onChange={handleAdminChange}
+                        className="font-mono pr-20"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={handleGeneratePassword}
+                      title="Generate new password"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={handleCopyPassword}
+                      title="Copy password"
+                    >
+                      {passwordCopied ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  {errors.admin_password && (
+                    <p className="text-sm text-red-500">{errors.admin_password}</p>
+                  )}
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    ⚠️ Save this password before submitting. It will be shown once more after creation for you to share with the tenant.
+                  </p>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 

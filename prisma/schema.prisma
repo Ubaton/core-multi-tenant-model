@@ -162,17 +162,18 @@ model Tenant {
 // ════════════════════════════════════════════════════════════════════════════
 
 model User {
-  id            String    @id @default(cuid())
-  email         String    @unique
-  passwordHash  String
-  firstName     String
-  lastName      String
-  phone         String?
-  avatar        String?
-  role          UserRole  @default(MEMBER)
-  isActive      Boolean   @default(true)
-  emailVerified Boolean   @default(false)
-  lastLoginAt   DateTime?
+  id                 String    @id @default(cuid())
+  email              String    @unique
+  passwordHash       String
+  firstName          String
+  lastName           String
+  phone              String?
+  avatar             String?
+  role               UserRole  @default(MEMBER)
+  isActive           Boolean   @default(true)
+  emailVerified      Boolean   @default(false)
+  mustChangePassword Boolean   @default(false) // Enforce password change on first login
+  lastLoginAt        DateTime?
   
   // Tenant association (null for SUPER_ADMIN who can access all)
   tenantId      String?

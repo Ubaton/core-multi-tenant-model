@@ -250,20 +250,21 @@ COMMENT ON COLUMN tenant.parent_id IS 'Reference to parent tenant for branch chu
 -- ──────────────────────────────────────────────────────────────────────────────
 
 CREATE TABLE IF NOT EXISTS "user" (
-    id              TEXT PRIMARY KEY,
-    email           TEXT NOT NULL,
-    password_hash   TEXT NOT NULL,
-    first_name      TEXT NOT NULL,
-    last_name       TEXT NOT NULL,
-    phone           TEXT,
-    avatar          TEXT,
-    role            user_role NOT NULL DEFAULT 'MEMBER',
-    is_active       BOOLEAN NOT NULL DEFAULT TRUE,
-    email_verified  BOOLEAN NOT NULL DEFAULT FALSE,
-    last_login_at   TIMESTAMP WITH TIME ZONE,
-    tenant_id       TEXT,
-    created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    id                    TEXT PRIMARY KEY,
+    email                 TEXT NOT NULL,
+    password_hash         TEXT NOT NULL,
+    first_name            TEXT NOT NULL,
+    last_name             TEXT NOT NULL,
+    phone                 TEXT,
+    avatar                TEXT,
+    role                  user_role NOT NULL DEFAULT 'MEMBER',
+    is_active             BOOLEAN NOT NULL DEFAULT TRUE,
+    email_verified        BOOLEAN NOT NULL DEFAULT FALSE,
+    must_change_password  BOOLEAN NOT NULL DEFAULT FALSE,
+    last_login_at         TIMESTAMP WITH TIME ZONE,
+    tenant_id             TEXT,
+    created_at            TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at            TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
     
     CONSTRAINT uq_user_email UNIQUE (email),
     CONSTRAINT fk_user_tenant FOREIGN KEY (tenant_id) REFERENCES tenant(id) ON DELETE SET NULL
@@ -272,6 +273,7 @@ CREATE TABLE IF NOT EXISTS "user" (
 COMMENT ON TABLE "user" IS 'System users with role-based access - tenant_id is NULL for SUPER_ADMIN';
 COMMENT ON COLUMN "user".password_hash IS 'bcrypt hashed password with salt';
 COMMENT ON COLUMN "user".role IS 'User role for RBAC: SUPER_ADMIN, CHURCH_ADMIN, STAFF, CALL_CENTER, SUBSCRIBER, MEMBER';
+COMMENT ON COLUMN "user".must_change_password IS 'When TRUE, user must change password on next login';
 
 -- ──────────────────────────────────────────────────────────────────────────────
 -- TABLE: role_permission

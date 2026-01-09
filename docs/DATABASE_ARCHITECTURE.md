@@ -437,20 +437,21 @@ CREATE INDEX idx_tenant_is_active ON tenant(is_active);
 -- ════════════════════════════════════════════════════════════════════════════
 
 CREATE TABLE "user" (
-    id              TEXT PRIMARY KEY,
-    email           TEXT NOT NULL UNIQUE,
-    password_hash   TEXT NOT NULL,
-    first_name      TEXT NOT NULL,
-    last_name       TEXT NOT NULL,
-    phone           TEXT,
-    avatar          TEXT,
-    role            user_role NOT NULL DEFAULT 'MEMBER',
-    is_active       BOOLEAN NOT NULL DEFAULT TRUE,
-    email_verified  BOOLEAN NOT NULL DEFAULT FALSE,
-    last_login_at   TIMESTAMP WITH TIME ZONE,
-    tenant_id       TEXT REFERENCES tenant(id) ON DELETE SET NULL,
-    created_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
-    updated_at      TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+    id                  TEXT PRIMARY KEY,
+    email               TEXT NOT NULL UNIQUE,
+    password_hash       TEXT NOT NULL,
+    first_name          TEXT NOT NULL,
+    last_name           TEXT NOT NULL,
+    phone               TEXT,
+    avatar              TEXT,
+    role                user_role NOT NULL DEFAULT 'MEMBER',
+    is_active           BOOLEAN NOT NULL DEFAULT TRUE,
+    email_verified      BOOLEAN NOT NULL DEFAULT FALSE,
+    must_change_password BOOLEAN NOT NULL DEFAULT FALSE, -- Enforce password change on first login
+    last_login_at       TIMESTAMP WITH TIME ZONE,
+    tenant_id           TEXT REFERENCES tenant(id) ON DELETE SET NULL,
+    created_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at          TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
 );
 
 CREATE INDEX idx_user_email ON "user"(email);

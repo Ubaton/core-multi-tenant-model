@@ -8,6 +8,7 @@
 
 import { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
+import { hashPassword } from '@/lib/auth';
 import { 
   withSuperAdmin, 
   successResponse, 
@@ -17,6 +18,7 @@ import {
   calculatePagination,
   createPaginationMeta,
   logAudit,
+  errorResponse,
 } from '@/lib/api';
 import { createTenantSchema, searchSchema } from '@/lib/validations';
 
@@ -94,25 +96,90 @@ export const GET = withSuperAdmin(async (request, { user }) => {
 
 /**
  * POST /api/tenants
- * Create a new tenant
+ * Create a new tenant with optional admin user account
  */
 export const POST = withSuperAdmin(async (request, { user }) => {
   const data = await parseBody(request, createTenantSchema);
 
-  const tenant = await prisma.tenant.create({
-    data: {
-      ...data,
-      slug: data.slug.toLowerCase(),
-    },
-    include: {
-      parent: {
-        select: {
-          id: true,
-          name: true,
-          slug: true,
+  // Extract admin user data if provided
+  const { adminUser, ...tenantData } = data;
+
+  // If admin user is provided, check if email already exists
+  if (adminUser) {
+    const existingUser = await prisma.user.findUnique({
+      where: { email: adminUser.email },
+    });
+
+    if (existingUser) {
+      return errorResponse(
+        'EMAIL_EXISTS',
+        'A user account with this email already exists',
+        400
+      );
+    }
+  }
+
+  // Check if slug already exists
+  const existingTenant = await prisma.tenant.findUnique({
+    where: { slug: tenantData.slug.toLowerCase() },
+  });
+
+  if (existingTenant) {
+    return errorResponse(
+      'SLUG_EXISTS',
+      'A tenant with this slug already exists',
+      400
+    );
+  }
+
+  // Create tenant and optionally admin user in a transaction
+  const result = await prisma.$transaction(async (tx) => {
+    // Create tenant
+    const tenant = await tx.tenant.create({
+      data: {
+        ...tenantData,
+        slug: tenantData.slug.toLowerCase(),
+      },
+      include: {
+        parent: {
+          select: {
+            id: true,
+            name: true,
+            slug: true,
+          },
         },
       },
-    },
+    });
+
+    let createdUser = null;
+
+    // If admin user data is provided, create the admin account
+    if (adminUser) {
+      const hashedPassword = await hashPassword(adminUser.password);
+
+      createdUser = await tx.user.create({
+        data: {
+          email: adminUser.email,
+          passwordHash: hashedPassword,
+          firstName: adminUser.firstName,
+          lastName: adminUser.lastName,
+          phone: adminUser.phone,
+          role: 'CHURCH_ADMIN',
+          tenantId: tenant.id,
+          isActive: true,
+          mustChangePassword: true, // Enforce password change on first login
+        },
+        select: {
+          id: true,
+          email: true,
+          firstName: true,
+          lastName: true,
+          role: true,
+        },
+      });
+    }
+
+    return { tenant, adminUser: createdUser };
   });
 
   // Log audit
@@ -121,11 +188,23 @@ export const POST = withSuperAdmin(async (request, { user }) => {
     null,
     'CREATE_TENANT',
     'Tenant',
-    tenant.id,
+    result.tenant.id,
     null,
-    tenant,
+    {
+      tenant: result.tenant,
+      adminUser: result.adminUser ? { 
+        id: result.adminUser.id, 
+        email: result.adminUser.email 
+      } : null,
+    },
     request
   );
 
-  return createdResponse(tenant);
+  return createdResponse({
+    tenant: result.tenant,
+    adminUser: result.adminUser,
+    // Include the password in response so Super Admin can share it with tenant
+    // This is only shown once and should be communicated to the tenant
+    generatedPassword: adminUser?.password,
+  });
 });

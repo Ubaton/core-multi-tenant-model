@@ -32,6 +32,7 @@ export interface AuthUser {
   role: UserRole;
   tenantId: string | null;
   isActive: boolean;
+  mustChangePassword?: boolean;
 }
 
 /**

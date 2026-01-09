@@ -100,6 +100,14 @@ export const createTenantSchema = z.object({
   timezone: z.string().default('Africa/Johannesburg'),
   isHQ: z.boolean().default(false),
   parentId: z.string().cuid().optional(),
+  // Admin user details for auto-creating tenant admin account
+  adminUser: z.object({
+    firstName: z.string().min(1, 'First name is required').max(100),
+    lastName: z.string().min(1, 'Last name is required').max(100),
+    email: z.string().email('Invalid email address'),
+    password: z.string().min(8, 'Password must be at least 8 characters'),
+    phone: z.string().max(20).optional(),
+  }).optional(),
 });
 
 export const updateTenantSchema = createTenantSchema.partial();
