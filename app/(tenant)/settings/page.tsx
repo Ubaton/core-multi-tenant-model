@@ -78,7 +78,13 @@ export default function SettingsPage() {
   // Organization form state
   const [orgForm, setOrgForm] = useState({
     name: '',
+    description: '',
     address: '',
+    city: '',
+    state: '',
+    postalCode: '',
+    country: '',
+    timezone: '',
     phone: '',
     email: '',
     website: '',
@@ -116,7 +122,13 @@ export default function SettingsPage() {
     if (tenant) {
       setOrgForm({
         name: tenant.name || '',
+        description: tenant.description || '',
         address: tenant.address || '',
+        city: tenant.city || '',
+        state: tenant.state || '',
+        postalCode: tenant.postalCode || '',
+        country: tenant.country || '',
+        timezone: tenant.timezone || '',
         phone: tenant.phone || '',
         email: tenant.email || '',
         website: tenant.website || '',
@@ -163,7 +175,13 @@ export default function SettingsPage() {
     try {
       await updateTenant.mutateAsync({
         name: orgForm.name,
+        description: orgForm.description || undefined,
         address: orgForm.address || undefined,
+        city: orgForm.city || undefined,
+        state: orgForm.state || undefined,
+        postalCode: orgForm.postalCode || undefined,
+        country: orgForm.country || undefined,
+        timezone: orgForm.timezone || undefined,
         phone: orgForm.phone || undefined,
         email: orgForm.email || undefined,
         website: orgForm.website || undefined,
@@ -333,12 +351,12 @@ export default function SettingsPage() {
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="orgAddress">Address</Label>
+                  <Label htmlFor="orgDescription">Description</Label>
                   <Textarea 
-                    id="orgAddress" 
-                    value={orgForm.address}
-                    onChange={(e) => setOrgForm(prev => ({ ...prev, address: e.target.value }))}
-                    placeholder="Enter organization address"
+                    id="orgDescription" 
+                    value={orgForm.description}
+                    onChange={(e) => setOrgForm(prev => ({ ...prev, description: e.target.value }))}
+                    placeholder="Brief description of your organization"
                     rows={3}
                   />
                 </div>
@@ -374,7 +392,90 @@ export default function SettingsPage() {
                     placeholder="https://yourchurch.com"
                   />
                 </div>
-                <div className="flex justify-end">
+
+                {/* Location Section */}
+                <div className="pt-4 border-t">
+                  <h3 className="text-sm font-medium mb-4">Location Details</h3>
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="orgAddress">Street Address</Label>
+                      <Textarea 
+                        id="orgAddress" 
+                        value={orgForm.address}
+                        onChange={(e) => setOrgForm(prev => ({ ...prev, address: e.target.value }))}
+                        placeholder="Enter street address"
+                        rows={2}
+                      />
+                    </div>
+                    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="orgCity">City</Label>
+                        <Input 
+                          id="orgCity" 
+                          value={orgForm.city}
+                          onChange={(e) => setOrgForm(prev => ({ ...prev, city: e.target.value }))}
+                          placeholder="Enter city"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="orgState">Province</Label>
+                        <select
+                          id="orgState"
+                          value={orgForm.state}
+                          onChange={(e) => setOrgForm(prev => ({ ...prev, state: e.target.value }))}
+                          className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                        >
+                          <option value="">Select Province</option>
+                          <option value="Eastern Cape">Eastern Cape</option>
+                          <option value="Free State">Free State</option>
+                          <option value="Gauteng">Gauteng</option>
+                          <option value="KwaZulu-Natal">KwaZulu-Natal</option>
+                          <option value="Limpopo">Limpopo</option>
+                          <option value="Mpumalanga">Mpumalanga</option>
+                          <option value="North West">North West</option>
+                          <option value="Northern Cape">Northern Cape</option>
+                          <option value="Western Cape">Western Cape</option>
+                        </select>
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="orgPostalCode">Postal Code</Label>
+                        <Input 
+                          id="orgPostalCode" 
+                          value={orgForm.postalCode}
+                          onChange={(e) => setOrgForm(prev => ({ ...prev, postalCode: e.target.value }))}
+                          placeholder="0001"
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="orgCountry">Country</Label>
+                        <Input 
+                          id="orgCountry" 
+                          value={orgForm.country}
+                          onChange={(e) => setOrgForm(prev => ({ ...prev, country: e.target.value }))}
+                          placeholder="South Africa"
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="orgTimezone">Timezone</Label>
+                      <select
+                        id="orgTimezone"
+                        value={orgForm.timezone}
+                        onChange={(e) => setOrgForm(prev => ({ ...prev, timezone: e.target.value }))}
+                        className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                      >
+                        <option value="">Select Timezone</option>
+                        <option value="Africa/Johannesburg">Africa/Johannesburg (SAST)</option>
+                        <option value="Africa/Nairobi">Africa/Nairobi (EAT)</option>
+                        <option value="Europe/London">Europe/London (GMT/BST)</option>
+                        <option value="America/New_York">America/New_York (EST/EDT)</option>
+                        <option value="America/Los_Angeles">America/Los_Angeles (PST/PDT)</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex justify-end pt-4">
                   <Button onClick={handleSaveOrganization} disabled={updateTenant.isPending}>
                     {updateTenant.isPending ? (
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />

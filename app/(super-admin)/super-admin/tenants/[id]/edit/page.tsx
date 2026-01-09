@@ -6,16 +6,45 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, Building2, Loader2 } from 'lucide-react';
+import { ArrowLeft, Save, Building2, Loader2, UserPlus, RefreshCw, Eye, EyeOff, Copy, Check, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useTenant, useUpdateTenant, useTenants } from '@/lib/client';
+import { useTenant, useUpdateTenant, useTenants, useTenantAdmins, useCreateTenantAdmin } from '@/lib/client';
+
+// Default email domain as required
+const DEFAULT_EMAIL_DOMAIN = 'unityfellowship.org.za';
+
+/**
+ * Generate a secure random password
+ */
+function generatePassword(length: number = 12): string {
+  const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  const lowercase = 'abcdefghijklmnopqrstuvwxyz';
+  const numbers = '0123456789';
+  const special = '!@#$%^&*';
+  const allChars = uppercase + lowercase + numbers + special;
+  
+  // Ensure at least one of each required type
+  let password = '';
+  password += uppercase[Math.floor(Math.random() * uppercase.length)];
+  password += lowercase[Math.floor(Math.random() * lowercase.length)];
+  password += numbers[Math.floor(Math.random() * numbers.length)];
+  password += special[Math.floor(Math.random() * special.length)];
+  
+  // Fill the rest randomly
+  for (let i = password.length; i < length; i++) {
+    password += allChars[Math.floor(Math.random() * allChars.length)];
+  }
+  
+  // Shuffle the password
+  return password.split('').sort(() => Math.random() - 0.5).join('');
+}
 
 export default function EditTenantPage() {
   const params = useParams();
@@ -25,8 +54,11 @@ export default function EditTenantPage() {
   const { data: tenant, isLoading: isLoadingTenant } = useTenant(id);
   const updateTenant = useUpdateTenant(id);
   const { data: tenantsData } = useTenants({ limit: 100 });
+  const { data: adminData, isLoading: isLoadingAdmins } = useTenantAdmins(id);
+  const createTenantAdmin = useCreateTenantAdmin(id);
   
   const hqTenants = tenantsData?.data?.filter(t => t.isHQ && t.id !== id) ?? [];
+  const hasExistingAdmin = adminData?.hasAdmin ?? false;
 
   const [formData, setFormData] = useState({
     name: '',
@@ -45,6 +77,23 @@ export default function EditTenantPage() {
     parentId: '',
     isActive: true,
   });
+
+  // Admin user state (for adding admin to existing tenant)
+  const [showAddAdmin, setShowAddAdmin] = useState(false);
+  const [adminUser, setAdminUser] = useState({
+    firstName: '',
+    lastName: '',
+    email: `info@${DEFAULT_EMAIL_DOMAIN}`,
+    phone: '',
+    password: generatePassword(),
+  });
+  const [showPassword, setShowPassword] = useState(false);
+  const [passwordCopied, setPasswordCopied] = useState(false);
+  const [createdCredentials, setCreatedCredentials] = useState<{
+    email: string;
+    password: string;
+  } | null>(null);
+  const [adminErrors, setAdminErrors] = useState<Record<string, string>>({});
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -87,6 +136,91 @@ export default function EditTenantPage() {
         delete next[name];
         return next;
       });
+    }
+  };
+
+  // Handle admin user field changes
+  const handleAdminChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setAdminUser(prev => ({
+      ...prev,
+      [name]: value,
+    }));
+
+    // Clear error when field is edited
+    if (adminErrors[name]) {
+      setAdminErrors(prev => {
+        const next = { ...prev };
+        delete next[name];
+        return next;
+      });
+    }
+  };
+
+  // Generate new password
+  const handleGeneratePassword = useCallback(() => {
+    setAdminUser(prev => ({
+      ...prev,
+      password: generatePassword(),
+    }));
+    setPasswordCopied(false);
+  }, []);
+
+  // Copy password to clipboard
+  const handleCopyPassword = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(adminUser.password);
+      setPasswordCopied(true);
+      setTimeout(() => setPasswordCopied(false), 2000);
+    } catch (err) {
+      console.error('Failed to copy password:', err);
+    }
+  }, [adminUser.password]);
+
+  // Validate admin user form
+  const validateAdminForm = () => {
+    const newErrors: Record<string, string> = {};
+
+    if (!adminUser.firstName.trim()) {
+      newErrors.firstName = 'First name is required';
+    }
+    if (!adminUser.lastName.trim()) {
+      newErrors.lastName = 'Last name is required';
+    }
+    if (!adminUser.email.trim()) {
+      newErrors.email = 'Email is required';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminUser.email)) {
+      newErrors.email = 'Invalid email format';
+    }
+    if (!adminUser.password || adminUser.password.length < 8) {
+      newErrors.password = 'Password must be at least 8 characters';
+    }
+
+    setAdminErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // Handle creating admin user
+  const handleCreateAdmin = async () => {
+    if (!validateAdminForm()) return;
+
+    try {
+      const result = await createTenantAdmin.mutateAsync({
+        firstName: adminUser.firstName,
+        lastName: adminUser.lastName,
+        email: adminUser.email,
+        password: adminUser.password,
+        phone: adminUser.phone || undefined,
+      });
+
+      // Show created credentials
+      setCreatedCredentials({
+        email: adminUser.email,
+        password: adminUser.password,
+      });
+      setShowAddAdmin(false);
+    } catch (error) {
+      // Error is handled by mutation
     }
   };
 
@@ -463,6 +597,302 @@ export default function EditTenantPage() {
                 Organization is active
               </Label>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Admin User Account */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <UserPlus className="h-5 w-5" />
+              Admin User Account
+            </CardTitle>
+            <CardDescription>
+              {hasExistingAdmin 
+                ? 'This tenant already has administrator accounts.'
+                : 'Create an administrator account for this tenant. They will be required to change their password on first login.'
+              }
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {/* Show existing admins */}
+            {isLoadingAdmins ? (
+              <div className="flex items-center justify-center py-4">
+                <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                <span className="ml-2 text-sm text-gray-500">Loading admin users...</span>
+              </div>
+            ) : hasExistingAdmin ? (
+              <div className="space-y-3">
+                <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                  <Check className="h-4 w-4" />
+                  <span>This tenant has {adminData?.adminUsers.length} admin user(s)</span>
+                </div>
+                <div className="border rounded-lg divide-y">
+                  {adminData?.adminUsers.map(admin => (
+                    <div key={admin.id} className="p-3 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                          <Users className="h-4 w-4 text-primary" />
+                        </div>
+                        <div>
+                          <p className="font-medium text-sm">{admin.firstName} {admin.lastName}</p>
+                          <p className="text-xs text-muted-foreground">{admin.email}</p>
+                        </div>
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {admin.lastLoginAt 
+                          ? `Last login: ${new Date(admin.lastLoginAt).toLocaleDateString()}`
+                          : 'Never logged in'
+                        }
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                {!showAddAdmin && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowAddAdmin(true)}
+                  >
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Add Another Admin
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <Users className="h-10 w-10 mx-auto text-gray-400 mb-2" />
+                <p className="text-sm text-muted-foreground mb-4">
+                  No admin account has been created for this tenant yet.
+                </p>
+                {!showAddAdmin && (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setShowAddAdmin(true)}
+                  >
+                    <UserPlus className="mr-2 h-4 w-4" />
+                    Create Admin Account
+                  </Button>
+                )}
+              </div>
+            )}
+
+            {/* Created credentials display */}
+            {createdCredentials && (
+              <div className="rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 p-4 space-y-3">
+                <div className="flex items-center gap-2 text-green-800 dark:text-green-200">
+                  <Check className="h-5 w-5" />
+                  <span className="font-medium">Admin Account Created Successfully</span>
+                </div>
+                <p className="text-sm text-green-700 dark:text-green-300">
+                  Share these credentials with the tenant. They will be required to change their password on first login.
+                </p>
+                <div className="grid gap-2">
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-green-800 dark:text-green-200">Email:</span>
+                    <code className="text-sm bg-white dark:bg-gray-800 px-2 py-1 rounded">{createdCredentials.email}</code>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => navigator.clipboard.writeText(createdCredentials.email)}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-sm font-medium text-green-800 dark:text-green-200">Password:</span>
+                    <code className="text-sm bg-white dark:bg-gray-800 px-2 py-1 rounded">{createdCredentials.password}</code>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => navigator.clipboard.writeText(createdCredentials.password)}
+                    >
+                      <Copy className="h-3 w-3" />
+                    </Button>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setCreatedCredentials(null)}
+                >
+                  Dismiss
+                </Button>
+              </div>
+            )}
+
+            {/* Add admin form */}
+            {showAddAdmin && !createdCredentials && (
+              <div className="space-y-4 pt-4 border-t">
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="admin_firstName">
+                      First Name <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="admin_firstName"
+                      name="firstName"
+                      value={adminUser.firstName}
+                      onChange={handleAdminChange}
+                      placeholder="Enter first name"
+                    />
+                    {adminErrors.firstName && (
+                      <p className="text-sm text-red-500">{adminErrors.firstName}</p>
+                    )}
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="admin_lastName">
+                      Last Name <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="admin_lastName"
+                      name="lastName"
+                      value={adminUser.lastName}
+                      onChange={handleAdminChange}
+                      placeholder="Enter last name"
+                    />
+                    {adminErrors.lastName && (
+                      <p className="text-sm text-red-500">{adminErrors.lastName}</p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="admin_email">
+                      Email (Login Identifier) <span className="text-red-500">*</span>
+                    </Label>
+                    <Input
+                      id="admin_email"
+                      name="email"
+                      type="email"
+                      value={adminUser.email}
+                      onChange={handleAdminChange}
+                      placeholder={`info@${DEFAULT_EMAIL_DOMAIN}`}
+                    />
+                    {adminErrors.email && (
+                      <p className="text-sm text-red-500">{adminErrors.email}</p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      Default: info@{DEFAULT_EMAIL_DOMAIN}
+                    </p>
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="admin_phone">Phone</Label>
+                    <Input
+                      id="admin_phone"
+                      name="phone"
+                      type="tel"
+                      value={adminUser.phone}
+                      onChange={handleAdminChange}
+                      placeholder="+27 12 345 6789"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="admin_password">
+                    Generated Password <span className="text-red-500">*</span>
+                  </Label>
+                  <div className="flex items-center gap-2">
+                    <div className="relative flex-1">
+                      <Input
+                        id="admin_password"
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        value={adminUser.password}
+                        onChange={handleAdminChange}
+                        className="font-mono pr-20"
+                      />
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+                        onClick={() => setShowPassword(!showPassword)}
+                      >
+                        {showPassword ? (
+                          <EyeOff className="h-4 w-4" />
+                        ) : (
+                          <Eye className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={handleGeneratePassword}
+                      title="Generate new password"
+                    >
+                      <RefreshCw className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      onClick={handleCopyPassword}
+                      title="Copy password"
+                    >
+                      {passwordCopied ? (
+                        <Check className="h-4 w-4 text-green-500" />
+                      ) : (
+                        <Copy className="h-4 w-4" />
+                      )}
+                    </Button>
+                  </div>
+                  {adminErrors.password && (
+                    <p className="text-sm text-red-500">{adminErrors.password}</p>
+                  )}
+                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                    ⚠️ Save this password before creating. It will be shown once more after creation for you to share with the tenant.
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 pt-2">
+                  <Button
+                    type="button"
+                    onClick={handleCreateAdmin}
+                    disabled={createTenantAdmin.isPending}
+                  >
+                    {createTenantAdmin.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creating...
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="mr-2 h-4 w-4" />
+                        Create Admin Account
+                      </>
+                    )}
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      setShowAddAdmin(false);
+                      setAdminErrors({});
+                    }}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+
+                {createTenantAdmin.isError && (
+                  <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4 text-sm text-red-600 dark:text-red-400">
+                    {createTenantAdmin.error?.message || 'Failed to create admin account. Please try again.'}
+                  </div>
+                )}
+              </div>
+            )}
           </CardContent>
         </Card>
 

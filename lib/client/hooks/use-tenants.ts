@@ -204,3 +204,70 @@ export function useTenantMembers(tenantId: string, filters: TenantMembersFilters
     enabled: !!tenantId,
   });
 }
+
+// ════════════════════════════════════════════════════════════════════════════
+// TENANT ADMIN USERS (Super Admin)
+// ════════════════════════════════════════════════════════════════════════════
+
+interface TenantAdminUser {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  isActive: boolean;
+  lastLoginAt?: string;
+  createdAt: string;
+}
+
+interface TenantAdminResponse {
+  tenant: { id: string; name: string };
+  adminUsers: TenantAdminUser[];
+  hasAdmin: boolean;
+}
+
+interface CreateTenantAdminInput {
+  firstName: string;
+  lastName: string;
+  email: string;
+  password: string;
+  phone?: string;
+}
+
+interface CreateTenantAdminResponse {
+  adminUser: TenantAdminUser;
+  tenant: { id: string; name: string };
+  generatedPassword: string;
+}
+
+/**
+ * Fetch admin users for a specific tenant (Super Admin only)
+ */
+export function useTenantAdmins(tenantId: string) {
+  return useQuery({
+    queryKey: [...tenantKeys.detail(tenantId), 'admins'],
+    queryFn: async () => {
+      const response = await get<TenantAdminResponse>(`/api/tenants/${tenantId}/admin`);
+      return response.data!;
+    },
+    enabled: !!tenantId,
+  });
+}
+
+/**
+ * Create an admin user for a tenant (Super Admin only)
+ */
+export function useCreateTenantAdmin(tenantId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (data: CreateTenantAdminInput) => {
+      const response = await post<CreateTenantAdminResponse>(`/api/tenants/${tenantId}/admin`, data);
+      return response.data!;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: [...tenantKeys.detail(tenantId), 'admins'] });
+      queryClient.invalidateQueries({ queryKey: tenantKeys.detail(tenantId) });
+    },
+  });
+}
