@@ -11,13 +11,14 @@ import Link from 'next/link';
 import { Building2, Users, Globe, Activity, DollarSign, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { useTenants } from '@/lib/client';
+import { useTenants, usePlatformStats } from '@/lib/client';
 
 export default function SuperAdminDashboardPage() {
   const [page, setPage] = useState(1);
 
-  // Fetch all tenants for stats (high limit for aggregation)
-  const { data: allTenantsData, isLoading: isLoadingStats } = useTenants({ pageSize: 1000 });
+  // Fetch platform-wide stats from dedicated endpoint (server-side aggregation)
+  const { data: stats, isLoading: isLoadingStats } = usePlatformStats();
+  
   // Fetch paginated tenants for the list (5 per page)
   const { data: paginatedData, isLoading: isLoadingList, isFetching } = useTenants({ 
     page, 
@@ -26,15 +27,11 @@ export default function SuperAdminDashboardPage() {
     sortOrder: 'desc',
   });
 
-  const allTenants = allTenantsData?.data ?? [];
   const tenants = paginatedData?.data ?? [];
   const meta = paginatedData?.meta;
 
-  const activeTenants = allTenants.filter(t => t.isActive).length;
-  const hqTenants = allTenants.filter(t => t.isHQ).length;
-  const totalOfferings = allTenants.reduce((sum, t) => sum + parseFloat(t.totalOfferings ?? '0'), 0);
-  const totalUsers = allTenants.reduce((sum, t) => sum + (t._count?.users ?? 0), 0);
-  const totalMembers = allTenants.reduce((sum, t) => sum + (t._count?.members ?? 0), 0);
+  // Parse offerings total
+  const totalOfferings = parseFloat(stats?.offerings.total ?? '0');
 
   return (
     <div className="space-y-6">
@@ -59,8 +56,8 @@ export default function SuperAdminDashboardPage() {
               <div className="h-8 w-16 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
             ) : (
               <>
-                <div className="text-2xl font-bold">{allTenants.length}</div>
-                <p className="text-xs text-muted-foreground">{activeTenants} active</p>
+                <div className="text-2xl font-bold">{stats?.tenants.total ?? 0}</div>
+                <p className="text-xs text-muted-foreground">{stats?.tenants.active ?? 0} active</p>
               </>
             )}
           </CardContent>
@@ -78,7 +75,7 @@ export default function SuperAdminDashboardPage() {
               <div className="h-8 w-12 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
             ) : (
               <>
-                <div className="text-2xl font-bold">{hqTenants}</div>
+                <div className="text-2xl font-bold">{stats?.tenants.hq ?? 0}</div>
                 <p className="text-xs text-muted-foreground">with branches</p>
               </>
             )}
@@ -97,7 +94,7 @@ export default function SuperAdminDashboardPage() {
               <div className="h-8 w-16 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
             ) : (
               <>
-                <div className="text-2xl font-bold">{totalUsers}</div>
+                <div className="text-2xl font-bold">{stats?.users.total ?? 0}</div>
                 <p className="text-xs text-muted-foreground">across all tenants</p>
               </>
             )}
@@ -116,7 +113,7 @@ export default function SuperAdminDashboardPage() {
               <div className="h-8 w-16 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
             ) : (
               <>
-                <div className="text-2xl font-bold">{totalMembers}</div>
+                <div className="text-2xl font-bold">{stats?.members.total ?? 0}</div>
                 <p className="text-xs text-muted-foreground">across all tenants</p>
               </>
             )}
