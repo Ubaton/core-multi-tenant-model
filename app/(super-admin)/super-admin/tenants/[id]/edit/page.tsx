@@ -336,18 +336,29 @@ export default function EditTenantPage() {
                   name="city"
                   value={formData.city}
                   onChange={handleChange}
-                  placeholder="Johannesburg"
+                  placeholder="Enter city name"
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="state">State/Province</Label>
-                <Input
+                <Label htmlFor="state">Province</Label>
+                <select
                   id="state"
                   name="state"
                   value={formData.state}
                   onChange={handleChange}
-                  placeholder="Gauteng"
-                />
+                  className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+                >
+                  <option value="">Select Province</option>
+                  <option value="Eastern Cape">Eastern Cape</option>
+                  <option value="Free State">Free State</option>
+                  <option value="Gauteng">Gauteng</option>
+                  <option value="KwaZulu-Natal">KwaZulu-Natal</option>
+                  <option value="Limpopo">Limpopo</option>
+                  <option value="Mpumalanga">Mpumalanga</option>
+                  <option value="North West">North West</option>
+                  <option value="Northern Cape">Northern Cape</option>
+                  <option value="Western Cape">Western Cape</option>
+                </select>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="postalCode">Postal/ZIP Code</Label>
