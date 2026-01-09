@@ -41,7 +41,7 @@ export default function TenantsPage() {
     search: search || undefined,
     isActive: status === 'active' ? true : status === 'inactive' ? false : undefined,
     page,
-    limit: 20,
+    pageSize: 6,
   });
 
   const deleteTenant = useDeleteTenant();

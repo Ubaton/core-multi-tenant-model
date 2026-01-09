@@ -6,17 +6,35 @@
 
 'use client';
 
-import { Building2, Users, Globe, Activity, DollarSign } from 'lucide-react';
+import { useState } from 'react';
+import Link from 'next/link';
+import { Building2, Users, Globe, Activity, DollarSign, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
 import { useTenants } from '@/lib/client';
 
 export default function SuperAdminDashboardPage() {
-  const { data: tenantsData } = useTenants({});
+  const [page, setPage] = useState(1);
 
-  const tenants = tenantsData?.data ?? [];
-  const activeTenants = tenants.filter(t => t.isActive).length;
-  const hqTenants = tenants.filter(t => t.isHQ).length;
-  const totalOfferings = tenants.reduce((sum, t) => sum + parseFloat(t.totalOfferings ?? '0'), 0);
+  // Fetch all tenants for stats (high limit for aggregation)
+  const { data: allTenantsData, isLoading: isLoadingStats } = useTenants({ pageSize: 1000 });
+  // Fetch paginated tenants for the list (5 per page)
+  const { data: paginatedData, isLoading: isLoadingList, isFetching } = useTenants({ 
+    page, 
+    pageSize: 5,
+    sortBy: 'createdAt',
+    sortOrder: 'desc',
+  });
+
+  const allTenants = allTenantsData?.data ?? [];
+  const tenants = paginatedData?.data ?? [];
+  const meta = paginatedData?.meta;
+
+  const activeTenants = allTenants.filter(t => t.isActive).length;
+  const hqTenants = allTenants.filter(t => t.isHQ).length;
+  const totalOfferings = allTenants.reduce((sum, t) => sum + parseFloat(t.totalOfferings ?? '0'), 0);
+  const totalUsers = allTenants.reduce((sum, t) => sum + (t._count?.users ?? 0), 0);
+  const totalMembers = allTenants.reduce((sum, t) => sum + (t._count?.members ?? 0), 0);
 
   return (
     <div className="space-y-6">
@@ -37,8 +55,14 @@ export default function SuperAdminDashboardPage() {
             <Building2 className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{tenants.length}</div>
-            <p className="text-xs text-muted-foreground">{activeTenants} active</p>
+            {isLoadingStats ? (
+              <div className="h-8 w-16 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{allTenants.length}</div>
+                <p className="text-xs text-muted-foreground">{activeTenants} active</p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -50,8 +74,14 @@ export default function SuperAdminDashboardPage() {
             <Globe className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{hqTenants}</div>
-            <p className="text-xs text-muted-foreground">with branches</p>
+            {isLoadingStats ? (
+              <div className="h-8 w-12 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{hqTenants}</div>
+                <p className="text-xs text-muted-foreground">with branches</p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -63,10 +93,14 @@ export default function SuperAdminDashboardPage() {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {tenants.reduce((sum, t) => sum + (t._count?.users ?? 0), 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">across all tenants</p>
+            {isLoadingStats ? (
+              <div className="h-8 w-16 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{totalUsers}</div>
+                <p className="text-xs text-muted-foreground">across all tenants</p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -78,10 +112,14 @@ export default function SuperAdminDashboardPage() {
             <Activity className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">
-              {tenants.reduce((sum, t) => sum + (t._count?.members ?? 0), 0)}
-            </div>
-            <p className="text-xs text-muted-foreground">across all tenants</p>
+            {isLoadingStats ? (
+              <div className="h-8 w-16 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{totalMembers}</div>
+                <p className="text-xs text-muted-foreground">across all tenants</p>
+              </>
+            )}
           </CardContent>
         </Card>
 
@@ -93,30 +131,57 @@ export default function SuperAdminDashboardPage() {
             <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-700 dark:text-green-300">
-              R {totalOfferings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-            </div>
-            <p className="text-xs text-green-600 dark:text-green-400">across all tenants</p>
+            {isLoadingStats ? (
+              <div className="h-8 w-24 bg-green-100 dark:bg-green-900/40 rounded animate-pulse" />
+            ) : (
+              <>
+                <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+                  R {totalOfferings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                </div>
+                <p className="text-xs text-green-600 dark:text-green-400">across all tenants</p>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>
 
-      {/* Recent Tenants */}
+      {/* Recent Tenants with Pagination */}
       <Card>
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Recent Tenants</CardTitle>
+          {isFetching && !isLoadingList && (
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+          )}
         </CardHeader>
         <CardContent>
-          {tenants.length === 0 ? (
+          {isLoadingList ? (
+            <div className="space-y-4">
+              {[...Array(5)].map((_, i) => (
+                <div key={i} className="flex items-center justify-between p-4 border dark:border-gray-800 rounded-lg">
+                  <div className="flex items-center gap-4">
+                    <div className="h-10 w-10 rounded-lg bg-gray-100 dark:bg-gray-800 animate-pulse" />
+                    <div className="space-y-2">
+                      <div className="h-4 w-32 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+                      <div className="h-3 w-24 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-4">
+                    <div className="h-8 w-20 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : tenants.length === 0 ? (
             <p className="text-gray-500 dark:text-gray-400 text-center py-8">
               No tenants registered yet
             </p>
           ) : (
             <div className="space-y-4">
-              {tenants.slice(0, 5).map((tenant) => (
-                <div
+              {tenants.map((tenant) => (
+                <Link
                   key={tenant.id}
-                  className="flex items-center justify-between p-4 border dark:border-gray-800 rounded-lg"
+                  href={`/super-admin/tenants/${tenant.id}`}
+                  className="flex items-center justify-between p-4 border dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                 >
                   <div className="flex items-center gap-4">
                     <div className="h-10 w-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
@@ -148,8 +213,37 @@ export default function SuperAdminDashboardPage() {
                       }`}
                     />
                   </div>
-                </div>
+                </Link>
               ))}
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {meta && meta.totalPages > 1 && (
+            <div className="flex items-center justify-between pt-4 mt-4 border-t dark:border-gray-800">
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                Page {meta.page} of {meta.totalPages} ({meta.total} tenants)
+              </p>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!meta.hasPrevPage || isFetching}
+                  onClick={() => setPage(page - 1)}
+                >
+                  <ChevronLeft className="h-4 w-4 mr-1" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={!meta.hasNextPage || isFetching}
+                  onClick={() => setPage(page + 1)}
+                >
+                  Next
+                  <ChevronRight className="h-4 w-4 ml-1" />
+                </Button>
+              </div>
             </div>
           )}
         </CardContent>
