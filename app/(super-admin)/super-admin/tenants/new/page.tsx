@@ -34,6 +34,7 @@ export default function NewTenantPage() {
     address: '',
     city: '',
     state: '',
+    postalCode: '',
     country: 'South Africa',
     timezone: 'Africa/Johannesburg',
     isHQ: true,
@@ -111,6 +112,7 @@ export default function NewTenantPage() {
         address: formData.address || undefined,
         city: formData.city || undefined,
         state: formData.state || undefined,
+        postalCode: formData.postalCode || undefined,
         country: formData.country,
         timezone: formData.timezone,
         isHQ: formData.isHQ,
@@ -266,7 +268,7 @@ export default function NewTenantPage() {
               />
             </div>
 
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div className="space-y-2">
                 <Label htmlFor="city">City</Label>
                 <Input
@@ -278,13 +280,23 @@ export default function NewTenantPage() {
                 />
               </div>
               <div className="space-y-2">
-                <Label htmlFor="state">State</Label>
+                <Label htmlFor="state">State/Province</Label>
                 <Input
                   id="state"
                   name="state"
                   value={formData.state}
                   onChange={handleChange}
                   placeholder="Gauteng"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="postalCode">Postal/ZIP Code</Label>
+                <Input
+                  id="postalCode"
+                  name="postalCode"
+                  value={formData.postalCode}
+                  onChange={handleChange}
+                  placeholder="2000"
                 />
               </div>
               <div className="space-y-2">

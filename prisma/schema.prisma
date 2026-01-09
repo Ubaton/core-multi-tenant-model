@@ -124,6 +124,7 @@ model Tenant {
   address     String?
   city        String?
   state       String?
+  postalCode  String?  // Postal/ZIP code
   country     String   @default("South Africa")
   timezone    String   @default("Africa/Johannesburg")
   isActive    Boolean  @default(true)

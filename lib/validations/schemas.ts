@@ -95,6 +95,7 @@ export const createTenantSchema = z.object({
   address: z.string().max(500).optional(),
   city: z.string().max(100).optional(),
   state: z.string().max(100).optional(),
+  postalCode: z.string().max(20).optional(),
   country: z.string().max(100).default('South Africa'),
   timezone: z.string().default('Africa/Johannesburg'),
   isHQ: z.boolean().default(false),

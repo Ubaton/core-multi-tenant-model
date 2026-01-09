@@ -417,6 +417,7 @@ CREATE TABLE tenant (
     address         TEXT,
     city            TEXT,
     state           TEXT,
+    postal_code     TEXT,
     country         TEXT NOT NULL DEFAULT 'South Africa',
     timezone        TEXT NOT NULL DEFAULT 'Africa/Johannesburg',
     is_active       BOOLEAN NOT NULL DEFAULT TRUE,

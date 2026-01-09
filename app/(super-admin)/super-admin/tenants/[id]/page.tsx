@@ -261,7 +261,7 @@ export default function TenantDetailPage() {
                 <div>
                   {tenant.address && <p className="text-gray-900 dark:text-white">{tenant.address}</p>}
                   <p className="text-gray-600 dark:text-gray-300">
-                    {[tenant.city, tenant.state, tenant.country].filter(Boolean).join(', ') || 'No location provided'}
+                    {[tenant.city, tenant.state, tenant.postalCode, tenant.country].filter(Boolean).join(', ') || 'No location provided'}
                   </p>
                   <div className="flex items-center gap-2 mt-2 text-sm text-gray-500 dark:text-gray-400">
                     <Clock className="h-4 w-4" />
