@@ -133,7 +133,7 @@ export function Header({
                 </DropdownMenuLabel>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => router.push(profileLink)}>Your Profile</DropdownMenuItem>
+              {/* <DropdownMenuItem onClick={() => router.push(profileLink)}>Your Profile</DropdownMenuItem> */}
               <DropdownMenuItem onClick={() => router.push(settingsLink)}>Settings</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
