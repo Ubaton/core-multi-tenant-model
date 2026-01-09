@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Nunito_Sans } from "next/font/google";
 import { QueryProvider } from "@/lib/client";
 import { ThemeProvider } from "@/context";
+import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 const nunitoSans = Nunito_Sans({variable:'--font-sans'});
@@ -34,6 +35,7 @@ export default function RootLayout({
         <ThemeProvider>
           <QueryProvider>
             {children}
+            <Toaster />
           </QueryProvider>
         </ThemeProvider>
       </body>

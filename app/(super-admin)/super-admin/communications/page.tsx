@@ -21,11 +21,14 @@ import {
   type MessagePriority,
   type MessageStatus,
 } from '@/lib/client/hooks';
-import { Button } from '@/components/ui/button';
+
+// UI Components
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Separator } from '@/components/ui/separator';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -36,6 +39,43 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+
+// Icons
+import { 
+  Inbox, 
+  Send, 
+  Reply, 
+  Trash2, 
+  X, 
+  Plus, 
+  Search, 
+  Filter, 
+  CheckCheck,
+  Archive,
+  AlertCircle,
+  MoreVertical,
+  User,
+  Building2,
+  Clock,
+  RefreshCcw
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 // ═══════════════════════════════════════════════════════════════════════════
 // TYPES & CONSTANTS
@@ -44,64 +84,18 @@ import {
 type TabType = 'inbox' | 'sent' | 'all';
 
 const priorityColors: Record<MessagePriority, string> = {
-  LOW: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-  NORMAL: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
-  HIGH: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
-  URGENT: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+  LOW: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200',
+  NORMAL: 'bg-zinc-50 text-zinc-700 dark:bg-zinc-900/20 dark:text-zinc-300 border-zinc-200',
+  HIGH: 'bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300 border-orange-200',
+  URGENT: 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300 border-red-200',
 };
 
 const statusColors: Record<MessageStatus, string> = {
-  UNREAD: 'bg-blue-500 text-white',
-  READ: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-  REPLIED: 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300',
-  ARCHIVED: 'bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300',
+  UNREAD: 'bg-zinc-500 text-white border-transparent',
+  READ: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200',
+  REPLIED: 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300 border-green-200',
+  ARCHIVED: 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300 border-purple-200',
 };
-
-// ═══════════════════════════════════════════════════════════════════════════
-// ICONS (inline SVG)
-// ═══════════════════════════════════════════════════════════════════════════
-
-const InboxIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4" />
-  </svg>
-);
-
-const SendIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-  </svg>
-);
-
-const ReplyIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-  </svg>
-);
-
-const TrashIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-  </svg>
-);
-
-const RefreshIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-  </svg>
-);
-
-const XIcon = () => (
-  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-  </svg>
-);
-
-const PlusIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-  </svg>
-);
 
 // ═══════════════════════════════════════════════════════════════════════════
 // HELPER FUNCTIONS
@@ -114,249 +108,325 @@ function formatDate(dateString: string) {
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
   
   if (days === 0) {
-    return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
-  } else if (days === 1) {
-    return 'Yesterday';
+    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   } else if (days < 7) {
-    return date.toLocaleDateString('en-US', { weekday: 'short' });
+    return date.toLocaleDateString([], { weekday: 'short' });
   } else {
-    return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
   }
 }
 
 function getSenderName(message: InternalMessage) {
-  const { sender } = message;
-  return `${sender.firstName} ${sender.lastName}`;
+  if (!message.sender) return 'Unknown';
+  return `${message.sender.firstName} ${message.sender.lastName}`;
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// MAIN COMPONENT
-// ═══════════════════════════════════════════════════════════════════════════
-
 export default function SuperAdminCommunicationsPage() {
-  // State
+  // ─── STATE ─────────────────────────────────────────────────────────────────
   const [activeTab, setActiveTab] = useState<TabType>('inbox');
   const [selectedMessageId, setSelectedMessageId] = useState<string | null>(null);
-  const [isComposeOpen, setIsComposeOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const [replyText, setReplyText] = useState('');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
   
-  // Compose form state
+  // Compose State
+  const [isComposeOpen, setIsComposeOpen] = useState(false);
+  const [composeTenantId, setComposeTenantId] = useState('');
   const [composeSubject, setComposeSubject] = useState('');
   const [composeMessage, setComposeMessage] = useState('');
   const [composePriority, setComposePriority] = useState<MessagePriority>('NORMAL');
-  const [composeTenantId, setComposeTenantId] = useState<string>('');
 
-  // Filters
+  // Filters setup
   const [filters, setFilters] = useState<MessageFilters>({
-    type: 'inbox',
     page: 1,
-    pageSize: 20,
+    pageSize: 50, // Increase page size for better list view
+    type: activeTab // Pass activeTab as type to filter
   });
 
-  // Queries
   const { data: messagesData, isLoading, refetch } = useMessages(
-    { ...filters, type: activeTab },
-    { refetchInterval: 10000 } // Poll every 10 seconds
+    { ...filters, type: activeTab }, 
+    { refetchInterval: 15000 }
   );
+  
+  const { data: selectedMessage, isLoading: isLoadingMessage } = useMessage(selectedMessageId || '');
   const { data: unreadCount } = useUnreadMessageCount();
-  const { data: selectedMessage, isLoading: isLoadingMessage } = useMessage(
-    selectedMessageId || undefined
-  );
   const { data: tenantsData } = useTenants({ pageSize: 100, isActive: true });
+
+  const messages = messagesData?.data ?? [];
   const tenants = tenantsData?.data ?? [];
 
-  // Mutations
   const sendMessage = useSendMessage();
   const replyMutation = useReplyToMessage(selectedMessageId || '');
-  const deleteMessage = useDeleteMessage();
+  const deleteMutation = useDeleteMessage();
 
-  // Handlers
+  // ─── HANDLERS ──────────────────────────────────────────────────────────────
+
   const handleTabChange = useCallback((tab: TabType) => {
     setActiveTab(tab);
     setSelectedMessageId(null);
+    setFilters(prev => ({ ...prev, type: tab, page: 1 }));
   }, []);
 
-  const handleSelectMessage = useCallback((id: string) => {
+  const handleSelectMessage = (id: string) => {
     setSelectedMessageId(id);
-    setReplyText('');
-  }, []);
+    setReplyText(''); 
+  };
 
-  const handleSendReply = useCallback(async () => {
-    if (!selectedMessage || !replyText.trim()) return;
-
+  const handleSendReply = async () => {
+    if (!selectedMessageId || !replyText.trim() || !selectedMessage) return;
+    
     try {
       await replyMutation.mutateAsync({
+        message: replyText,
         subject: `Re: ${selectedMessage.subject}`,
-        message: replyText.trim(),
         priority: selectedMessage.priority,
-        receiverId: selectedMessage.senderId,
+        receiverId: selectedMessage.senderId, // Important for reply
       });
       setReplyText('');
+      toast.success("Reply sent successfully");
     } catch (error) {
-      console.error('Failed to send reply:', error);
+      toast.error("Failed to send reply");
     }
-  }, [selectedMessage, replyText, replyMutation]);
+  };
 
-  const handleCompose = useCallback(async () => {
-    if (!composeSubject.trim() || !composeMessage.trim() || !composeTenantId) return;
-
-    try {
-      await sendMessage.mutateAsync({
-        subject: composeSubject.trim(),
-        message: composeMessage.trim(),
-        priority: composePriority,
-        tenantId: composeTenantId,
-      });
-      setIsComposeOpen(false);
-      setComposeSubject('');
-      setComposeMessage('');
-      setComposePriority('NORMAL');
-      setComposeTenantId('');
-    } catch (error) {
-      console.error('Failed to send message:', error);
-    }
-  }, [composeSubject, composeMessage, composePriority, composeTenantId, sendMessage]);
-
-  const handleDelete = useCallback(async () => {
+  const handleDelete = async () => {
     if (!deleteConfirmId) return;
-
+    
     try {
-      await deleteMessage.mutateAsync(deleteConfirmId);
+      await deleteMutation.mutateAsync(deleteConfirmId);
       if (selectedMessageId === deleteConfirmId) {
         setSelectedMessageId(null);
       }
       setDeleteConfirmId(null);
+      toast.success("Message deleted");
     } catch (error) {
-      console.error('Failed to delete message:', error);
+      toast.error("Failed to delete message");
     }
-  }, [deleteConfirmId, deleteMessage, selectedMessageId]);
+  };
 
-  const messages = messagesData?.data ?? [];
+  const handleCompose = async () => {
+    if (!composeTenantId || !composeSubject.trim() || !composeMessage.trim()) return;
+
+    try {
+      await sendMessage.mutateAsync({
+        tenantId: composeTenantId,
+        subject: composeSubject,
+        message: composeMessage,
+        priority: composePriority,
+      });
+      setIsComposeOpen(false);
+      
+      // Reset form
+      setComposeTenantId('');
+      setComposeSubject('');
+      setComposeMessage('');
+      setComposePriority('NORMAL');
+      
+      toast.success("Message sent successfully");
+      refetch(); // Refresh list
+    } catch (error) {
+      toast.error("Failed to send message");
+    }
+  };
+
+  // Client-side filtering if needed (though API 'type' filter should handle it)
+  const filteredMessages = messages.filter(msg => {
+    if (searchQuery) {
+      const searchLower = searchQuery.toLowerCase();
+      const matchesSubject = msg.subject.toLowerCase().includes(searchLower);
+      const matchesBody = msg.message.toLowerCase().includes(searchLower);
+      const matchesSender = getSenderName(msg).toLowerCase().includes(searchLower);
+      return matchesSubject || matchesBody || matchesSender;
+    }
+    return true;
+  });
 
   return (
-    <div className="flex h-[calc(100vh-4rem)] bg-white dark:bg-gray-900">
-      {/* Sidebar - Message List */}
-      <div className="w-80 border-r border-gray-200 dark:border-gray-700 flex flex-col">
-        {/* Header */}
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-          <div className="flex items-center justify-between mb-4">
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Messages
-            </h1>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => refetch()}
-                className="p-2"
-              >
-                <RefreshIcon />
-              </Button>
-              <Button
-                size="sm"
-                onClick={() => setIsComposeOpen(true)}
-                className="gap-1"
-              >
-                <PlusIcon />
-                New
-              </Button>
+    <div className="flex h-[calc(100vh-4rem)] overflow-hidden bg-background">
+      {/* ─── SIDEBAR: MESSAGE LIST ────────────────────────────────────────── */}
+      <div className={cn(
+        "w-full md:w-80 lg:w-96 border-r flex flex-col bg-muted/10",
+        selectedMessageId ? "hidden md:flex" : "flex"
+      )}>
+        {/* Header & Controls */}
+        <div className="p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-xl font-semibold tracking-tight">Messages</h1>
+            <div className="flex items-center gap-1">
+               <Button variant="ghost" size="icon" onClick={() => refetch()} title="Refresh">
+                 <RefreshCcw className="h-4 w-4" />
+               </Button>
+               <Sheet open={isComposeOpen} onOpenChange={setIsComposeOpen}>
+                <SheetTrigger className={buttonVariants({ size: "sm", className: "gap-2" })}>
+                  <Plus className="h-4 w-4" />
+                  Compose
+                </SheetTrigger>
+                <SheetContent className="overflow-y-auto sm:max-w-md md:max-w-lg w-full">
+                  <SheetHeader>
+                    <SheetTitle>New Message</SheetTitle>
+                    <SheetDescription>
+                      Send a new message to a specific tenant.
+                    </SheetDescription>
+                  </SheetHeader>
+                  <div className="space-y-6 py-6">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Tenant</label>
+                      <Select value={composeTenantId} onValueChange={(value) => setComposeTenantId(value ?? '')}>
+                        <SelectTrigger>
+                          {composeTenantId ? tenants.find(t => t.id === composeTenantId)?.name : "Select a tenant"}
+                        </SelectTrigger>
+                        <SelectContent>
+                          {tenants.map((t) => (
+                            <SelectItem key={t.id} value={t.id}>{t.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Subject</label>
+                      <Input 
+                        placeholder="Enter subject..." 
+                        value={composeSubject}
+                        onChange={(e) => setComposeSubject(e.target.value)}
+                      />
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Priority</label>
+                      <Select value={composePriority} onValueChange={(val) => setComposePriority(val as MessagePriority)}>
+                        <SelectTrigger>
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="LOW">Low - Routine</SelectItem>
+                          <SelectItem value="NORMAL">Normal</SelectItem>
+                          <SelectItem value="HIGH">High - Important</SelectItem>
+                          <SelectItem value="URGENT">Urgent - Immediate Action</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Message</label>
+                      <Textarea 
+                        placeholder="Type your message here..." 
+                        className="min-h-50"
+                        value={composeMessage}
+                        onChange={(e) => setComposeMessage(e.target.value)}
+                      />
+                    </div>
+                    
+                    <div className="pt-4 flex justify-end gap-2">
+                       <Button variant="outline" onClick={() => setIsComposeOpen(false)}>Cancel</Button>
+                       <Button onClick={handleCompose} disabled={sendMessage.isPending}>
+                         {sendMessage.isPending ? 'Sending...' : 'Send Message'}
+                       </Button>
+                    </div>
+                  </div>
+                </SheetContent>
+              </Sheet>
             </div>
           </div>
 
-          {/* Tabs */}
-          <div className="flex gap-1 bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
-            <button
-              onClick={() => handleTabChange('inbox')}
-              className={`flex-1 flex items-center justify-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors ${
-                activeTab === 'inbox'
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <InboxIcon />
-              Inbox
-              {typeof unreadCount === 'number' && unreadCount > 0 && (
-                <span className="bg-blue-500 text-white text-xs px-1.5 rounded-full">
-                  {unreadCount}
-                </span>
-              )}
-            </button>
-            <button
-              onClick={() => handleTabChange('sent')}
-              className={`flex-1 flex items-center justify-center gap-2 px-3 py-1.5 text-sm rounded-md transition-colors ${
-                activeTab === 'sent'
-                  ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                  : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-              }`}
-            >
-              <SendIcon />
-              Sent
-            </button>
+          <div className="flex items-center gap-1 bg-muted p-1 rounded-lg">
+            {(['inbox', 'sent', 'all'] as const).map((tab) => (
+              <button
+                key={tab}
+                onClick={() => handleTabChange(tab)}
+                className={cn(
+                  "flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-2",
+                  activeTab === tab 
+                    ? "bg-background text-foreground shadow-sm" 
+                    : "text-muted-foreground hover:text-foreground"
+                )}
+              >
+                {tab === 'inbox' && <Inbox className="w-3.5 h-3.5" />}
+                {tab === 'sent' && <Send className="w-3.5 h-3.5" />}
+                {tab === 'all' && <Archive className="w-3.5 h-3.5" />}
+                <span className="capitalize">{tab}</span>
+                {tab === 'inbox' && typeof unreadCount === 'number' && unreadCount > 0 && (
+                   <span className="bg-primary text-primary-foreground text-[10px] px-1.5 h-4 flex items-center rounded-full ml-1">
+                     {unreadCount}
+                   </span>
+                )}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input 
+              placeholder="Search messages..." 
+              className="pl-9 bg-background"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
           </div>
         </div>
+        
+        <Separator />
 
-        {/* Message List */}
+        {/* List */}
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
-            <div className="p-4 text-center text-gray-500 dark:text-gray-400">
-              Loading messages...
+            <div className="p-8 text-center text-muted-foreground text-sm">
+              Loading...
             </div>
-          ) : messages.length === 0 ? (
-            <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-              <InboxIcon />
-              <p className="mt-2">No messages</p>
+          ) : filteredMessages.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-40 text-muted-foreground p-4">
+              <Inbox className="h-10 w-10 mb-2 opacity-20" />
+              <p className="text-sm">No messages found</p>
             </div>
           ) : (
-            <div className="divide-y divide-gray-100 dark:divide-gray-800">
-              {messages.map((msg) => (
+            <div className="divide-y divide-border">
+              {filteredMessages.map((msg) => (
                 <button
                   key={msg.id}
                   onClick={() => handleSelectMessage(msg.id)}
-                  className={`w-full p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors ${
-                    selectedMessageId === msg.id
-                      ? 'bg-blue-50 dark:bg-blue-900/20'
-                      : ''
-                  } ${msg.status === 'UNREAD' ? 'bg-blue-50/50 dark:bg-blue-900/10' : ''}`}
+                  className={cn(
+                    "w-full p-4 text-left transition-colors hover:bg-muted/50 flex flex-col gap-1 items-start",
+                    selectedMessageId === msg.id ? "bg-muted shadow-[inset_3px_0_0_0_var(--color-primary)]" : "",
+                    msg.status === 'UNREAD' ? "bg-zinc-50/50 dark:bg-zinc-900/10 font-medium" : ""
+                  )}
                 >
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        {msg.status === 'UNREAD' && (
-                          <span className="w-2 h-2 bg-blue-500 rounded-full shrink-0" />
-                        )}
-                        <span className="font-medium text-gray-900 dark:text-white truncate">
-                          {getSenderName(msg)}
-                        </span>
-                      </div>
-                      {msg.tenant && (
-                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                          {msg.tenant.name}
-                        </p>
-                      )}
-                      <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate mt-1">
-                        {msg.subject}
-                      </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                        {msg.message.substring(0, 50)}...
-                      </p>
-                    </div>
-                    <div className="flex flex-col items-end gap-1">
-                      <span className="text-xs text-gray-500 dark:text-gray-400">
-                        {formatDate(msg.createdAt)}
-                      </span>
-                      {msg.priority !== 'NORMAL' && (
-                        <Badge className={priorityColors[msg.priority]}>
-                          {msg.priority}
-                        </Badge>
-                      )}
-                      {msg._count && msg._count.replies > 0 && (
-                        <span className="text-xs text-gray-500 dark:text-gray-400">
-                          {msg._count.replies} replies
-                        </span>
-                      )}
-                    </div>
+                  <div className="w-full flex items-start justify-between gap-2 mb-0.5">
+                    <span className={cn(
+                      "text-sm truncate max-w-[70%]",
+                      msg.status === 'UNREAD' ? "font-bold text-foreground" : "font-semibold text-muted-foreground"
+                    )}>
+                      {getSenderName(msg)}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground shrink-0 whitespace-nowrap">
+                      {formatDate(msg.createdAt)}
+                    </span>
                   </div>
+                  
+                  <div className="w-full flex items-center gap-2 mb-1">
+                     <span className={cn(
+                       "text-sm truncate flex-1",
+                       msg.status === 'UNREAD' ? "font-medium text-foreground" : "text-muted-foreground"
+                     )}>
+                      {msg.subject}
+                     </span>
+                     {msg.priority !== 'NORMAL' && (
+                       <Badge variant="outline" className={cn("text-[10px] h-4 px-1 gap-0.5 rounded-sm border-0", priorityColors[msg.priority])}>
+                         {msg.priority === 'URGENT' && <AlertCircle className="w-2 h-2" />}
+                         {msg.priority}
+                       </Badge>
+                     )}
+                  </div>
+
+                  <p className="text-xs text-muted-foreground line-clamp-2 w-full wrap-break-word">
+                    {msg.message}
+                  </p>
+                  
+                  {msg.tenant && (
+                     <div className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full self-start border border-border/50">
+                       <Building2 className="w-3 h-3 opacity-70" />
+                       {msg.tenant.name}
+                     </div>
+                  )}
                 </button>
               ))}
             </div>
@@ -364,249 +434,190 @@ export default function SuperAdminCommunicationsPage() {
         </div>
       </div>
 
-      {/* Main Content - Message Detail */}
-      <div className="flex-1 flex flex-col">
+      {/* ─── MAIN CONTENT: MESSAGE DETAIL ────────────────────────────────── */}
+      <div className={cn(
+        "flex-1 flex flex-col h-full bg-background",
+        !selectedMessageId ? "hidden md:flex" : "flex fixed inset-0 z-20 md:static bg-background"
+      )}>
         {selectedMessageId && selectedMessage ? (
           <>
-            {/* Message Header */}
-            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-              <div className="flex items-start justify-between">
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-                      {selectedMessage.subject}
-                    </h2>
-                    <Badge className={priorityColors[selectedMessage.priority]}>
-                      {selectedMessage.priority}
-                    </Badge>
-                    <Badge className={statusColors[selectedMessage.status]}>
-                      {selectedMessage.status}
-                    </Badge>
+            {/* Header */}
+            <div className="border-b px-6 py-4 flex items-start justify-between bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-10">
+              <div className="flex items-start gap-4 flex-1 overflow-hidden">
+                <Button 
+                  variant="ghost" 
+                  size="icon" 
+                  className="md:hidden -ml-2 shrink-0" 
+                  onClick={() => setSelectedMessageId(null)}
+                >
+                  <X className="h-5 w-5" />
+                </Button>
+                
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-3 mb-2 flex-wrap">
+                    <h2 className="text-xl font-bold truncate tracking-tight">{selectedMessage.subject}</h2>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Badge variant="secondary" className={cn("rounded-sm font-medium border", priorityColors[selectedMessage.priority])}>
+                        {selectedMessage.priority}
+                      </Badge>
+                      <Badge variant="outline" className={cn("rounded-sm font-medium border", statusColors[selectedMessage.status])}>
+                         {selectedMessage.status}
+                      </Badge>
+                    </div>
                   </div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                    From: {getSenderName(selectedMessage)}
-                    {selectedMessage.tenant && ` • ${selectedMessage.tenant.name}`}
-                  </p>
+                  
+                  <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
+                    <div className="flex items-center gap-1.5">
+                      <User className="w-4 h-4 text-muted-foreground/70" />
+                      <span className="font-medium text-foreground">{getSenderName(selectedMessage)}</span>
+                    </div>
+                    {selectedMessage.tenant && (
+                      <div className="flex items-center gap-1.5">
+                        <span className="text-muted-foreground/50 mx-1">•</span>
+                        <Building2 className="w-4 h-4 text-muted-foreground/70" />
+                        <span>{selectedMessage.tenant.name}</span>
+                      </div>
+                    )}
+                    <div className="flex items-center gap-1.5 ml-auto md:ml-0">
+                       <span className="hidden md:inline text-muted-foreground/50 mx-1">•</span>
+                       <Clock className="w-4 h-4 text-muted-foreground/70" />
+                       <span>{new Date(selectedMessage.createdAt).toLocaleString()}</span>
+                    </div>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setDeleteConfirmId(selectedMessage.id)}
-                    className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-900/20"
-                  >
-                    <TrashIcon />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setSelectedMessageId(null)}
-                  >
-                    <XIcon />
-                  </Button>
-                </div>
+              </div>
+
+              <div className="flex items-center gap-1 pl-4">
+                 <Button variant="ghost" size="icon" onClick={() => setDeleteConfirmId(selectedMessage.id)} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+                   <Trash2 className="h-4 w-4" />
+                 </Button>
               </div>
             </div>
 
-            {/* Message Thread */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            {/* Thread Content */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-zinc-50/30 dark:bg-zinc-900/30">
               {isLoadingMessage ? (
-                <div className="text-center text-gray-500 dark:text-gray-400">
-                  Loading message...
-                </div>
+                <div className="flex justify-center p-8"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div></div>
               ) : (
                 <>
-                  {/* Original message */}
-                  <Card>
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-sm font-medium">
-                          {getSenderName(selectedMessage)}
-                        </CardTitle>
-                        <CardDescription>
-                          {new Date(selectedMessage.createdAt).toLocaleString()}
-                        </CardDescription>
-                      </div>
-                    </CardHeader>
-                    <CardContent>
-                      <p className="whitespace-pre-wrap text-gray-700 dark:text-gray-300">
-                        {selectedMessage.message}
-                      </p>
-                    </CardContent>
-                  </Card>
+                  {/* Original Message */}
+                  <div className="flex gap-4 max-w-4xl mx-auto">
+                    <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-700 dark:text-zinc-300 font-bold text-sm shrink-0">
+                      {getSenderName(selectedMessage).charAt(0).toUpperCase()}
+                    </div>
+                    <div className="flex-1 space-y-2">
+                       <div className="flex items-baseline justify-between">
+                         <span className="font-semibold text-sm text-foreground">{getSenderName(selectedMessage)}</span>
+                       </div>
+                       <Card className="border shadow-sm bg-background">
+                         <CardContent className="p-5 text-sm leading-relaxed whitespace-pre-wrap">
+                           {selectedMessage.message}
+                         </CardContent>
+                       </Card>
+                    </div>
+                  </div>
+
+                  {/* Divider if replies exist */}
+                  {(selectedMessage.replies?.length ?? 0) > 0 && (
+                     <div className="relative flex items-center py-4 max-w-4xl mx-auto">
+                       <div className="grow border-t border-border"></div>
+                       <span className="shrink-0 mx-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">Replies</span>
+                       <div className="grow border-t border-border"></div>
+                     </div>
+                  )}
 
                   {/* Replies */}
-                  {selectedMessage.replies?.map((reply) => (
-                    <Card 
-                      key={reply.id}
-                      className={reply.sender.role === 'SUPER_ADMIN' ? 'ml-8 border-blue-200 dark:border-blue-800' : ''}
-                    >
-                      <CardHeader className="pb-2">
-                        <div className="flex items-center justify-between">
-                          <CardTitle className="text-sm font-medium flex items-center gap-2">
-                            {getSenderName(reply)}
-                            {reply.sender.role === 'SUPER_ADMIN' && (
-                              <Badge variant="outline" className="text-xs">
-                                Admin
-                              </Badge>
-                            )}
-                          </CardTitle>
-                          <CardDescription>
-                            {new Date(reply.createdAt).toLocaleString()}
-                          </CardDescription>
-                        </div>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="whitespace-pre-wrap text-gray-700 dark:text-gray-300">
-                          {reply.message}
-                        </p>
-                      </CardContent>
-                    </Card>
-                  ))}
+                  {selectedMessage.replies?.map((reply) => {
+                    const isAdmin = reply.sender.role === 'SUPER_ADMIN';
+                    return (
+                      <div key={reply.id} className={cn("flex gap-4 max-w-4xl mx-auto", isAdmin ? "justify-end" : "")}>
+                         {!isAdmin && (
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center font-semibold text-xs shrink-0 border bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700">
+                                {getSenderName(reply).charAt(0).toUpperCase()}
+                            </div>
+                         )}
+                         
+                         <div className={cn("flex-1 max-w-[85%] space-y-1", isAdmin ? "text-right" : "")}>
+                            <div className={cn("flex items-baseline gap-2", isAdmin ? "flex-row-reverse" : "")}>
+                              <span className="font-semibold text-sm text-foreground">
+                                {isAdmin ? 'Support Team' : getSenderName(reply)}
+                              </span>
+                              <span className="text-xs text-muted-foreground">{formatDate(reply.createdAt)}</span>
+                            </div>
+                            <Card className={cn(
+                              "border-none shadow-sm text-sm p-4 inline-block text-left",
+                              isAdmin 
+                                ? "bg-primary text-primary-foreground rounded-tr-sm" 
+                                : "bg-background rounded-tl-sm border" 
+                            )}>
+                              <p className="whitespace-pre-wrap">{reply.message}</p>
+                            </Card>
+                         </div>
+                         
+                         {isAdmin && (
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center font-semibold text-xs shrink-0 border bg-primary/10 text-primary border-primary/20">
+                                S
+                            </div>
+                         )}
+                      </div>
+                    );
+                  })}
                 </>
               )}
             </div>
 
-            {/* Reply Input */}
-            <div className="p-4 border-t border-gray-200 dark:border-gray-700">
-              <div className="flex gap-2">
-                <Textarea
+            {/* Reply Input Area */}
+            <div className="p-4 bg-background border-t">
+              <div className="max-w-4xl mx-auto flex gap-4 items-end">
+                <Textarea 
+                  className="min-h-20 w-full resize-none focus-visible:ring-1" 
+                  placeholder="Type your reply..."
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
-                  placeholder="Type your reply..."
-                  className="resize-none"
-                  rows={3}
                 />
-                <Button
-                  onClick={handleSendReply}
+                <Button 
+                  onClick={handleSendReply} 
                   disabled={!replyText.trim() || replyMutation.isPending}
-                  className="self-end"
+                  size="icon" 
+                  className="h-10 w-10 mb-1"
                 >
-                  <ReplyIcon />
-                  Reply
+                  <Send className="w-4 h-4 ml-0.5" />
                 </Button>
               </div>
+              <p className="text-xs text-muted-foreground text-center mt-2">
+                Pressing send will notify the tenant immediately via email.
+              </p>
             </div>
           </>
         ) : (
-          <div className="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
-            <div className="text-center">
-              <InboxIcon />
-              <p className="mt-2">Select a message to view</p>
-            </div>
+          <div className="flex-1 flex flex-col items-center justify-center p-8 bg-zinc-50/50 dark:bg-zinc-900/50 text-muted-foreground">
+             <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-6">
+               <Inbox className="w-10 h-10 opacity-40" />
+             </div>
+             <h3 className="text-xl font-semibold text-foreground">Select a conversation</h3>
+             <p className="max-w-xs text-center mt-2 mb-8 text-muted-foreground">
+               Choose a message from the list to view details and reply to tenants.
+             </p>
+             <Button onClick={() => setIsComposeOpen(true)} variant="outline" className="gap-2">
+               <Plus className="w-4 h-4" />
+               New Message
+             </Button>
           </div>
         )}
       </div>
 
-      {/* Compose Dialog */}
-      {isComposeOpen && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-lg m-4">
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle>New Message to Tenant</CardTitle>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setIsComposeOpen(false)}
-                >
-                  <XIcon />
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Select Tenant
-                </label>
-                <select
-                  value={composeTenantId}
-                  onChange={(e) => setComposeTenantId(e.target.value)}
-                  className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-                >
-                  <option value="">Choose a tenant...</option>
-                  {tenants.map((tenant) => (
-                    <option key={tenant.id} value={tenant.id}>
-                      {tenant.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Subject
-                </label>
-                <Input
-                  value={composeSubject}
-                  onChange={(e) => setComposeSubject(e.target.value)}
-                  placeholder="Message subject"
-                  className="mt-1"
-                />
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Priority
-                </label>
-                <select
-                  value={composePriority}
-                  onChange={(e) => setComposePriority(e.target.value as MessagePriority)}
-                  className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
-                >
-                  <option value="LOW">Low</option>
-                  <option value="NORMAL">Normal</option>
-                  <option value="HIGH">High</option>
-                  <option value="URGENT">Urgent</option>
-                </select>
-              </div>
-              <div>
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Message
-                </label>
-                <Textarea
-                  value={composeMessage}
-                  onChange={(e) => setComposeMessage(e.target.value)}
-                  placeholder="Write your message..."
-                  className="mt-1"
-                  rows={5}
-                />
-              </div>
-              <div className="flex justify-end gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsComposeOpen(false)}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleCompose}
-                  disabled={!composeTenantId || !composeSubject.trim() || !composeMessage.trim() || sendMessage.isPending}
-                >
-                  <SendIcon />
-                  Send Message
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Delete Confirmation */}
-      <AlertDialog open={!!deleteConfirmId} onOpenChange={() => setDeleteConfirmId(null)}>
+      {/* Delete Dialog */}
+      <AlertDialog open={!!deleteConfirmId} onOpenChange={(open) => !open && setDeleteConfirmId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Delete Message</AlertDialogTitle>
+            <AlertDialogTitle>Delete Conversation</AlertDialogTitle>
             <AlertDialogDescription>
-              Are you sure you want to delete this message? This action cannot be undone.
+              Are you sure you want to delete this message thread? This action cannot be undone.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={handleDelete}
-              className="bg-red-600 hover:bg-red-700"
-            >
-              Delete
-            </AlertDialogAction>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90">Delete</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
