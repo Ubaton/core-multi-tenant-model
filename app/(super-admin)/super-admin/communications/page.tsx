@@ -8,10 +8,10 @@
  */
 
 import { useState, useCallback } from 'react';
-import { 
-  useMessages, 
+import {
+  useMessages,
   useMessage,
-  useSendMessage, 
+  useSendMessage,
   useReplyToMessage,
   useDeleteMessage,
   useUnreadMessageCount,
@@ -56,15 +56,15 @@ import {
 } from "@/components/ui/select";
 
 // Icons
-import { 
-  Inbox, 
-  Send, 
-  Reply, 
-  Trash2, 
-  X, 
-  Plus, 
-  Search, 
-  Filter, 
+import {
+  Inbox,
+  Send,
+  Reply,
+  Trash2,
+  X,
+  Plus,
+  Search,
+  Filter,
   CheckCheck,
   Archive,
   AlertCircle,
@@ -106,7 +106,7 @@ function formatDate(dateString: string) {
   const now = new Date();
   const diff = now.getTime() - date.getTime();
   const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-  
+
   if (days === 0) {
     return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   } else if (days < 7) {
@@ -128,7 +128,7 @@ export default function SuperAdminCommunicationsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [replyText, setReplyText] = useState('');
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
-  
+
   // Compose State
   const [isComposeOpen, setIsComposeOpen] = useState(false);
   const [composeTenantId, setComposeTenantId] = useState('');
@@ -144,10 +144,10 @@ export default function SuperAdminCommunicationsPage() {
   });
 
   const { data: messagesData, isLoading, refetch } = useMessages(
-    { ...filters, type: activeTab }, 
+    { ...filters, type: activeTab },
     { refetchInterval: 15000 }
   );
-  
+
   const { data: selectedMessage, isLoading: isLoadingMessage } = useMessage(selectedMessageId || '');
   const { data: unreadCount } = useUnreadMessageCount();
   const { data: tenantsData } = useTenants({ pageSize: 100, isActive: true });
@@ -169,12 +169,12 @@ export default function SuperAdminCommunicationsPage() {
 
   const handleSelectMessage = (id: string) => {
     setSelectedMessageId(id);
-    setReplyText(''); 
+    setReplyText('');
   };
 
   const handleSendReply = async () => {
     if (!selectedMessageId || !replyText.trim() || !selectedMessage) return;
-    
+
     try {
       await replyMutation.mutateAsync({
         message: replyText,
@@ -191,7 +191,7 @@ export default function SuperAdminCommunicationsPage() {
 
   const handleDelete = async () => {
     if (!deleteConfirmId) return;
-    
+
     try {
       await deleteMutation.mutateAsync(deleteConfirmId);
       if (selectedMessageId === deleteConfirmId) {
@@ -215,13 +215,13 @@ export default function SuperAdminCommunicationsPage() {
         priority: composePriority,
       });
       setIsComposeOpen(false);
-      
+
       // Reset form
       setComposeTenantId('');
       setComposeSubject('');
       setComposeMessage('');
       setComposePriority('NORMAL');
-      
+
       toast.success("Message sent successfully");
       refetch(); // Refresh list
     } catch (error) {
@@ -253,10 +253,10 @@ export default function SuperAdminCommunicationsPage() {
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-semibold tracking-tight">Messages</h1>
             <div className="flex items-center gap-1">
-               <Button variant="ghost" size="icon" onClick={() => refetch()} title="Refresh">
-                 <RefreshCcw className="h-4 w-4" />
-               </Button>
-               <Sheet open={isComposeOpen} onOpenChange={setIsComposeOpen}>
+              <Button variant="ghost" size="icon" onClick={() => refetch()} title="Refresh">
+                <RefreshCcw className="h-4 w-4" />
+              </Button>
+              <Sheet open={isComposeOpen} onOpenChange={setIsComposeOpen}>
                 <SheetTrigger className={buttonVariants({ size: "sm", className: "gap-2" })}>
                   <Plus className="h-4 w-4" />
                   Compose
@@ -282,11 +282,11 @@ export default function SuperAdminCommunicationsPage() {
                         </SelectContent>
                       </Select>
                     </div>
-                    
+
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Subject</label>
-                      <Input 
-                        placeholder="Enter subject..." 
+                      <Input
+                        placeholder="Enter subject..."
                         value={composeSubject}
                         onChange={(e) => setComposeSubject(e.target.value)}
                       />
@@ -309,19 +309,19 @@ export default function SuperAdminCommunicationsPage() {
 
                     <div className="space-y-2">
                       <label className="text-sm font-medium">Message</label>
-                      <Textarea 
-                        placeholder="Type your message here..." 
+                      <Textarea
+                        placeholder="Type your message here..."
                         className="min-h-50"
                         value={composeMessage}
                         onChange={(e) => setComposeMessage(e.target.value)}
                       />
                     </div>
-                    
+
                     <div className="pt-4 flex justify-end gap-2">
-                       <Button variant="outline" onClick={() => setIsComposeOpen(false)}>Cancel</Button>
-                       <Button onClick={handleCompose} disabled={sendMessage.isPending}>
-                         {sendMessage.isPending ? 'Sending...' : 'Send Message'}
-                       </Button>
+                      <Button variant="outline" onClick={() => setIsComposeOpen(false)}>Cancel</Button>
+                      <Button onClick={handleCompose} disabled={sendMessage.isPending}>
+                        {sendMessage.isPending ? 'Sending...' : 'Send Message'}
+                      </Button>
                     </div>
                   </div>
                 </SheetContent>
@@ -336,8 +336,8 @@ export default function SuperAdminCommunicationsPage() {
                 onClick={() => handleTabChange(tab)}
                 className={cn(
                   "flex-1 px-3 py-1.5 text-sm font-medium rounded-md transition-all flex items-center justify-center gap-2",
-                  activeTab === tab 
-                    ? "bg-background text-foreground shadow-sm" 
+                  activeTab === tab
+                    ? "bg-background text-foreground shadow-sm"
                     : "text-muted-foreground hover:text-foreground"
                 )}
               >
@@ -346,9 +346,9 @@ export default function SuperAdminCommunicationsPage() {
                 {tab === 'all' && <Archive className="w-3.5 h-3.5" />}
                 <span className="capitalize">{tab}</span>
                 {tab === 'inbox' && typeof unreadCount === 'number' && unreadCount > 0 && (
-                   <span className="bg-primary text-primary-foreground text-[10px] px-1.5 h-4 flex items-center rounded-full ml-1">
-                     {unreadCount}
-                   </span>
+                  <span className="bg-primary text-primary-foreground text-[10px] px-1.5 h-4 flex items-center rounded-full ml-1">
+                    {unreadCount}
+                  </span>
                 )}
               </button>
             ))}
@@ -356,15 +356,15 @@ export default function SuperAdminCommunicationsPage() {
 
           <div className="relative">
             <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search messages..." 
+            <Input
+              placeholder="Search messages..."
               className="pl-9 bg-background"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
         </div>
-        
+
         <Separator />
 
         {/* List */}
@@ -401,31 +401,31 @@ export default function SuperAdminCommunicationsPage() {
                       {formatDate(msg.createdAt)}
                     </span>
                   </div>
-                  
+
                   <div className="w-full flex items-center gap-2 mb-1">
-                     <span className={cn(
-                       "text-sm truncate flex-1",
-                       msg.status === 'UNREAD' ? "font-medium text-foreground" : "text-muted-foreground"
-                     )}>
+                    <span className={cn(
+                      "text-sm truncate flex-1",
+                      msg.status === 'UNREAD' ? "font-medium text-foreground" : "text-muted-foreground"
+                    )}>
                       {msg.subject}
-                     </span>
-                     {msg.priority !== 'NORMAL' && (
-                       <Badge variant="outline" className={cn("text-[10px] h-4 px-1 gap-0.5 rounded-sm border-0", priorityColors[msg.priority])}>
-                         {msg.priority === 'URGENT' && <AlertCircle className="w-2 h-2" />}
-                         {msg.priority}
-                       </Badge>
-                     )}
+                    </span>
+                    {msg.priority !== 'NORMAL' && (
+                      <Badge variant="outline" className={cn("text-[10px] h-4 px-1 gap-0.5 rounded-sm border-0", priorityColors[msg.priority])}>
+                        {msg.priority === 'URGENT' && <AlertCircle className="w-2 h-2" />}
+                        {msg.priority}
+                      </Badge>
+                    )}
                   </div>
 
                   <p className="text-xs text-muted-foreground line-clamp-2 w-full wrap-break-word">
                     {msg.message}
                   </p>
-                  
+
                   {msg.tenant && (
-                     <div className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full self-start border border-border/50">
-                       <Building2 className="w-3 h-3 opacity-70" />
-                       {msg.tenant.name}
-                     </div>
+                    <div className="mt-2 flex items-center gap-1 text-[10px] text-muted-foreground bg-muted/50 px-1.5 py-0.5 rounded-full self-start border border-border/50">
+                      <Building2 className="w-3 h-3 opacity-70" />
+                      {msg.tenant.name}
+                    </div>
                   )}
                 </button>
               ))}
@@ -444,15 +444,15 @@ export default function SuperAdminCommunicationsPage() {
             {/* Header */}
             <div className="border-b px-6 py-4 flex items-start justify-between bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-10">
               <div className="flex items-start gap-4 flex-1 overflow-hidden">
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="md:hidden -ml-2 shrink-0" 
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="md:hidden -ml-2 shrink-0"
                   onClick={() => setSelectedMessageId(null)}
                 >
                   <X className="h-5 w-5" />
                 </Button>
-                
+
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-3 mb-2 flex-wrap">
                     <h2 className="text-xl font-bold truncate tracking-tight">{selectedMessage.subject}</h2>
@@ -461,11 +461,11 @@ export default function SuperAdminCommunicationsPage() {
                         {selectedMessage.priority}
                       </Badge>
                       <Badge variant="outline" className={cn("rounded-sm font-medium border", statusColors[selectedMessage.status])}>
-                         {selectedMessage.status}
+                        {selectedMessage.status}
                       </Badge>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-2 text-sm text-muted-foreground flex-wrap">
                     <div className="flex items-center gap-1.5">
                       <User className="w-4 h-4 text-muted-foreground/70" />
@@ -479,18 +479,18 @@ export default function SuperAdminCommunicationsPage() {
                       </div>
                     )}
                     <div className="flex items-center gap-1.5 ml-auto md:ml-0">
-                       <span className="hidden md:inline text-muted-foreground/50 mx-1">•</span>
-                       <Clock className="w-4 h-4 text-muted-foreground/70" />
-                       <span>{new Date(selectedMessage.createdAt).toLocaleString()}</span>
+                      <span className="hidden md:inline text-muted-foreground/50 mx-1">•</span>
+                      <Clock className="w-4 h-4 text-muted-foreground/70" />
+                      <span>{new Date(selectedMessage.createdAt).toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
               <div className="flex items-center gap-1 pl-4">
-                 <Button variant="ghost" size="icon" onClick={() => setDeleteConfirmId(selectedMessage.id)} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
-                   <Trash2 className="h-4 w-4" />
-                 </Button>
+                <Button variant="ghost" size="icon" onClick={() => setDeleteConfirmId(selectedMessage.id)} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+                  <Trash2 className="h-4 w-4" />
+                </Button>
               </div>
             </div>
 
@@ -506,24 +506,24 @@ export default function SuperAdminCommunicationsPage() {
                       {getSenderName(selectedMessage).charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 space-y-2">
-                       <div className="flex items-baseline justify-between">
-                         <span className="font-semibold text-sm text-foreground">{getSenderName(selectedMessage)}</span>
-                       </div>
-                       <Card className="border shadow-sm bg-background">
-                         <CardContent className="p-5 text-sm leading-relaxed whitespace-pre-wrap">
-                           {selectedMessage.message}
-                         </CardContent>
-                       </Card>
+                      <div className="flex items-baseline justify-between">
+                        <span className="font-semibold text-sm text-foreground">{getSenderName(selectedMessage)}</span>
+                      </div>
+                      <Card className="border shadow-sm bg-background">
+                        <CardContent className="p-5 text-sm leading-relaxed whitespace-pre-wrap">
+                          {selectedMessage.message}
+                        </CardContent>
+                      </Card>
                     </div>
                   </div>
 
                   {/* Divider if replies exist */}
                   {(selectedMessage.replies?.length ?? 0) > 0 && (
-                     <div className="relative flex items-center py-4 max-w-4xl mx-auto">
-                       <div className="grow border-t border-border"></div>
-                       <span className="shrink-0 mx-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">Replies</span>
-                       <div className="grow border-t border-border"></div>
-                     </div>
+                    <div className="relative flex items-center py-4 max-w-4xl mx-auto">
+                      <div className="grow border-t border-border"></div>
+                      <span className="shrink-0 mx-4 text-xs font-medium text-muted-foreground uppercase tracking-wider">Replies</span>
+                      <div className="grow border-t border-border"></div>
+                    </div>
                   )}
 
                   {/* Replies */}
@@ -531,34 +531,34 @@ export default function SuperAdminCommunicationsPage() {
                     const isAdmin = reply.sender.role === 'SUPER_ADMIN';
                     return (
                       <div key={reply.id} className={cn("flex gap-4 max-w-4xl mx-auto", isAdmin ? "justify-end" : "")}>
-                         {!isAdmin && (
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center font-semibold text-xs shrink-0 border bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700">
-                                {getSenderName(reply).charAt(0).toUpperCase()}
-                            </div>
-                         )}
-                         
-                         <div className={cn("flex-1 max-w-[85%] space-y-1", isAdmin ? "text-right" : "")}>
-                            <div className={cn("flex items-baseline gap-2", isAdmin ? "flex-row-reverse" : "")}>
-                              <span className="font-semibold text-sm text-foreground">
-                                {isAdmin ? 'Support Team' : getSenderName(reply)}
-                              </span>
-                              <span className="text-xs text-muted-foreground">{formatDate(reply.createdAt)}</span>
-                            </div>
-                            <Card className={cn(
-                              "border-none shadow-sm text-sm p-4 inline-block text-left",
-                              isAdmin 
-                                ? "bg-primary text-primary-foreground rounded-tr-sm" 
-                                : "bg-background rounded-tl-sm border" 
-                            )}>
-                              <p className="whitespace-pre-wrap">{reply.message}</p>
-                            </Card>
-                         </div>
-                         
-                         {isAdmin && (
-                            <div className="w-8 h-8 rounded-full flex items-center justify-center font-semibold text-xs shrink-0 border bg-primary/10 text-primary border-primary/20">
-                                S
-                            </div>
-                         )}
+                        {!isAdmin && (
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center font-semibold text-xs shrink-0 border bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700">
+                            {getSenderName(reply).charAt(0).toUpperCase()}
+                          </div>
+                        )}
+
+                        <div className={cn("flex-1 max-w-[85%] space-y-1", isAdmin ? "text-right" : "")}>
+                          <div className={cn("flex items-baseline gap-2", isAdmin ? "flex-row-reverse" : "")}>
+                            <span className="font-semibold text-sm text-foreground">
+                              {isAdmin ? 'Support Team' : getSenderName(reply)}
+                            </span>
+                            <span className="text-xs text-muted-foreground">{formatDate(reply.createdAt)}</span>
+                          </div>
+                          <Card className={cn(
+                            "border-none shadow-sm text-sm p-4 inline-block text-left",
+                            isAdmin
+                              ? "bg-primary text-primary-foreground rounded-tr-sm"
+                              : "bg-background rounded-tl-sm border"
+                          )}>
+                            <p className="whitespace-pre-wrap">{reply.message}</p>
+                          </Card>
+                        </div>
+
+                        {isAdmin && (
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center font-semibold text-xs shrink-0 border bg-primary/10 text-primary border-primary/20">
+                            S
+                          </div>
+                        )}
                       </div>
                     );
                   })}
@@ -569,16 +569,16 @@ export default function SuperAdminCommunicationsPage() {
             {/* Reply Input Area */}
             <div className="p-4 bg-background border-t">
               <div className="max-w-4xl mx-auto flex gap-4 items-end">
-                <Textarea 
-                  className="min-h-20 w-full resize-none focus-visible:ring-1" 
+                <Textarea
+                  className="min-h-20 w-full resize-none focus-visible:ring-1"
                   placeholder="Type your reply..."
                   value={replyText}
                   onChange={(e) => setReplyText(e.target.value)}
                 />
-                <Button 
-                  onClick={handleSendReply} 
+                <Button
+                  onClick={handleSendReply}
                   disabled={!replyText.trim() || replyMutation.isPending}
-                  size="icon" 
+                  size="icon"
                   className="h-10 w-10 mb-1"
                 >
                   <Send className="w-4 h-4 ml-0.5" />
@@ -591,17 +591,17 @@ export default function SuperAdminCommunicationsPage() {
           </>
         ) : (
           <div className="flex-1 flex flex-col items-center justify-center p-8 bg-zinc-50/50 dark:bg-zinc-900/50 text-muted-foreground">
-             <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-6">
-               <Inbox className="w-10 h-10 opacity-40" />
-             </div>
-             <h3 className="text-xl font-semibold text-foreground">Select a conversation</h3>
-             <p className="max-w-xs text-center mt-2 mb-8 text-muted-foreground">
-               Choose a message from the list to view details and reply to tenants.
-             </p>
-             <Button onClick={() => setIsComposeOpen(true)} variant="outline" className="gap-2">
-               <Plus className="w-4 h-4" />
-               New Message
-             </Button>
+            <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center mb-6">
+              <Inbox className="w-10 h-10 opacity-40" />
+            </div>
+            <h3 className="text-xl font-semibold text-foreground">Select a conversation</h3>
+            <p className="max-w-xs text-center mt-2 mb-8 text-muted-foreground">
+              Choose a message from the list to view details and reply to tenants.
+            </p>
+            <Button onClick={() => setIsComposeOpen(true)} variant="outline" className="gap-2">
+              <Plus className="w-4 h-4" />
+              New Message
+            </Button>
           </div>
         )}
       </div>
