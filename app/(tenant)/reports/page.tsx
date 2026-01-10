@@ -129,62 +129,99 @@ export default function ReportsPage() {
     if (!stats || !selectedReport) return;
     
     let csvContent = '';
-    const now = new Date().toISOString();
+    const date = new Date();
+    const formattedDate = date.toLocaleDateString('en-ZA', { 
+      year: 'numeric', 
+      month: 'long', 
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+
+    // Helper to escape CSV values
+    const escapeCsv = (val: string | number) => {
+      const stringVal = String(val);
+      if (stringVal.includes(',') || stringVal.includes('"') || stringVal.includes('\n')) {
+        return `"${stringVal.replace(/"/g, '""')}"`;
+      }
+      return stringVal;
+    };
     
     switch (selectedReport) {
       case 'membership':
-        csvContent = `Membership Report - Generated ${now}\n\n`;
+        csvContent += `MEMBERSHIP REPORT\n`;
+        csvContent += `Generated On,${escapeCsv(formattedDate)}\n\n`;
+        
+        csvContent += `SUMMARY METRICS\n`;
         csvContent += `Metric,Value\n`;
-        csvContent += `Total Members,${stats.members.total}\n`;
-        csvContent += `Active Members,${stats.members.active}\n`;
-        csvContent += `New Members This Month,${stats.members.newThisMonth}\n`;
-        csvContent += `Growth Rate,${stats.members.growth}%\n`;
+        csvContent += `Total Members,${escapeCsv(stats.members.total)}\n`;
+        csvContent += `Active Members,${escapeCsv(stats.members.active)}\n`;
+        csvContent += `New Members (This Month),${escapeCsv(stats.members.newThisMonth)}\n`;
+        csvContent += `Growth Rate,${escapeCsv(stats.members.growth)}%\n`;
         break;
+
       case 'financial':
-        csvContent = `Financial Report - Generated ${now}\n\n`;
+        csvContent += `FINANCIAL REPORT\n`;
+        csvContent += `Generated On,${escapeCsv(formattedDate)}\n\n`;
+
+        csvContent += `SUMMARY STATISTICS\n`;
         csvContent += `Metric,Value\n`;
-        csvContent += `This Month Total,${stats.offerings.thisMonth.total}\n`;
-        csvContent += `This Month Count,${stats.offerings.thisMonth.count}\n`;
-        csvContent += `Last Month Total,${stats.offerings.lastMonth.total}\n`;
-        csvContent += `Growth Rate,${stats.offerings.growth}%\n\n`;
-        csvContent += `\nOfferings by Type\n`;
-        csvContent += `Type,Amount,Count\n`;
+        csvContent += `This Month Total,${escapeCsv(stats.offerings.thisMonth.total)}\n`;
+        csvContent += `This Month Count,${escapeCsv(stats.offerings.thisMonth.count)}\n`;
+        csvContent += `Last Month Total,${escapeCsv(stats.offerings.lastMonth.total)}\n`;
+        csvContent += `Growth Rate,${escapeCsv(stats.offerings.growth)}%\n\n`;
+
+        csvContent += `OFFERINGS BREAKDOWN\n`;
+        csvContent += `Category,Amount (ZAR),Count\n`;
         stats.offerings.byType.forEach(item => {
-          csvContent += `${item.type},${item.total},${item.count}\n`;
+          csvContent += `${escapeCsv(item.type)},${escapeCsv(item.total)},${escapeCsv(item.count)}\n`;
         });
         break;
+
       case 'attendance':
-        csvContent = `Prayer Requests Report - Generated ${now}\n\n`;
+        // Note: Currently using prayer request data for attendance report
+        csvContent += `ATTENDANCE REPORT (PRAYER REQUESTS)\n`;
+        csvContent += `Generated On,${escapeCsv(formattedDate)}\n\n`;
+
+        csvContent += `SUMMARY STATISTICS\n`;
         csvContent += `Metric,Value\n`;
-        csvContent += `Total Requests,${stats.prayerRequests.total}\n`;
-        csvContent += `Pending,${stats.prayerRequests.pending}\n`;
-        csvContent += `Answered,${stats.prayerRequests.answered}\n`;
+        csvContent += `Total Requests,${escapeCsv(stats.prayerRequests.total)}\n`;
+        csvContent += `Pending Requests,${escapeCsv(stats.prayerRequests.pending)}\n`;
+        csvContent += `Answered Requests,${escapeCsv(stats.prayerRequests.answered)}\n`;
         break;
+
       case 'engagement':
-        csvContent = `Engagement Report - Generated ${now}\n\n`;
+        csvContent += `ENGAGEMENT REPORT\n`;
+        csvContent += `Generated On,${escapeCsv(formattedDate)}\n\n`;
+        
+        csvContent += `LEAD STATISTICS\n`;
         csvContent += `Metric,Value\n`;
-        csvContent += `Total Leads,${stats.leads.total}\n`;
-        csvContent += `New Leads,${stats.leads.new}\n`;
-        csvContent += `Converted,${stats.leads.converted}\n`;
-        csvContent += `Pending,${stats.leads.pending}\n`;
-        csvContent += `Conversion Rate,${stats.leads.conversionRate}%\n\n`;
-        csvContent += `\nLeads by Source\n`;
+        csvContent += `Total Leads,${escapeCsv(stats.leads.total)}\n`;
+        csvContent += `New Leads,${escapeCsv(stats.leads.new)}\n`;
+        csvContent += `Converted,${escapeCsv(stats.leads.converted)}\n`;
+        csvContent += `Pending,${escapeCsv(stats.leads.pending)}\n`;
+        csvContent += `Conversion Rate,${escapeCsv(stats.leads.conversionRate)}%\n\n`;
+        
+        csvContent += `LEADS BY SOURCE\n`;
         csvContent += `Source,Count\n`;
         stats.leads.bySource.forEach(item => {
-          csvContent += `${item.source},${item.count}\n`;
+          csvContent += `${escapeCsv(item.source)},${escapeCsv(item.count)}\n`;
         });
-        csvContent += `\n\nCall Center Activity\n`;
+        csvContent += `\n`;
+
+        csvContent += `CALL CENTER ACTIVITY\n`;
         csvContent += `Metric,Value\n`;
-        csvContent += `Calls This Month,${stats.callCenter.callsThisMonth}\n`;
-        csvContent += `Calls Last Month,${stats.callCenter.callsLastMonth}\n`;
-        csvContent += `Growth,${stats.callCenter.growth}%\n`;
+        csvContent += `Calls This Month,${escapeCsv(stats.callCenter.callsThisMonth)}\n`;
+        csvContent += `Calls Last Month,${escapeCsv(stats.callCenter.callsLastMonth)}\n`;
+        csvContent += `Growth,${escapeCsv(stats.callCenter.growth)}%\n`;
         break;
     }
     
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    // Add BOM for Excel compatibility with UTF-8
+    const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement('a');
     link.href = URL.createObjectURL(blob);
-    link.download = `${selectedReport}-report-${new Date().toISOString().split('T')[0]}.csv`;
+    link.download = `${selectedReport}-report-${date.toISOString().split('T')[0]}.csv`;
     link.click();
   };
 
@@ -194,7 +231,7 @@ export default function ReportsPage() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-[400px]">
+      <div className="flex items-center justify-center min-h-100">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
       </div>
     );
