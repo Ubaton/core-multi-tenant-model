@@ -40,6 +40,7 @@ import {
 } from '@/lib/client';
 import { cn } from '@/lib/utils';
 import { RequireCreate, AccessDenied } from '@/components/permission-gate';
+import { toast } from 'sonner';
 
 const statusColors: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
@@ -152,8 +153,10 @@ export default function PrayerRequestsPage() {
         isAnonymous: formData.isAnonymous,
         isUrgent: formData.isUrgent,
       });
+      toast.success('Prayer request submitted successfully');
       handleCloseDialog();
     } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to submit prayer request');
       setFormError(err instanceof Error ? err.message : 'Failed to submit prayer request');
     }
   };

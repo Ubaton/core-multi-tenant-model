@@ -16,8 +16,6 @@ import {
   Palette,
   Save,
   Loader2,
-  CheckCircle,
-  AlertCircle,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -28,6 +26,7 @@ import { useCurrentUser, useUpdateProfile, useChangePassword, useTenantProfile, 
 import { useTheme } from '@/context';
 import { cn } from '@/lib/utils';
 import { AccessDenied } from '@/components/permission-gate';
+import { toast } from 'sonner';
 
 const settingsTabs = [
   { id: 'profile', label: 'Profile', icon: User },
@@ -39,33 +38,12 @@ const settingsTabs = [
 
 type SettingsTab = typeof settingsTabs[number]['id'];
 
-// Toast notification component
-function Toast({ message, type, onClose }: { message: string; type: 'success' | 'error'; onClose: () => void }) {
-  useEffect(() => {
-    const timer = setTimeout(onClose, 4000);
-    return () => clearTimeout(timer);
-  }, [onClose]);
-
-  return (
-    <div className={cn(
-      "fixed bottom-4 right-4 flex items-center gap-2 px-4 py-3 rounded-lg shadow-lg z-50",
-      type === 'success' ? "bg-green-600 text-white" : "bg-red-600 text-white"
-    )}>
-      {type === 'success' ? <CheckCircle className="h-5 w-5" /> : <AlertCircle className="h-5 w-5" />}
-      {message}
-    </div>
-  );
-}
-
 export default function SettingsPage() {
   const searchParams = useSearchParams();
   const { data: user } = useCurrentUser();
   const { data: tenant } = useTenantProfile();
   const [activeTab, setActiveTab] = useState<SettingsTab>('profile');
   const { canView, isLoading: permissionsLoading } = useModulePermissions();
-  
-  // Toast state
-  const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   // Profile form state
   const [profileForm, setProfileForm] = useState({
@@ -160,9 +138,9 @@ export default function SettingsPage() {
         email: profileForm.email,
         phone: profileForm.phone || null,
       });
-      setToast({ message: 'Profile updated successfully', type: 'success' });
+      toast.success('Profile updated successfully');
     } catch (error) {
-      setToast({ message: error instanceof Error ? error.message : 'Failed to update profile', type: 'error' });
+      toast.error(error instanceof Error ? error.message : 'Failed to update profile');
     }
   };
 
@@ -182,20 +160,20 @@ export default function SettingsPage() {
         email: orgForm.email || undefined,
         website: orgForm.website || undefined,
       });
-      setToast({ message: 'Organization updated successfully', type: 'success' });
+      toast.success('Organization updated successfully');
     } catch (error) {
-      setToast({ message: error instanceof Error ? error.message : 'Failed to update organization', type: 'error' });
+      toast.error(error instanceof Error ? error.message : 'Failed to update organization');
     }
   };
 
   // Handle password change
   const handleChangePassword = async () => {
     if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-      setToast({ message: 'New passwords do not match', type: 'error' });
+      toast.error('New passwords do not match');
       return;
     }
     if (passwordForm.newPassword.length < 8) {
-      setToast({ message: 'Password must be at least 8 characters', type: 'error' });
+      toast.error('Password must be at least 8 characters');
       return;
     }
     try {
@@ -204,16 +182,16 @@ export default function SettingsPage() {
         newPassword: passwordForm.newPassword,
       });
       setPasswordForm({ currentPassword: '', newPassword: '', confirmPassword: '' });
-      setToast({ message: 'Password changed successfully', type: 'success' });
+      toast.success('Password changed successfully');
     } catch (error) {
-      setToast({ message: error instanceof Error ? error.message : 'Failed to change password', type: 'error' });
+      toast.error(error instanceof Error ? error.message : 'Failed to change password');
     }
   };
 
   // Handle notification preferences save
   const handleSaveNotifications = async () => {
     // TODO: Implement notification preferences API
-    setToast({ message: 'Notification preferences saved', type: 'success' });
+    toast.success('Notification preferences saved');
   };
 
   // Check for view permission
@@ -223,15 +201,6 @@ export default function SettingsPage() {
 
   return (
     <div className="space-y-6">
-      {/* Toast notification */}
-      {toast && (
-        <Toast 
-          message={toast.message} 
-          type={toast.type} 
-          onClose={() => setToast(null)} 
-        />
-      )}
-      
       {/* Page Header */}
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Settings</h1>

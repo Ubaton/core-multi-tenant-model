@@ -24,6 +24,7 @@ import { useMembers, useDeleteMember } from '@/lib/client';
 import { useModulePermissions } from '@/lib/client/hooks/use-user-permissions';
 import { RequireCreate, RequireEdit, RequireDelete, AccessDenied } from '@/components/permission-gate';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const statusColors: Record<string, string> = {
   ACTIVE: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
@@ -127,12 +128,13 @@ export default function MembersPage() {
           ) : members.length === 0 ? (
             <div className="text-center py-12">
               <p className="text-gray-500 dark:text-gray-400">No members found</p>
-              <Link href="/members/new" className="mt-4 inline-block">
+                   <RequireCreate module="members"><Link href="/members/new" className="mt-4 inline-block">
                 <Button variant="outline">
                   <Plus className="h-4 w-4 mr-2" />
                   Add your first member
                 </Button>
-              </Link>
+              </Link></RequireCreate>
+              
             </div>
           ) : (
             <div className="overflow-x-auto">
@@ -194,7 +196,10 @@ export default function MembersPage() {
                               <DropdownMenuItem
                                 onClick={() => {
                                   if (confirm('Are you sure you want to delete this member?')) {
-                                    deleteMember.mutate(member.id);
+                                    deleteMember.mutate(member.id, {
+                                      onSuccess: () => toast.success('Member deleted successfully'),
+                                      onError: (err) => toast.error(err instanceof Error ? err.message : 'Failed to delete member'),
+                                    });
                                   }
                                 }}
                                 className="text-red-600 dark:text-red-400"

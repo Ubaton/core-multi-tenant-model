@@ -33,6 +33,7 @@ import { cn } from '@/lib/utils';
 import { useSettings, useUpdateSettings, type SystemSettings } from '@/lib/client/hooks/use-settings';
 import type { UpdateSystemSettingsInput } from '@/lib/validations';
 import { useTheme } from '@/context/theme-context';
+import { toast } from 'sonner';
 
 const settingsTabs = [
   { id: 'general', label: 'General', icon: Settings },
@@ -103,9 +104,11 @@ export default function SuperAdminSettingsPage() {
   const handleSave = async (section: string) => {
     try {
       await updateSettings.mutateAsync(formData);
+      toast.success(`${section} settings saved successfully`);
       setSaveSuccess(section);
       setTimeout(() => setSaveSuccess(null), 3000);
     } catch (err) {
+      toast.error('Failed to save settings');
       console.error('Failed to save settings:', err);
     }
   };

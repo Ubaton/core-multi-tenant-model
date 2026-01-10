@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Church, CheckCircle } from 'lucide-react';
+import { toast } from 'sonner';
 
 function LoginForm() {
   const searchParams = useSearchParams();

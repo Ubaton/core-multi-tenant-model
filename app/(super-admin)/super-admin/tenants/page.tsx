@@ -31,6 +31,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useTenants, useDeleteTenant } from '@/lib/client';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function TenantsPage() {
   const [search, setSearch] = useState('');
@@ -163,7 +164,10 @@ export default function TenantsPage() {
                       <DropdownMenuItem
                         onClick={() => {
                           if (confirm(`Are you sure you want to delete ${tenant.name}? This action cannot be undone.`)) {
-                            deleteTenant.mutate(tenant.id);
+                            deleteTenant.mutate(tenant.id, {
+                              onSuccess: () => toast.success('Tenant deleted successfully'),
+                              onError: (err) => toast.error(err instanceof Error ? err.message : 'Failed to delete tenant'),
+                            });
                           }
                         }}
                         className="text-red-600 dark:text-red-400"

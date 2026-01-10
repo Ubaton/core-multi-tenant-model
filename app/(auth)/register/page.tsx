@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { toast } from 'sonner';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -85,8 +86,10 @@ export default function RegisterPage() {
       }
 
       // Redirect to login with success message
+      toast.success('Registration successful! Please sign in.');
       router.push('/login?registered=true');
     } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Registration failed');
       setError(err instanceof Error ? err.message : 'Registration failed');
     } finally {
       setIsLoading(false);

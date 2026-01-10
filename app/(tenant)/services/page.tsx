@@ -47,6 +47,7 @@ import {
 import { useModulePermissions } from '@/lib/client/hooks/use-user-permissions';
 import { useServices, useCreateService, useUpdateService, useDeleteService } from '@/lib/client';
 import { AccessDenied } from '@/components/permission-gate';
+import { toast } from 'sonner';
 
 interface ServiceFormData {
   name: string;
@@ -176,8 +177,10 @@ export default function ServicesPage() {
         endTime: formData.endTime || undefined,
         attendanceCount: formData.attendanceCount ? parseInt(formData.attendanceCount) : undefined,
       });
+      toast.success('Service created successfully');
       handleCloseDialogs();
     } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to create service');
       setFormError(err instanceof Error ? err.message : 'Failed to create service');
     }
   };
@@ -200,8 +203,10 @@ export default function ServicesPage() {
         endTime: formData.endTime || undefined,
         attendanceCount: formData.attendanceCount ? parseInt(formData.attendanceCount) : undefined,
       });
+      toast.success('Service updated successfully');
       handleCloseDialogs();
     } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update service');
       setFormError(err instanceof Error ? err.message : 'Failed to update service');
     }
   };
@@ -210,8 +215,9 @@ export default function ServicesPage() {
     if (confirm('Are you sure you want to delete this service?')) {
       try {
         await deleteService.mutateAsync(id);
+        toast.success('Service deleted successfully');
       } catch (err) {
-        alert(err instanceof Error ? err.message : 'Failed to delete service');
+        toast.error(err instanceof Error ? err.message : 'Failed to delete service');
       }
     }
   };

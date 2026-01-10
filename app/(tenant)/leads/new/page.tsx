@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCreateLead } from '@/lib/client';
+import { toast } from 'sonner';
 
 export default function NewLeadPage() {
   const router = useRouter();
@@ -71,8 +72,10 @@ export default function NewLeadPage() {
         priority: parseInt(formData.priority) || 0,
         nextFollowUp: formData.nextFollowUp ? new Date(formData.nextFollowUp) : undefined,
       });
+      toast.success('Lead created successfully');
       router.push('/leads');
     } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to create lead');
       setError(err instanceof Error ? err.message : 'Failed to create lead');
     }
   };

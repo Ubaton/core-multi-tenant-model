@@ -58,6 +58,7 @@ import {
 } from '@/lib/client/hooks/use-messages';
 import { cn } from '@/lib/utils';
 import { RequireCreate, AccessDenied } from '@/components/permission-gate';
+import { toast } from 'sonner';
 
 const typeIcons = {
   SMS: MessageSquare,
@@ -172,8 +173,10 @@ export default function CommunicationsPage() {
         priority: selectedMessage.priority,
         receiverId: selectedMessage.senderId,
       });
+      toast.success('Reply sent successfully');
       setReplyText('');
     } catch (error) {
+      toast.error('Failed to send reply');
       console.error('Failed to send reply:', error);
     }
   }, [selectedMessage, replyText, replyMutation]);
@@ -188,11 +191,13 @@ export default function CommunicationsPage() {
         priority: composePriority,
         // No receiverId = message goes to Super Admin
       });
+      toast.success('Message sent successfully');
       setIsComposeOpen(false);
       setComposeSubject('');
       setComposeMessage('');
       setComposePriority('NORMAL');
     } catch (error) {
+      toast.error('Failed to send message');
       console.error('Failed to send message:', error);
     }
   }, [composeSubject, composeMessage, composePriority, sendMessage]);

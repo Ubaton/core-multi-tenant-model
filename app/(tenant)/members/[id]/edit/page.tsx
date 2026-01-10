@@ -19,6 +19,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { useMember, useUpdateMember } from '@/lib/client';
 import { useModulePermissions } from '@/lib/client/hooks/use-user-permissions';
 import { AccessDenied } from '@/components/permission-gate';
+import { toast } from 'sonner';
 
 interface PageProps {
   params: Promise<{ id: string }>;
@@ -177,8 +178,10 @@ export default function EditMemberPage({ params }: PageProps) {
         weddingDate: formData.weddingDate ? new Date(formData.weddingDate) : undefined,
         notes: formData.notes.trim() || undefined,
       });
+      toast.success('Member updated successfully');
       router.push(`/members/${id}`);
     } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to update member');
       setError(err instanceof Error ? err.message : 'Failed to update member');
     }
   };

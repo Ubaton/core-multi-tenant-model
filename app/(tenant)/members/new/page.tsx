@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCreateMember } from '@/lib/client';
+import { toast } from 'sonner';
 
 export default function NewMemberPage() {
   const router = useRouter();
@@ -84,8 +85,10 @@ export default function NewMemberPage() {
         weddingDate: formData.weddingDate ? new Date(formData.weddingDate) : undefined,
         notes: formData.notes.trim() || undefined,
       });
+      toast.success('Member created successfully');
       router.push('/members');
     } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to create member');
       setError(err instanceof Error ? err.message : 'Failed to create member');
     }
   };

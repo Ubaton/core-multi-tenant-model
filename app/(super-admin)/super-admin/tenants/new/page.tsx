@@ -16,6 +16,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useCreateTenant, useTenants } from '@/lib/client';
+import { toast } from 'sonner';
 
 // Default email domain as required
 const DEFAULT_EMAIL_DOMAIN = 'unityfellowship.org.za';
@@ -151,8 +152,10 @@ export default function NewTenantPage() {
     try {
       await navigator.clipboard.writeText(adminUser.password);
       setPasswordCopied(true);
+      toast.success('Password copied to clipboard');
       setTimeout(() => setPasswordCopied(false), 2000);
     } catch (err) {
+      toast.error('Failed to copy password');
       console.error('Failed to copy password:', err);
     }
   }, [adminUser.password]);

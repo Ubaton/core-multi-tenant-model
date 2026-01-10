@@ -23,6 +23,7 @@ import {
 import { useLeads, useDeleteLead, useConvertLead, useModulePermissions } from '@/lib/client';
 import { cn } from '@/lib/utils';
 import { RequireCreate, AccessDenied } from '@/components/permission-gate';
+import { toast } from 'sonner';
 
 const statusColors: Record<string, string> = {
   NEW: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
@@ -179,7 +180,10 @@ export default function LeadsPage() {
                     <LeadRow 
                       key={lead.id} 
                       lead={lead} 
-                      onDelete={() => deleteLead.mutate(lead.id)}
+                      onDelete={() => deleteLead.mutate(lead.id, {
+                        onSuccess: () => toast.success('Lead deleted successfully'),
+                        onError: (err) => toast.error(err instanceof Error ? err.message : 'Failed to delete lead'),
+                      })}
                       canEdit={canEdit('leads')}
                       canDelete={canDelete('leads')}
                     />
@@ -278,7 +282,10 @@ function LeadRow({ lead, onDelete, canEdit, canDelete }: { lead: any; onDelete: 
                 <DropdownMenuItem
                   onClick={() => {
                     if (confirm('Convert this lead to a member?')) {
-                      convertLead.mutate({});
+                      convertLead.mutate({}, {
+                        onSuccess: () => toast.success('Lead converted to member successfully'),
+                        onError: (err) => toast.error(err instanceof Error ? err.message : 'Failed to convert lead'),
+                      });
                     }
                   }}
                   className="text-green-600 dark:text-green-400"

@@ -26,6 +26,7 @@ import {
 import { useOfferings, useCreateOffering, useMembers, useModulePermissions } from '@/lib/client';
 import { cn } from '@/lib/utils';
 import { RequireCreate, AccessDenied } from '@/components/permission-gate';
+import { toast } from 'sonner';
 
 const typeColors: Record<string, string> = {
   TITHE: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
@@ -166,8 +167,10 @@ export default function OfferingsPage() {
         reference: formData.reference.trim() || undefined,
         givenAt: formData.givenAt ? new Date(formData.givenAt) : undefined,
       });
+      toast.success('Offering recorded successfully');
       handleCloseDialog();
     } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Failed to record offering');
       setFormError(err instanceof Error ? err.message : 'Failed to record offering');
     }
   };

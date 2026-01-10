@@ -34,6 +34,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { useUsers, useDeleteUser } from '@/lib/client';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 const roleColors: Record<string, string> = {
   SUPER_ADMIN: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
@@ -72,7 +73,10 @@ export default function UsersPage() {
 
   const handleDelete = async (id: string, email: string) => {
     if (confirm(`Are you sure you want to delete user "${email}"? This action cannot be undone.`)) {
-      deleteUser.mutate(id);
+      deleteUser.mutate(id, {
+        onSuccess: () => toast.success('User deleted successfully'),
+        onError: (err) => toast.error(err instanceof Error ? err.message : 'Failed to delete user'),
+      });
     }
   };
 

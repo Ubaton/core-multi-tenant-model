@@ -36,6 +36,7 @@ import { Separator } from '@/components/ui/separator';
 import { Input } from '@/components/ui/input';
 import { useTenant, useDeleteTenant, useTenantMembers } from '@/lib/client';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
 
 export default function TenantDetailPage() {
   const params = useParams();
@@ -58,8 +59,10 @@ export default function TenantDetailPage() {
     if (confirm(`Are you sure you want to delete ${tenant?.name}? This action cannot be undone.`)) {
       deleteTenant.mutate(id, {
         onSuccess: () => {
+          toast.success('Tenant deleted successfully');
           router.push('/super-admin/tenants');
         },
+        onError: (err) => toast.error(err instanceof Error ? err.message : 'Failed to delete tenant'),
       });
     }
   };
