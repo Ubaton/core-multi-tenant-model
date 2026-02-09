@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, Search, MoreHorizontal, Eye, Pencil, Trash2, Check, Loader2, X, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Combobox,
+  ComboboxInput,
+  ComboboxContent,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxEmpty,
+} from '@/components/ui/combobox';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -79,6 +87,7 @@ export default function PrayerRequestsPage() {
   const [formData, setFormData] = useState<PrayerRequestFormData>(initialFormData);
   const [formError, setFormError] = useState('');
   const [requestorType, setRequestorType] = useState<'member' | 'guest'>('member');
+  const [memberSearch, setMemberSearch] = useState('');
   
   const { canView, canEdit, canDelete, isLoading: permissionsLoading } = useModulePermissions();
   const createPrayerRequest = useCreatePrayerRequest();
@@ -86,6 +95,21 @@ export default function PrayerRequestsPage() {
   // Fetch members for the dropdown
   const { data: membersData } = useMembers({ limit: 100 });
   const members = membersData?.data ?? [];
+
+  // Filter members based on search
+  const filteredMembers = useMemo(() => {
+    if (!memberSearch.trim()) return members;
+    const searchLower = memberSearch.toLowerCase();
+    return members.filter((member) => {
+      const fullName = `${member.firstName} ${member.lastName}`.toLowerCase();
+      return fullName.includes(searchLower);
+    });
+  }, [members, memberSearch]);
+
+  // Get selected member for display
+  const selectedMember = useMemo(() => {
+    return members.find((m) => m.id === formData.memberId);
+  }, [members, formData.memberId]);
 
   const { data, isLoading } = usePrayerRequests({
     search: search || undefined,
@@ -113,6 +137,7 @@ export default function PrayerRequestsPage() {
     setFormData(initialFormData);
     setFormError('');
     setRequestorType('member');
+    setMemberSearch('');
     setIsAddDialogOpen(true);
   };
 
@@ -120,6 +145,7 @@ export default function PrayerRequestsPage() {
     setIsAddDialogOpen(false);
     setFormData(initialFormData);
     setFormError('');
+    setMemberSearch('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -268,20 +294,36 @@ export default function PrayerRequestsPage() {
             {requestorType === 'member' ? (
               <div className="space-y-2">
                 <Label htmlFor="memberId">Select Member</Label>
-                <select
-                  id="memberId"
-                  name="memberId"
+                <Combobox
                   value={formData.memberId}
-                  onChange={handleFormChange}
-                  className="w-full h-10 rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                  onValueChange={(value) => {
+                    setFormData(prev => ({ ...prev, memberId: value as string }));
+                    setMemberSearch('');
+                  }}
                 >
-                  <option value="">-- Select a member (optional) --</option>
-                  {members.map((member) => (
-                    <option key={member.id} value={member.id}>
-                      {member.firstName} {member.lastName}
-                    </option>
-                  ))}
-                </select>
+                  <ComboboxInput
+                    placeholder={selectedMember ? `${selectedMember.firstName} ${selectedMember.lastName}` : "Search for a member..."}
+                    value={memberSearch}
+                    onChange={(e) => setMemberSearch(e.target.value)}
+                    showClear={!!formData.memberId}
+                    className="w-full"
+                  />
+                  <ComboboxContent>
+                    <ComboboxList>
+                      <ComboboxEmpty>No members found</ComboboxEmpty>
+                      {filteredMembers.map((member) => (
+                        <ComboboxItem key={member.id} value={member.id}>
+                          {member.firstName} {member.lastName}
+                        </ComboboxItem>
+                      ))}
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
+                {formData.memberId && selectedMember && (
+                  <p className="text-xs text-muted-foreground">
+                    Selected: {selectedMember.firstName} {selectedMember.lastName}
+                  </p>
+                )}
               </div>
             ) : (
               <div className="space-y-4">

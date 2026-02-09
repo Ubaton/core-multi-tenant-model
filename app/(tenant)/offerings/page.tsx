@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Plus, Search, DollarSign, TrendingUp, Calendar, Loader2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +14,14 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  Combobox,
+  ComboboxInput,
+  ComboboxContent,
+  ComboboxList,
+  ComboboxItem,
+  ComboboxEmpty,
+} from '@/components/ui/combobox';
 import {
   AlertDialog,
   AlertDialogContent,
@@ -97,6 +105,7 @@ export default function OfferingsPage() {
   const [formData, setFormData] = useState<OfferingFormData>(initialFormData);
   const [formError, setFormError] = useState('');
   const [giverType, setGiverType] = useState<'member' | 'guest'>('member');
+  const [memberSearch, setMemberSearch] = useState('');
   
   const { canView, isLoading: permissionsLoading } = useModulePermissions();
   const createOffering = useCreateOffering();
@@ -104,6 +113,22 @@ export default function OfferingsPage() {
   // Fetch members for the dropdown
   const { data: membersData } = useMembers({ limit: 100 });
   const members = membersData?.data ?? [];
+
+  // Filter members based on search
+  const filteredMembers = useMemo(() => {
+    if (!memberSearch.trim()) return members;
+    const searchLower = memberSearch.toLowerCase();
+    return members.filter((member) => {
+      const fullName = `${member.firstName} ${member.lastName}`.toLowerCase();
+      const membershipId = member.membershipId?.toLowerCase() || '';
+      return fullName.includes(searchLower) || membershipId.includes(searchLower);
+    });
+  }, [members, memberSearch]);
+
+  // Get selected member for display
+  const selectedMember = useMemo(() => {
+    return members.find((m) => m.id === formData.memberId);
+  }, [members, formData.memberId]);
 
   const { data, isLoading } = useOfferings({
     search: search || undefined,
@@ -125,6 +150,7 @@ export default function OfferingsPage() {
     setFormData(initialFormData);
     setFormError('');
     setGiverType('member');
+    setMemberSearch('');
     setIsAddDialogOpen(true);
   };
 
@@ -132,6 +158,7 @@ export default function OfferingsPage() {
     setIsAddDialogOpen(false);
     setFormData(initialFormData);
     setFormError('');
+    setMemberSearch('');
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -253,20 +280,41 @@ export default function OfferingsPage() {
             {giverType === 'member' ? (
               <div className="space-y-2">
                 <Label htmlFor="memberId">Select Member</Label>
-                <select
-                  id="memberId"
-                  name="memberId"
+                <Combobox
                   value={formData.memberId}
-                  onChange={handleFormChange}
-                  className="w-full h-10 rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                  onValueChange={(value) => {
+                    setFormData(prev => ({ ...prev, memberId: value as string }));
+                    setMemberSearch('');
+                  }}
                 >
-                  <option value="">-- Select a member (optional) --</option>
-                  {members.map((member) => (
-                    <option key={member.id} value={member.id}>
-                      {member.firstName} {member.lastName} {member.membershipId ? `(${member.membershipId})` : ''}
-                    </option>
-                  ))}
-                </select>
+                  <ComboboxInput
+                    placeholder={selectedMember ? `${selectedMember.firstName} ${selectedMember.lastName}` : "Search for a member..."}
+                    value={memberSearch}
+                    onChange={(e) => setMemberSearch(e.target.value)}
+                    showClear={!!formData.memberId}
+                    className="w-full"
+                  />
+                  <ComboboxContent>
+                    <ComboboxList>
+                      <ComboboxEmpty>No members found</ComboboxEmpty>
+                      {filteredMembers.map((member) => (
+                        <ComboboxItem key={member.id} value={member.id}>
+                          <div className="flex flex-col">
+                            <span>{member.firstName} {member.lastName}</span>
+                            {member.membershipId && (
+                              <span className="text-xs text-muted-foreground">{member.membershipId}</span>
+                            )}
+                          </div>
+                        </ComboboxItem>
+                      ))}
+                    </ComboboxList>
+                  </ComboboxContent>
+                </Combobox>
+                {formData.memberId && selectedMember && (
+                  <p className="text-xs text-muted-foreground">
+                    Selected: {selectedMember.firstName} {selectedMember.lastName}
+                  </p>
+                )}
               </div>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2">

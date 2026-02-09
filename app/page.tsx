@@ -65,9 +65,9 @@ export default function HomePage() {
       {/* Hero Section */}
       <section className="container mx-auto px-4 py-20 text-center">
         <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-gray-900 dark:text-white mb-6">
-          Modern Church Management
+          Unity Fellowship Church
           <br />
-          <span className="text-primary">Made Simple</span>
+          <span className="text-primary">Management System</span>
         </h1>
         <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-8">
           A comprehensive multi-tenant platform for managing your church community, 
@@ -76,12 +76,12 @@ export default function HomePage() {
         <div className="flex items-center justify-center gap-4">
           <Link href="/login">
             <Button size="lg" className="gap-2">
-              Start Free Trial
+              Get Started
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
           <Button size="lg" variant="outline">
-            Watch Demo
+            Learn More
           </Button>
         </div>
       </section>
