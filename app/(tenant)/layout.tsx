@@ -4,8 +4,9 @@
  * ════════════════════════════════════════════════════════════════════════════
  */
 
-import { Sidebar, TenantMobileNav } from '@/components/dashboard/sidebar';
+import { Sidebar, TenantMobileNav, TenantContentWrapper } from '@/components/dashboard/sidebar';
 import { Header } from '@/components/dashboard/header';
+import { SidebarProvider } from '@/context/sidebar-context';
 
 export default function TenantDashboardLayout({
   children,
@@ -13,16 +14,18 @@ export default function TenantDashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="min-h-screen bg-muted/30">
-      <Sidebar />
-      <div className="lg:pl-72">
-        <Header MobileNav={TenantMobileNav} />
-        <main className="py-6">
-          <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
-            {children}
-          </div>
-        </main>
+    <SidebarProvider storageKey="tenant-sidebar-collapsed">
+      <div className="min-h-screen bg-muted/30">
+        <Sidebar />
+        <TenantContentWrapper>
+          <Header MobileNav={TenantMobileNav} />
+          <main className="py-6">
+            <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
+              {children}
+            </div>
+          </main>
+        </TenantContentWrapper>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
