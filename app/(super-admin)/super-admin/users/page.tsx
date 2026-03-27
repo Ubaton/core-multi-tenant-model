@@ -8,17 +8,18 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { 
-  Plus, 
-  Search, 
-  MoreHorizontal, 
-  Eye, 
-  Pencil, 
-  Trash2, 
+import {
+  Plus,
+  Search,
+  MoreHorizontal,
+  Eye,
+  Pencil,
+  Trash2,
   User,
   Shield,
   UserCog,
   Users as UsersIcon,
+  Key,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -270,6 +271,17 @@ export default function UsersPage() {
                                     Edit
                                   </Link>
                                 </DropdownMenuItem>
+                                {user.role === 'CHURCH_ADMIN' && (
+                                  <DropdownMenuItem>
+                                    <Link
+                                      href="/super-admin/access"
+                                      className="flex items-center w-full"
+                                    >
+                                      <Key className="mr-2 h-4 w-4" />
+                                      Manage Permissions
+                                    </Link>
+                                  </DropdownMenuItem>
+                                )}
                               </DropdownMenuGroup>
                               <DropdownMenuSeparator />
                               <DropdownMenuItem

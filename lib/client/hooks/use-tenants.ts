@@ -91,12 +91,27 @@ export function useTenant(id: string) {
   });
 }
 
+interface CreatedUserSummary {
+  id: string;
+  email: string;
+  firstName: string;
+  lastName: string;
+  role: string;
+}
+
+interface CreateTenantResponse {
+  tenant: Tenant;
+  adminUser: CreatedUserSummary | null;
+  createdUsers: CreatedUserSummary[];
+  generatedPasswords: Record<string, string>;
+}
+
 export function useCreateTenant() {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: async (data: CreateTenantInput) => {
-      const response = await post<Tenant>('/api/tenants', data);
+      const response = await post<CreateTenantResponse>('/api/tenants', data);
       return response.data!;
     },
     onSuccess: () => {

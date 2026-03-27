@@ -9,51 +9,370 @@
 import { useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Save, Building2, UserPlus, RefreshCw, Eye, EyeOff, Copy, Check } from 'lucide-react';
+import {
+  ArrowLeft,
+  Save,
+  Building2,
+  UserPlus,
+  RefreshCw,
+  Eye,
+  EyeOff,
+  Copy,
+  Check,
+  Plus,
+  Trash2,
+  Shield,
+  UserCog,
+  User,
+  Phone,
+  Users,
+  Info,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useCreateTenant, useTenants } from '@/lib/client';
 import { toast } from 'sonner';
+import { cn } from '@/lib/utils';
 
-// Default email domain as required
+// ─── Constants ───────────────────────────────────────────────────────────────
+
 const DEFAULT_EMAIL_DOMAIN = 'unityfellowship.org.za';
 
-/**
- * Generate a secure random password
- */
-function generatePassword(length: number = 12): string {
+type TenantRole = 'CHURCH_ADMIN' | 'STAFF' | 'CALL_CENTER' | 'SUBSCRIBER' | 'MEMBER';
+
+const ROLE_CONFIG: Record<TenantRole, {
+  label: string;
+  description: string;
+  color: string;
+  Icon: React.ElementType;
+}> = {
+  CHURCH_ADMIN: {
+    label: 'Church Admin',
+    description: 'Full access within this tenant',
+    color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+    Icon: UserCog,
+  },
+  STAFF: {
+    label: 'Staff',
+    description: 'Limited tenant access',
+    color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+    Icon: User,
+  },
+  CALL_CENTER: {
+    label: 'Call Center',
+    description: 'Call center operations',
+    color: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
+    Icon: Phone,
+  },
+  SUBSCRIBER: {
+    label: 'Subscriber',
+    description: 'Read-only access',
+    color: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400',
+    Icon: Users,
+  },
+  MEMBER: {
+    label: 'Member',
+    description: 'Basic member access',
+    color: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
+    Icon: Users,
+  },
+};
+
+// ─── Password Utilities ───────────────────────────────────────────────────────
+
+function generatePassword(length = 12): string {
   const uppercase = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
   const lowercase = 'abcdefghijklmnopqrstuvwxyz';
   const numbers = '0123456789';
   const special = '!@#$%^&*';
   const allChars = uppercase + lowercase + numbers + special;
-  
-  // Ensure at least one of each required type
+
   let password = '';
   password += uppercase[Math.floor(Math.random() * uppercase.length)];
   password += lowercase[Math.floor(Math.random() * lowercase.length)];
   password += numbers[Math.floor(Math.random() * numbers.length)];
   password += special[Math.floor(Math.random() * special.length)];
-  
-  // Fill the rest randomly
+
   for (let i = password.length; i < length; i++) {
     password += allChars[Math.floor(Math.random() * allChars.length)];
   }
-  
-  // Shuffle the password
-  return password.split('').sort(() => Math.random() - 0.5).join('');
+
+  return password
+    .split('')
+    .sort(() => Math.random() - 0.5)
+    .join('');
 }
+
+// ─── User Entry Types ─────────────────────────────────────────────────────────
+
+interface UserEntry {
+  id: string; // local key only
+  role: TenantRole;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  password: string;
+  showPassword: boolean;
+  passwordCopied: boolean;
+}
+
+function createUserEntry(role: TenantRole): UserEntry {
+  return {
+    id: Math.random().toString(36).slice(2),
+    role,
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    password: generatePassword(),
+    showPassword: false,
+    passwordCopied: false,
+  };
+}
+
+// ─── User Row Component ───────────────────────────────────────────────────────
+
+interface UserRowProps {
+  entry: UserEntry;
+  isFixed?: boolean; // Can't delete (Church Admin primary)
+  errors: Record<string, string>;
+  onUpdate: (id: string, field: keyof UserEntry, value: unknown) => void;
+  onRemove: (id: string) => void;
+  index: number;
+}
+
+function UserRow({ entry, isFixed, errors, onUpdate, onRemove, index }: UserRowProps) {
+  const roleConfig = ROLE_CONFIG[entry.role];
+  const RoleIcon = roleConfig.Icon;
+
+  const handleCopyPassword = async () => {
+    try {
+      await navigator.clipboard.writeText(entry.password);
+      onUpdate(entry.id, 'passwordCopied', true);
+      toast.success('Password copied to clipboard');
+      setTimeout(() => onUpdate(entry.id, 'passwordCopied', false), 2000);
+    } catch {
+      toast.error('Failed to copy password');
+    }
+  };
+
+  const prefix = `user_${entry.id}`;
+
+  return (
+    <div
+      className={cn(
+        'rounded-xl border p-4 space-y-4 transition-colors',
+        isFixed
+          ? 'border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/10'
+          : 'border-border bg-card'
+      )}
+    >
+      {/* Row Header */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex items-center gap-2.5">
+          <div
+            className={cn(
+              'p-1.5 rounded-md',
+              isFixed
+                ? 'bg-purple-100 dark:bg-purple-900/30'
+                : 'bg-muted'
+            )}
+          >
+            <RoleIcon
+              className={cn(
+                'h-4 w-4',
+                isFixed
+                  ? 'text-purple-600 dark:text-purple-400'
+                  : 'text-muted-foreground'
+              )}
+            />
+          </div>
+          {isFixed ? (
+            <div>
+              <p className="text-sm font-semibold">Church Admin</p>
+              <p className="text-xs text-muted-foreground">Primary tenant administrator</p>
+            </div>
+          ) : (
+            <select
+              value={entry.role}
+              onChange={(e) => onUpdate(entry.id, 'role', e.target.value as TenantRole)}
+              className="h-8 rounded-md border border-input bg-background px-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+            >
+              <option value="STAFF">Staff</option>
+              <option value="CALL_CENTER">Call Center</option>
+              <option value="SUBSCRIBER">Subscriber</option>
+              <option value="MEMBER">Member</option>
+            </select>
+          )}
+          <Badge className={cn('text-xs', roleConfig.color)}>
+            {roleConfig.label}
+          </Badge>
+        </div>
+
+        {!isFixed && (
+          <Button
+            type="button"
+            variant="ghost"
+            size="icon"
+            className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+            onClick={() => onRemove(entry.id)}
+            title="Remove this user"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
+        )}
+      </div>
+
+      {/* Name Row */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor={`${prefix}_firstName`} className="text-xs">
+            First Name <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id={`${prefix}_firstName`}
+            value={entry.firstName}
+            onChange={(e) => onUpdate(entry.id, 'firstName', e.target.value)}
+            placeholder="First name"
+            className="h-9"
+          />
+          {errors[`${prefix}_firstName`] && (
+            <p className="text-xs text-red-500">{errors[`${prefix}_firstName`]}</p>
+          )}
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor={`${prefix}_lastName`} className="text-xs">
+            Last Name <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id={`${prefix}_lastName`}
+            value={entry.lastName}
+            onChange={(e) => onUpdate(entry.id, 'lastName', e.target.value)}
+            placeholder="Last name"
+            className="h-9"
+          />
+          {errors[`${prefix}_lastName`] && (
+            <p className="text-xs text-red-500">{errors[`${prefix}_lastName`]}</p>
+          )}
+        </div>
+      </div>
+
+      {/* Email & Phone Row */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div className="space-y-1.5">
+          <Label htmlFor={`${prefix}_email`} className="text-xs">
+            Email <span className="text-red-500">*</span>
+          </Label>
+          <Input
+            id={`${prefix}_email`}
+            type="email"
+            value={entry.email}
+            onChange={(e) => onUpdate(entry.id, 'email', e.target.value)}
+            placeholder={isFixed ? `info@${DEFAULT_EMAIL_DOMAIN}` : 'user@example.com'}
+            className="h-9"
+          />
+          {errors[`${prefix}_email`] && (
+            <p className="text-xs text-red-500">{errors[`${prefix}_email`]}</p>
+          )}
+        </div>
+        <div className="space-y-1.5">
+          <Label htmlFor={`${prefix}_phone`} className="text-xs">
+            Phone
+          </Label>
+          <Input
+            id={`${prefix}_phone`}
+            type="tel"
+            value={entry.phone}
+            onChange={(e) => onUpdate(entry.id, 'phone', e.target.value)}
+            placeholder="+27 12 345 6789"
+            className="h-9"
+          />
+        </div>
+      </div>
+
+      {/* Password Row */}
+      <div className="space-y-1.5">
+        <Label htmlFor={`${prefix}_password`} className="text-xs">
+          Password <span className="text-red-500">*</span>
+        </Label>
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Input
+              id={`${prefix}_password`}
+              type={entry.showPassword ? 'text' : 'password'}
+              value={entry.password}
+              onChange={(e) => onUpdate(entry.id, 'password', e.target.value)}
+              className="font-mono pr-10 h-9 text-sm"
+            />
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon"
+              className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
+              onClick={() => onUpdate(entry.id, 'showPassword', !entry.showPassword)}
+            >
+              {entry.showPassword ? (
+                <EyeOff className="h-3.5 w-3.5" />
+              ) : (
+                <Eye className="h-3.5 w-3.5" />
+              )}
+            </Button>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 shrink-0"
+            onClick={() => onUpdate(entry.id, 'password', generatePassword())}
+            title="Generate new password"
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            size="icon"
+            className="h-9 w-9 shrink-0"
+            onClick={handleCopyPassword}
+            title="Copy password"
+          >
+            {entry.passwordCopied ? (
+              <Check className="h-3.5 w-3.5 text-green-500" />
+            ) : (
+              <Copy className="h-3.5 w-3.5" />
+            )}
+          </Button>
+        </div>
+        {errors[`${prefix}_password`] && (
+          <p className="text-xs text-red-500">{errors[`${prefix}_password`]}</p>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main Page ────────────────────────────────────────────────────────────────
+
+type CreatedUserResult = {
+  email: string;
+  password: string;
+  firstName: string;
+  lastName: string;
+  role: TenantRole;
+};
 
 export default function NewTenantPage() {
   const router = useRouter();
   const createTenant = useCreateTenant();
   const { data: tenantsData } = useTenants({ limit: 100 });
-  
-  const hqTenants = tenantsData?.data?.filter(t => t.isHQ) ?? [];
+  const hqTenants = tenantsData?.data?.filter((t) => t.isHQ) ?? [];
 
+  // Tenant form data
   const [formData, setFormData] = useState({
     name: '',
     slug: '',
@@ -72,47 +391,43 @@ export default function NewTenantPage() {
     isActive: true,
   });
 
-  // Admin user state
-  const [createAdminUser, setCreateAdminUser] = useState(true);
-  const [adminUser, setAdminUser] = useState({
-    firstName: '',
-    lastName: '',
-    email: `info@${DEFAULT_EMAIL_DOMAIN}`,
-    phone: '',
-    password: generatePassword(),
-  });
-  const [showPassword, setShowPassword] = useState(false);
-  const [passwordCopied, setPasswordCopied] = useState(false);
+  // Users to create
+  const [createUsers, setCreateUsers] = useState(true);
+  const [users, setUsers] = useState<UserEntry[]>([createUserEntry('CHURCH_ADMIN')]);
 
-  // Success state to show credentials after creation
-  const [createdCredentials, setCreatedCredentials] = useState<{
-    email: string;
-    password: string;
+  // Success state
+  const [createdResults, setCreatedResults] = useState<{
     tenantName: string;
+    users: CreatedUserResult[];
   } | null>(null);
 
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  // ── Tenant Form Handlers ────────────────────────────────────────────────
+
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
+  ) => {
     const { name, value, type } = e.target;
     const checked = (e.target as HTMLInputElement).checked;
-    
-    setFormData(prev => ({
+
+    setFormData((prev) => ({
       ...prev,
       [name]: type === 'checkbox' ? checked : value,
     }));
 
-    // Auto-generate slug from name
     if (name === 'name') {
-      setFormData(prev => ({
+      setFormData((prev) => ({
         ...prev,
-        slug: value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
+        slug: value
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, ''),
       }));
     }
 
-    // Clear error when field is edited
     if (errors[name]) {
-      setErrors(prev => {
+      setErrors((prev) => {
         const next = { ...prev };
         delete next[name];
         return next;
@@ -120,52 +435,41 @@ export default function NewTenantPage() {
     }
   };
 
-  // Handle admin user field changes
-  const handleAdminChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setAdminUser(prev => ({
-      ...prev,
-      [name]: value,
-    }));
+  // ── User Row Handlers ───────────────────────────────────────────────────
 
-    // Clear error when field is edited
-    if (errors[`admin_${name}`]) {
-      setErrors(prev => {
-        const next = { ...prev };
-        delete next[`admin_${name}`];
-        return next;
-      });
-    }
-  };
+  const handleUpdateUser = useCallback(
+    (id: string, field: keyof UserEntry, value: unknown) => {
+      setUsers((prev) =>
+        prev.map((u) => (u.id === id ? { ...u, [field]: value } : u))
+      );
+      // Clear related error
+      const prefix = `user_${id}`;
+      const errorKey = `${prefix}_${String(field)}`;
+      if (errors[errorKey]) {
+        setErrors((prev) => {
+          const next = { ...prev };
+          delete next[errorKey];
+          return next;
+        });
+      }
+    },
+    [errors]
+  );
 
-  // Generate new password
-  const handleGeneratePassword = useCallback(() => {
-    setAdminUser(prev => ({
-      ...prev,
-      password: generatePassword(),
-    }));
-    setPasswordCopied(false);
+  const handleRemoveUser = useCallback((id: string) => {
+    setUsers((prev) => prev.filter((u) => u.id !== id));
   }, []);
 
-  // Copy password to clipboard
-  const handleCopyPassword = useCallback(async () => {
-    try {
-      await navigator.clipboard.writeText(adminUser.password);
-      setPasswordCopied(true);
-      toast.success('Password copied to clipboard');
-      setTimeout(() => setPasswordCopied(false), 2000);
-    } catch (err) {
-      toast.error('Failed to copy password');
-      console.error('Failed to copy password:', err);
-    }
-  }, [adminUser.password]);
+  const handleAddUser = (role: TenantRole) => {
+    setUsers((prev) => [...prev, createUserEntry(role)]);
+  };
+
+  // ── Validation ──────────────────────────────────────────────────────────
 
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    if (!formData.name.trim()) {
-      newErrors.name = 'Name is required';
-    }
+    if (!formData.name.trim()) newErrors.name = 'Name is required';
 
     if (!formData.slug.trim()) {
       newErrors.slug = 'Slug is required';
@@ -181,35 +485,51 @@ export default function NewTenantPage() {
       newErrors.parentId = 'Parent organization is required for branches';
     }
 
-    // Validate admin user fields if creating admin
-    if (createAdminUser) {
-      if (!adminUser.firstName.trim()) {
-        newErrors.admin_firstName = 'Admin first name is required';
-      }
-      if (!adminUser.lastName.trim()) {
-        newErrors.admin_lastName = 'Admin last name is required';
-      }
-      if (!adminUser.email.trim()) {
-        newErrors.admin_email = 'Admin email is required';
-      } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(adminUser.email)) {
-        newErrors.admin_email = 'Invalid email format';
-      }
-      if (!adminUser.password || adminUser.password.length < 8) {
-        newErrors.admin_password = 'Password must be at least 8 characters';
-      }
+    if (createUsers) {
+      const emailsSeen = new Set<string>();
+
+      users.forEach((u) => {
+        const prefix = `user_${u.id}`;
+
+        if (!u.firstName.trim()) newErrors[`${prefix}_firstName`] = 'First name is required';
+        if (!u.lastName.trim()) newErrors[`${prefix}_lastName`] = 'Last name is required';
+
+        if (!u.email.trim()) {
+          newErrors[`${prefix}_email`] = 'Email is required';
+        } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(u.email)) {
+          newErrors[`${prefix}_email`] = 'Invalid email format';
+        } else if (emailsSeen.has(u.email.toLowerCase())) {
+          newErrors[`${prefix}_email`] = 'Duplicate email address';
+        } else {
+          emailsSeen.add(u.email.toLowerCase());
+        }
+
+        if (!u.password || u.password.length < 8) {
+          newErrors[`${prefix}_password`] = 'Password must be at least 8 characters';
+        }
+      });
     }
 
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
+  // ── Submit ──────────────────────────────────────────────────────────────
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!validateForm()) return;
 
     try {
-      const result = await createTenant.mutateAsync({
+      // Separate Church Admin from additional users
+      const churchAdminEntry = createUsers
+        ? users.find((u) => u.role === 'CHURCH_ADMIN') ?? null
+        : null;
+      const additionalEntries = createUsers
+        ? users.filter((u) => u.role !== 'CHURCH_ADMIN')
+        : [];
+
+      await createTenant.mutateAsync({
         name: formData.name,
         slug: formData.slug,
         description: formData.description || undefined,
@@ -224,101 +544,145 @@ export default function NewTenantPage() {
         timezone: formData.timezone,
         isHQ: formData.isHQ,
         parentId: formData.isHQ ? undefined : formData.parentId || undefined,
-        // Include admin user if checkbox is checked
-        adminUser: createAdminUser ? {
-          firstName: adminUser.firstName,
-          lastName: adminUser.lastName,
-          email: adminUser.email,
-          password: adminUser.password,
-          phone: adminUser.phone || undefined,
-        } : undefined,
+        adminUser: churchAdminEntry
+          ? {
+              firstName: churchAdminEntry.firstName,
+              lastName: churchAdminEntry.lastName,
+              email: churchAdminEntry.email,
+              password: churchAdminEntry.password,
+              phone: churchAdminEntry.phone || undefined,
+            }
+          : undefined,
+        additionalUsers:
+          additionalEntries.length > 0
+            ? additionalEntries.map((u) => ({
+                role: u.role,
+                firstName: u.firstName,
+                lastName: u.lastName,
+                email: u.email,
+                password: u.password,
+                phone: u.phone || undefined,
+              }))
+            : undefined,
       });
 
-      // If admin user was created, show credentials modal
-      if (createAdminUser && result.adminUser) {
-        setCreatedCredentials({
-          email: adminUser.email,
-          password: adminUser.password,
+      if (createUsers && users.length > 0) {
+        setCreatedResults({
           tenantName: formData.name,
+          users: users.map((u) => ({
+            email: u.email,
+            password: u.password,
+            firstName: u.firstName,
+            lastName: u.lastName,
+            role: u.role,
+          })),
         });
       } else {
         router.push('/super-admin/tenants');
       }
-    } catch (error) {
-      // Error is handled by the mutation
+    } catch {
+      // Error handled by mutation
     }
   };
 
-  // If credentials were just created, show success modal
-  if (createdCredentials) {
+  // ─── Success Screen ────────────────────────────────────────────────────
+
+  if (createdResults) {
     return (
-      <div className="space-y-6">
-        <div className="flex items-center gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Tenant Created Successfully
-            </h1>
-            <p className="text-gray-500 dark:text-gray-400">
-              Share these credentials with the tenant administrator
-            </p>
-          </div>
+      <div className="space-y-6 max-w-2xl">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Tenant Created Successfully
+          </h1>
+          <p className="text-gray-500 dark:text-gray-400 mt-1">
+            Share these credentials with each user. Passwords are shown only once.
+          </p>
         </div>
 
-        <Card className="border-green-200 dark:border-green-800">
-          <CardHeader className="bg-green-50 dark:bg-green-900/20">
-            <CardTitle className="text-green-800 dark:text-green-200 flex items-center gap-2">
+        <Card className="border-emerald-200 dark:border-emerald-800">
+          <CardHeader className="bg-emerald-50 dark:bg-emerald-900/20 pb-4">
+            <CardTitle className="text-emerald-800 dark:text-emerald-200 flex items-center gap-2">
               <Check className="h-5 w-5" />
-              Admin Account Created for {createdCredentials.tenantName}
+              {createdResults.tenantName} — {createdResults.users.length} user
+              {createdResults.users.length !== 1 ? 's' : ''} created
             </CardTitle>
-            <CardDescription className="text-green-700 dark:text-green-300">
-              The following credentials have been generated. Make sure to securely share these with the tenant.
-              The user will be required to change their password on first login.
+            <CardDescription className="text-emerald-700 dark:text-emerald-300">
+              All users must change their password on first login.
             </CardDescription>
           </CardHeader>
-          <CardContent className="pt-6 space-y-4">
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Email (Login Identifier)</Label>
-              <div className="flex items-center gap-2">
-                <Input 
-                  value={createdCredentials.email} 
-                  readOnly 
-                  className="font-mono bg-gray-50 dark:bg-gray-800"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => navigator.clipboard.writeText(createdCredentials.email)}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-            </div>
+          <CardContent className="pt-4 space-y-4">
+            {createdResults.users.map((u, i) => {
+              const roleConfig = ROLE_CONFIG[u.role];
+              const RoleIcon = roleConfig.Icon;
 
-            <div className="space-y-2">
-              <Label className="text-sm font-medium">Temporary Password</Label>
-              <div className="flex items-center gap-2">
-                <Input 
-                  type="text"
-                  value={createdCredentials.password} 
-                  readOnly 
-                  className="font-mono bg-gray-50 dark:bg-gray-800"
-                />
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => navigator.clipboard.writeText(createdCredentials.password)}
-                >
-                  <Copy className="h-4 w-4" />
-                </Button>
-              </div>
-              <p className="text-xs text-amber-600 dark:text-amber-400">
-                ⚠️ This password will not be shown again. Make sure to copy and share it securely.
+              return (
+                <div key={i} className="rounded-lg border p-4 space-y-3">
+                  {/* User Header */}
+                  <div className="flex items-center gap-2">
+                    <RoleIcon className="h-4 w-4 text-muted-foreground" />
+                    <span className="font-medium text-sm">
+                      {u.firstName} {u.lastName}
+                    </span>
+                    <Badge className={cn('text-xs', roleConfig.color)}>
+                      {roleConfig.label}
+                    </Badge>
+                  </div>
+
+                  {/* Email */}
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">Email</p>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={u.email}
+                        readOnly
+                        className="font-mono bg-muted h-9 text-sm"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-9 w-9 shrink-0"
+                        onClick={() => navigator.clipboard.writeText(u.email)}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+
+                  {/* Password */}
+                  <div className="space-y-1">
+                    <p className="text-xs font-medium text-muted-foreground">
+                      Temporary Password
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Input
+                        value={u.password}
+                        readOnly
+                        className="font-mono bg-muted h-9 text-sm"
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="icon"
+                        className="h-9 w-9 shrink-0"
+                        onClick={() => navigator.clipboard.writeText(u.password)}
+                      >
+                        <Copy className="h-4 w-4" />
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+              <Info className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <p className="text-xs text-amber-700 dark:text-amber-300">
+                These passwords will not be shown again. Share them securely with each user.
               </p>
             </div>
 
-            <div className="pt-4 border-t">
+            <div className="pt-2 border-t">
               <Button onClick={() => router.push('/super-admin/tenants')}>
                 Continue to Tenants List
               </Button>
@@ -328,6 +692,8 @@ export default function NewTenantPage() {
       </div>
     );
   }
+
+  // ─── Form ──────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
@@ -349,7 +715,7 @@ export default function NewTenantPage() {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Basic Information */}
+        {/* ── Organization Details ──────────────────────────────────────── */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -432,7 +798,7 @@ export default function NewTenantPage() {
                   type="tel"
                   value={formData.phone}
                   onChange={handleChange}
-                  placeholder="+234 801 234 5678"
+                  placeholder="+27 12 345 6789"
                 />
               </div>
             </div>
@@ -451,13 +817,11 @@ export default function NewTenantPage() {
           </CardContent>
         </Card>
 
-        {/* Location */}
+        {/* ── Location ─────────────────────────────────────────────────── */}
         <Card>
           <CardHeader>
             <CardTitle>Location</CardTitle>
-            <CardDescription>
-              Address and location details
-            </CardDescription>
+            <CardDescription>Address and location details</CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
             <div className="space-y-2">
@@ -535,7 +899,6 @@ export default function NewTenantPage() {
                 onChange={handleChange}
                 className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
               >
-                <option value="Africa/Johannesburg">Africa/Johannesburg (WAT)</option>
                 <option value="Africa/Johannesburg">Africa/Johannesburg (SAST)</option>
                 <option value="Africa/Nairobi">Africa/Nairobi (EAT)</option>
                 <option value="Europe/London">Europe/London (GMT/BST)</option>
@@ -546,7 +909,7 @@ export default function NewTenantPage() {
           </CardContent>
         </Card>
 
-        {/* Organization Type */}
+        {/* ── Organization Type ────────────────────────────────────────── */}
         <Card>
           <CardHeader>
             <CardTitle>Organization Type</CardTitle>
@@ -582,7 +945,7 @@ export default function NewTenantPage() {
                   className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                 >
                   <option value="">Select parent organization</option>
-                  {hqTenants.map(tenant => (
+                  {hqTenants.map((tenant) => (
                     <option key={tenant.id} value={tenant.id}>
                       {tenant.name}
                     </option>
@@ -610,163 +973,114 @@ export default function NewTenantPage() {
           </CardContent>
         </Card>
 
-        {/* Admin User Account */}
+        {/* ── Initial Users ─────────────────────────────────────────────── */}
         <Card>
           <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <UserPlus className="h-5 w-5" />
-              Admin User Account
-            </CardTitle>
-            <CardDescription>
-              Create an administrator account for this tenant. They will be required to change their password on first login.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-3">
-              <input
-                type="checkbox"
-                id="createAdminUser"
-                checked={createAdminUser}
-                onChange={(e) => setCreateAdminUser(e.target.checked)}
-                className="h-4 w-4 rounded border-gray-300"
-              />
-              <Label htmlFor="createAdminUser" className="font-normal">
-                Create admin user account for this tenant
-              </Label>
+            <div className="flex items-start justify-between gap-4">
+              <div>
+                <CardTitle className="flex items-center gap-2">
+                  <UserPlus className="h-5 w-5" />
+                  Initial User Accounts
+                </CardTitle>
+                <CardDescription className="mt-1">
+                  Create user accounts for this tenant. All users will be prompted to change
+                  their password on first login.
+                </CardDescription>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <input
+                  type="checkbox"
+                  id="createUsers"
+                  checked={createUsers}
+                  onChange={(e) => setCreateUsers(e.target.checked)}
+                  className="h-4 w-4 rounded border-gray-300"
+                />
+                <Label htmlFor="createUsers" className="font-normal text-sm whitespace-nowrap">
+                  Create users now
+                </Label>
+              </div>
             </div>
+          </CardHeader>
 
-            {createAdminUser && (
-              <div className="space-y-4 pt-4 border-t">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="admin_firstName">
-                      First Name <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="admin_firstName"
-                      name="firstName"
-                      value={adminUser.firstName}
-                      onChange={handleAdminChange}
-                      placeholder="Enter first name"
-                    />
-                    {errors.admin_firstName && (
-                      <p className="text-sm text-red-500">{errors.admin_firstName}</p>
-                    )}
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="admin_lastName">
-                      Last Name <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="admin_lastName"
-                      name="lastName"
-                      value={adminUser.lastName}
-                      onChange={handleAdminChange}
-                      placeholder="Enter last name"
-                    />
-                    {errors.admin_lastName && (
-                      <p className="text-sm text-red-500">{errors.admin_lastName}</p>
-                    )}
-                  </div>
-                </div>
+          {createUsers && (
+            <CardContent className="space-y-4">
+              {/* Role summary pills */}
+              <div className="flex flex-wrap gap-2 p-3 bg-muted/40 rounded-lg">
+                <span className="text-xs text-muted-foreground self-center">
+                  Users to create:
+                </span>
+                {users.map((u) => {
+                  const roleConfig = ROLE_CONFIG[u.role];
+                  return (
+                    <Badge key={u.id} className={cn('text-xs', roleConfig.color)}>
+                      {roleConfig.label}
+                    </Badge>
+                  );
+                })}
+              </div>
 
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="admin_email">
-                      Email (Login Identifier) <span className="text-red-500">*</span>
-                    </Label>
-                    <Input
-                      id="admin_email"
-                      name="email"
-                      type="email"
-                      value={adminUser.email}
-                      onChange={handleAdminChange}
-                      placeholder={`info@${DEFAULT_EMAIL_DOMAIN}`}
-                    />
-                    {errors.admin_email && (
-                      <p className="text-sm text-red-500">{errors.admin_email}</p>
-                    )}
-                    <p className="text-xs text-muted-foreground">
-                      Default: info@{DEFAULT_EMAIL_DOMAIN}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="admin_phone">Phone</Label>
-                    <Input
-                      id="admin_phone"
-                      name="phone"
-                      type="tel"
-                      value={adminUser.phone}
-                      onChange={handleAdminChange}
-                      placeholder="+27 12 345 6789"
-                    />
-                  </div>
-                </div>
+              {/* User rows */}
+              <div className="space-y-4">
+                {users.map((u, i) => (
+                  <UserRow
+                    key={u.id}
+                    entry={u}
+                    isFixed={u.role === 'CHURCH_ADMIN' && i === 0}
+                    errors={errors}
+                    onUpdate={handleUpdateUser}
+                    onRemove={handleRemoveUser}
+                    index={i}
+                  />
+                ))}
+              </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="admin_password">
-                    Generated Password <span className="text-red-500">*</span>
-                  </Label>
-                  <div className="flex items-center gap-2">
-                    <div className="relative flex-1">
-                      <Input
-                        id="admin_password"
-                        name="password"
-                        type={showPassword ? 'text' : 'password'}
-                        value={adminUser.password}
-                        onChange={handleAdminChange}
-                        className="font-mono pr-20"
-                      />
+              {/* Add user buttons */}
+              <div className="pt-2 border-t">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider mb-3">
+                  Add another user
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {(
+                    [
+                      'CHURCH_ADMIN',
+                      'STAFF',
+                      'CALL_CENTER',
+                      'SUBSCRIBER',
+                      'MEMBER',
+                    ] as TenantRole[]
+                  ).map((role) => {
+                    const roleConfig = ROLE_CONFIG[role];
+                    const RoleIcon = roleConfig.Icon;
+                    return (
                       <Button
+                        key={role}
                         type="button"
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
-                        onClick={() => setShowPassword(!showPassword)}
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleAddUser(role)}
+                        className="gap-1.5 h-8 text-xs"
                       >
-                        {showPassword ? (
-                          <EyeOff className="h-4 w-4" />
-                        ) : (
-                          <Eye className="h-4 w-4" />
-                        )}
+                        <Plus className="h-3 w-3" />
+                        <RoleIcon className="h-3 w-3" />
+                        {roleConfig.label}
                       </Button>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={handleGeneratePassword}
-                      title="Generate new password"
-                    >
-                      <RefreshCw className="h-4 w-4" />
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      onClick={handleCopyPassword}
-                      title="Copy password"
-                    >
-                      {passwordCopied ? (
-                        <Check className="h-4 w-4 text-green-500" />
-                      ) : (
-                        <Copy className="h-4 w-4" />
-                      )}
-                    </Button>
-                  </div>
-                  {errors.admin_password && (
-                    <p className="text-sm text-red-500">{errors.admin_password}</p>
-                  )}
-                  <p className="text-xs text-amber-600 dark:text-amber-400">
-                    ⚠️ Save this password before submitting. It will be shown once more after creation for you to share with the tenant.
-                  </p>
+                    );
+                  })}
                 </div>
               </div>
-            )}
-          </CardContent>
+
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                <Info className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-700 dark:text-amber-300">
+                  Save or copy all passwords before submitting — they will be shown once more
+                  after creation but cannot be retrieved later.
+                </p>
+              </div>
+            </CardContent>
+          )}
         </Card>
 
-        {/* Actions */}
+        {/* ── Actions ───────────────────────────────────────────────────── */}
         <div className="flex items-center justify-end gap-4">
           <Link href="/super-admin/tenants">
             <Button type="button" variant="outline">

@@ -8,11 +8,11 @@
 'use client';
 
 import { useState } from 'react';
-import { 
-  Shield, 
+import {
+  Shield,
   Key,
-  Lock,
-  Unlock,
+  CheckCircle2,
+  Circle,
   Eye,
   Pencil,
   Trash2,
@@ -22,6 +22,22 @@ import {
   RefreshCw,
   Building2,
   Globe,
+  LayoutDashboard,
+  Users,
+  Target,
+  DollarSign,
+  Heart,
+  MessageSquare,
+  Phone,
+  BarChart3,
+  Settings,
+  UserCog,
+  Building,
+  MinusCircle,
+  Lock,
+  User,
+  AlertCircle,
+  Info,
 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -37,28 +53,41 @@ import {
 } from '@/lib/client';
 import { useTenants } from '@/lib/client/hooks/use-tenants';
 
-// Role permissions matrix
+// ─── Configuration ──────────────────────────────────────────────────────────
+
 const roles = [
-  { id: 'SUPER_ADMIN', name: 'Super Admin', description: 'Full platform access' },
-  { id: 'CHURCH_ADMIN', name: 'Church Admin', description: 'Full access within tenant' },
-  { id: 'STAFF', name: 'Staff', description: 'Limited tenant access' },
-  { id: 'CALL_CENTER', name: 'Call Center', description: 'Call center operations' },
-  { id: 'SUBSCRIBER', name: 'Subscriber', description: 'Read-only access' },
-  { id: 'MEMBER', name: 'Member', description: 'Basic member access' },
+  {
+    id: 'SUPER_ADMIN',
+    name: 'Super Admin',
+    description: 'Full platform access',
+    shortName: 'SA',
+    protected: true,
+  },
+  {
+    id: 'CHURCH_ADMIN',
+    name: 'Church Admin',
+    description: 'Per-user permissions',
+    shortName: 'CA',
+    perUser: true,
+  },
+  { id: 'STAFF', name: 'Staff', description: 'Limited tenant access', shortName: 'ST' },
+  { id: 'CALL_CENTER', name: 'Call Center', description: 'Call center operations', shortName: 'CC' },
+  { id: 'SUBSCRIBER', name: 'Subscriber', description: 'Read-only access', shortName: 'SB' },
+  { id: 'MEMBER', name: 'Member', description: 'Basic member access', shortName: 'ME' },
 ];
 
 const modules = [
-  { id: 'dashboard', name: 'Dashboard', description: 'View dashboard and analytics' },
-  { id: 'members', name: 'Members', description: 'Manage church members' },
-  { id: 'leads', name: 'Leads', description: 'Manage leads and prospects' },
-  { id: 'offerings', name: 'Offerings', description: 'Manage offerings and donations' },
-  { id: 'prayer_requests', name: 'Prayer Requests', description: 'Manage prayer requests' },
-  { id: 'communications', name: 'Communications', description: 'Send messages and notifications' },
-  { id: 'calls', name: 'Call Center', description: 'Call center operations' },
-  { id: 'reports', name: 'Reports', description: 'View and export reports' },
-  { id: 'settings', name: 'Settings', description: 'Manage tenant settings' },
-  { id: 'users', name: 'User Management', description: 'Manage users and roles' },
-  { id: 'tenants', name: 'Tenant Management', description: 'Manage tenants (Super Admin)' },
+  { id: 'dashboard', name: 'Dashboard', Icon: LayoutDashboard },
+  { id: 'members', name: 'Members', Icon: Users },
+  { id: 'leads', name: 'Leads', Icon: Target },
+  { id: 'offerings', name: 'Offerings', Icon: DollarSign },
+  { id: 'prayer_requests', name: 'Prayer Requests', Icon: Heart },
+  { id: 'communications', name: 'Communications', Icon: MessageSquare },
+  { id: 'calls', name: 'Call Center', Icon: Phone },
+  { id: 'reports', name: 'Reports', Icon: BarChart3 },
+  { id: 'settings', name: 'Settings', Icon: Settings },
+  { id: 'users', name: 'User Mgmt', Icon: UserCog },
+  { id: 'tenants', name: 'Tenants', Icon: Building },
 ];
 
 const roleColors: Record<string, string> = {
@@ -70,7 +99,7 @@ const roleColors: Record<string, string> = {
   MEMBER: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
 };
 
-// Default permissions fallback
+// Fallback default permissions
 const defaultPermissions: Record<string, Record<string, { view: boolean; create: boolean; edit: boolean; delete: boolean }>> = {
   SUPER_ADMIN: {
     dashboard: { view: true, create: true, edit: true, delete: true },
@@ -152,6 +181,8 @@ const defaultPermissions: Record<string, Record<string, { view: boolean; create:
   },
 };
 
+// ─── Permission Toggle ───────────────────────────────────────────────────────
+
 interface PermissionToggleProps {
   granted: boolean;
   onClick: () => void;
@@ -162,8 +193,16 @@ interface PermissionToggleProps {
 function PermissionToggle({ granted, onClick, isLoading, disabled }: PermissionToggleProps) {
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center">
+      <div className="flex items-center justify-center w-9 h-9">
         <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
+
+  if (disabled) {
+    return (
+      <div className="flex items-center justify-center w-9 h-9">
+        <CheckCircle2 className="h-5 w-5 text-emerald-500/50 dark:text-emerald-400/50" />
       </div>
     );
   }
@@ -171,44 +210,49 @@ function PermissionToggle({ granted, onClick, isLoading, disabled }: PermissionT
   return (
     <button
       onClick={onClick}
-      disabled={disabled}
       className={cn(
-        "p-1 rounded-md transition-all hover:scale-110 focus:outline-none focus:ring-2 focus:ring-offset-2",
-        granted 
-          ? "text-green-600 dark:text-green-400 hover:bg-green-100 dark:hover:bg-green-900/30 focus:ring-green-500" 
-          : "text-red-500 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 focus:ring-red-500",
-        disabled && "opacity-50 cursor-not-allowed hover:scale-100"
+        'group relative flex items-center justify-center w-9 h-9 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-1',
+        granted
+          ? 'text-emerald-600 dark:text-emerald-400 hover:bg-red-50 dark:hover:bg-red-900/20 focus:ring-red-300'
+          : 'text-gray-300 dark:text-gray-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 focus:ring-emerald-300'
       )}
-      title={granted ? "Click to revoke permission" : "Click to grant permission"}
+      title={granted ? 'Click to revoke' : 'Click to grant'}
     >
       {granted ? (
-        <Unlock className="h-4 w-4" />
+        <>
+          <CheckCircle2 className="h-5 w-5 group-hover:hidden" />
+          <MinusCircle className="h-5 w-5 hidden group-hover:block text-red-500 dark:text-red-400" />
+        </>
       ) : (
-        <Lock className="h-4 w-4" />
+        <>
+          <Circle className="h-5 w-5 group-hover:hidden" />
+          <CheckCircle2 className="h-5 w-5 hidden group-hover:block text-emerald-500 dark:text-emerald-400" />
+        </>
       )}
     </button>
   );
 }
+
+// ─── Main Page ───────────────────────────────────────────────────────────────
 
 export default function AccessControlPage() {
   const [selectedTenantId, setSelectedTenantId] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [updatingKey, setUpdatingKey] = useState<string | null>(null);
-  
-  // Fetch tenants for selection
+  const [updatingRow, setUpdatingRow] = useState<string | null>(null);
+
+  // Data fetching
   const { data: tenantsData, isLoading: isLoadingTenants } = useTenants({ limit: 100 });
   const tenants = tenantsData?.data ?? [];
 
-  // Fetch Church Admin users for the selected tenant (used only when editing CHURCH_ADMIN)
-  // When no tenant is selected, force an empty result by using a non-existent tenantId.
   const churchAdminsQuery = useUsers({
     role: 'CHURCH_ADMIN',
     tenantId: selectedTenantId ?? 'no-tenant-selected',
     pageSize: 100,
   });
   const churchAdmins = churchAdminsQuery.data?.data ?? [];
-  
+
   const rolePermissionsQuery = usePermissions(selectedTenantId);
   const userPermissionsQuery = useUserPermissionsAdmin(selectedUserId);
 
@@ -219,48 +263,58 @@ export default function AccessControlPage() {
   const updatePermission = useUpdatePermission();
   const updateUserPermission = useUpdateUserPermissionAdmin();
 
-  // Get the selected role details
-  const selectedRoleDetails = roles.find(r => r.id === selectedRole);
-  const selectedTenant = tenants.find(t => t.id === selectedTenantId);
-  const selectedUser = churchAdmins.find(u => u.id === selectedUserId);
+  // Derived state
+  const selectedRoleDetails = roles.find((r) => r.id === selectedRole);
+  const selectedTenant = tenants.find((t) => t.id === selectedTenantId);
+  const selectedUser = churchAdmins.find((u) => u.id === selectedUserId);
 
   const isChurchAdminRole = selectedRole === 'CHURCH_ADMIN';
   const isEditingChurchAdminUser = isChurchAdminRole && !!selectedUserId;
+  const isSuperAdminRole = selectedRole === 'SUPER_ADMIN';
 
   const isRefetching = isEditingChurchAdminUser
     ? userPermissionsQuery.isRefetching
     : rolePermissionsQuery.isRefetching;
 
-  const handleRefresh = () => {
-    if (isEditingChurchAdminUser) {
-      return userPermissionsQuery.refetch();
-    }
-    return rolePermissionsQuery.refetch();
-  };
+  const isLoading = isEditingChurchAdminUser ? isLoadingUserPermissions : isLoadingRolePermissions;
 
-  // Use fetched permissions or fallback to defaults
   const permissionsMatrix = permissions || defaultPermissions;
   const currentPermissions = isEditingChurchAdminUser
-    ? (userPermissionsQuery.data?.permissions || defaultPermissions.CHURCH_ADMIN)
-    : (selectedRole ? (permissionsMatrix[selectedRole] || {}) : {});
+    ? userPermissionsQuery.data?.permissions || defaultPermissions.CHURCH_ADMIN
+    : selectedRole
+    ? permissionsMatrix[selectedRole] || {}
+    : {};
+
+  // Permission summary
+  const totalPermissions = modules.length * 4;
+  const grantedCount = isSuperAdminRole
+    ? totalPermissions
+    : modules.reduce((acc, mod) => {
+        const perms = currentPermissions[mod.id] || {};
+        return (
+          acc +
+          (['view', 'create', 'edit', 'delete'] as const).filter((p) => perms[p]).length
+        );
+      }, 0);
+
+  const canShowMatrix =
+    selectedRole && selectedRoleDetails && (!isChurchAdminRole || isEditingChurchAdminUser);
+
+  // ─── Handlers ────────────────────────────────────────────────────────────
 
   const handleTogglePermission = async (
-    moduleId: string, 
-    permission: PermissionType, 
+    moduleId: string,
+    permission: PermissionType,
     currentValue: boolean
   ) => {
-    if (!selectedRole) return;
+    if (!selectedRole || isSuperAdminRole) return;
+    if (isChurchAdminRole && !selectedUserId) return;
 
-    // For Church Admin, permissions must be applied to a specific Church Admin user
-    if (selectedRole === 'CHURCH_ADMIN') {
-      if (!selectedUserId) return;
-    }
-    
     const key = `${selectedRole}:${moduleId}:${permission}`;
     setUpdatingKey(key);
-    
+
     try {
-      if (selectedRole === 'CHURCH_ADMIN' && selectedUserId) {
+      if (isChurchAdminRole && selectedUserId) {
         await updateUserPermission.mutateAsync({
           userId: selectedUserId,
           module: moduleId,
@@ -281,7 +335,49 @@ export default function AccessControlPage() {
     }
   };
 
+  const handleSetRowPermissions = async (moduleId: string, grant: boolean) => {
+    if (!selectedRole || isSuperAdminRole) return;
+    if (isChurchAdminRole && !selectedUserId) return;
+
+    const perms = currentPermissions[moduleId] || {
+      view: false,
+      create: false,
+      edit: false,
+      delete: false,
+    };
+    const permTypes: PermissionType[] = ['view', 'create', 'edit', 'delete'];
+    const toChange = permTypes.filter(
+      (p) => perms[p as keyof typeof perms] !== grant
+    );
+    if (toChange.length === 0) return;
+
+    setUpdatingRow(moduleId);
+    try {
+      for (const perm of toChange) {
+        if (isChurchAdminRole && selectedUserId) {
+          await updateUserPermission.mutateAsync({
+            userId: selectedUserId,
+            module: moduleId,
+            permission: perm,
+            granted: grant,
+          });
+        } else {
+          await updatePermission.mutateAsync({
+            role: selectedRole,
+            module: moduleId,
+            permission: perm,
+            granted: grant,
+            tenantId: selectedTenantId || undefined,
+          });
+        }
+      }
+    } finally {
+      setUpdatingRow(null);
+    }
+  };
+
   const isUpdating = (moduleId: string, permission: PermissionType) => {
+    if (updatingRow === moduleId) return true;
     return updatingKey === `${selectedRole}:${moduleId}:${permission}`;
   };
 
@@ -292,9 +388,11 @@ export default function AccessControlPage() {
 
   const handleSelectTenant = (tenantId: string | null) => {
     setSelectedTenantId(tenantId);
-    setSelectedRole(null); // Reset role selection when tenant changes
+    setSelectedRole(null);
     setSelectedUserId(null);
   };
+
+  // ─── Render ───────────────────────────────────────────────────────────────
 
   return (
     <div className="space-y-6">
@@ -302,380 +400,469 @@ export default function AccessControlPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Access Control</h1>
-          <p className="text-gray-500 dark:text-gray-400">
-            Manage role-based permissions across the platform
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            Configure role-based permissions across the platform
           </p>
         </div>
-        <Button 
-          variant="outline" 
-          size="sm" 
-          onClick={handleRefresh}
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={() =>
+            isEditingChurchAdminUser
+              ? userPermissionsQuery.refetch()
+              : rolePermissionsQuery.refetch()
+          }
           disabled={isRefetching}
         >
-          <RefreshCw className={cn("h-4 w-4 mr-2", isRefetching && "animate-spin")} />
+          <RefreshCw className={cn('h-4 w-4 mr-2', isRefetching && 'animate-spin')} />
           Refresh
         </Button>
       </div>
 
-      {/* Step 1: Tenant Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Building2 className="h-5 w-5" />
-            Step 1: Select Scope
-          </CardTitle>
-          <CardDescription>
-            Choose whether to configure global defaults or tenant-specific permissions
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoadingTenants ? (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-            </div>
-          ) : (
-            <div className="space-y-4">
-              {/* Global Defaults Option */}
+      {/* Main Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
+        {/* ── LEFT: Configuration Panel ─────────────────────────────────── */}
+        <Card className="lg:col-span-1 sticky top-6">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2">
+              <Shield className="h-4 w-4 text-primary" />
+              Configuration
+            </CardTitle>
+            <CardDescription className="text-xs">
+              Select scope and role to configure
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-5 p-4 pt-0">
+            {/* ── Scope ──────────────────────────────────────────────── */}
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground px-1">
+                Scope
+              </p>
+
+              {/* Global option */}
               <button
                 onClick={() => handleSelectTenant(null)}
                 className={cn(
-                  "w-full p-4 rounded-lg border text-left transition-all",
+                  'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all text-sm',
                   selectedTenantId === null
-                    ? "border-primary bg-primary/5 ring-2 ring-primary shadow-md"
-                    : "border-border hover:border-primary/50 hover:bg-muted/50"
+                    ? 'bg-primary/8 border border-primary/30 text-foreground'
+                    : 'border border-transparent hover:bg-muted/60 text-muted-foreground hover:text-foreground'
                 )}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/30">
-                      <Globe className="h-5 w-5 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div>
-                      <p className="font-medium">Global Defaults</p>
-                      <p className="text-sm text-muted-foreground">
-                        Default permissions for all tenants that don't have specific overrides
-                      </p>
-                    </div>
-                  </div>
-                  {selectedTenantId === null && (
-                    <Check className="h-5 w-5 text-primary" />
-                  )}
+                <div className="p-1 rounded-md bg-blue-100 dark:bg-blue-900/30 shrink-0">
+                  <Globe className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
                 </div>
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium text-sm leading-none">Global Defaults</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">All tenants</p>
+                </div>
+                {selectedTenantId === null && (
+                  <Check className="h-3.5 w-3.5 text-primary shrink-0" />
+                )}
               </button>
 
-              {/* Tenant Selection */}
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {tenants.map((tenant) => (
+              {/* Tenant list */}
+              {isLoadingTenants ? (
+                <div className="flex justify-center py-3">
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                </div>
+              ) : tenants.length > 0 ? (
+                <div className="max-h-44 overflow-y-auto space-y-0.5 pr-0.5 scrollbar-thin">
+                  {tenants.map((tenant) => (
+                    <button
+                      key={tenant.id}
+                      onClick={() => handleSelectTenant(tenant.id)}
+                      className={cn(
+                        'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all',
+                        selectedTenantId === tenant.id
+                          ? 'bg-primary/8 border border-primary/30 text-foreground'
+                          : 'border border-transparent hover:bg-muted/60 text-muted-foreground hover:text-foreground'
+                      )}
+                    >
+                      <div className="p-1 rounded-md bg-purple-100 dark:bg-purple-900/30 shrink-0">
+                        <Building2 className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm leading-none truncate">
+                          {tenant.name}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {tenant.isActive ? 'Active' : 'Inactive'}
+                        </p>
+                      </div>
+                      {selectedTenantId === tenant.id && (
+                        <Check className="h-3.5 w-3.5 text-primary shrink-0" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+
+            <div className="border-t border-dashed" />
+
+            {/* ── Role ────────────────────────────────────────────────── */}
+            <div className="space-y-1.5">
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground px-1">
+                Role
+              </p>
+              <div className="space-y-0.5">
+                {roles.map((role) => (
                   <button
-                    key={tenant.id}
-                    onClick={() => handleSelectTenant(tenant.id)}
+                    key={role.id}
+                    onClick={() => handleSelectRole(role.id)}
                     className={cn(
-                      "p-4 rounded-lg border text-left transition-all",
-                      selectedTenantId === tenant.id
-                        ? "border-primary bg-primary/5 ring-2 ring-primary shadow-md"
-                        : "border-border hover:border-primary/50 hover:bg-muted/50"
+                      'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all',
+                      selectedRole === role.id
+                        ? 'bg-primary/8 border border-primary/30 text-foreground'
+                        : 'border border-transparent hover:bg-muted/60 text-muted-foreground hover:text-foreground'
                     )}
                   >
-                    <div className="flex items-center justify-between mb-2">
-                      <Badge variant={tenant.isActive ? "default" : "secondary"}>
-                        {tenant.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
-                      {selectedTenantId === tenant.id && (
-                        <Check className="h-4 w-4 text-primary" />
+                    <Badge
+                      className={cn('shrink-0 text-[10px] font-bold px-1.5 py-0 h-5', roleColors[role.id])}
+                    >
+                      {role.shortName}
+                    </Badge>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-medium text-sm leading-none">{role.name}</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">{role.description}</p>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {role.protected && (
+                        <Lock className="h-3 w-3 text-muted-foreground/60" />
+                      )}
+                      {selectedRole === role.id && (
+                        <Check className="h-3.5 w-3.5 text-primary" />
                       )}
                     </div>
-                    <p className="font-medium truncate">{tenant.name}</p>
-                    <p className="text-xs text-muted-foreground mt-1 font-mono truncate">
-                      ID: {tenant.id}
-                    </p>
                   </button>
                 ))}
               </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
 
-      {/* Current Scope Indicator */}
-      {(selectedTenantId !== null || selectedTenantId === null) && (
-        <div className={cn(
-          "rounded-lg p-4 border",
-          selectedTenantId === null 
-            ? "bg-blue-50 dark:bg-blue-900/20 border-blue-200 dark:border-blue-800"
-            : "bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800"
-        )}>
-          <p className={cn(
-            "text-sm font-medium",
-            selectedTenantId === null ? "text-blue-800 dark:text-blue-200" : "text-purple-800 dark:text-purple-200"
-          )}>
-            {selectedTenantId === null ? (
+            {/* ── Church Admin User Selection ─────────────────────────── */}
+            {isChurchAdminRole && (
               <>
-                <Globe className="h-4 w-4 inline mr-2" />
-                Editing Global Default Permissions
-              </>
-            ) : (
-              <>
-                <Building2 className="h-4 w-4 inline mr-2" />
-                Editing permissions for: <strong>{selectedTenant?.name}</strong>
-              </>
-            )}
-          </p>
-        </div>
-      )}
+                <div className="border-t border-dashed" />
+                <div className="space-y-1.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground px-1">
+                    Church Admin User
+                  </p>
 
-      {/* Step 2: Role Selection */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Shield className="h-5 w-5" />
-            Step 2: Select a Role
-          </CardTitle>
-          <CardDescription>
-            Choose which role you want to configure permissions for
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {roles.map((role) => (
-              <button
-                key={role.id}
-                onClick={() => handleSelectRole(role.id)}
-                className={cn(
-                  "p-4 rounded-lg border text-left transition-all",
-                  selectedRole === role.id
-                    ? "border-primary bg-primary/5 ring-2 ring-primary shadow-md"
-                    : "border-border hover:border-primary/50 hover:bg-muted/50"
-                )}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <Badge className={roleColors[role.id]}>
-                    {role.name}
-                  </Badge>
-                  {selectedRole === role.id && (
-                    <Check className="h-4 w-4 text-primary" />
-                  )}
-                </div>
-                <p className="text-sm text-muted-foreground">{role.description}</p>
-                <p className="text-xs text-muted-foreground mt-2 font-mono">
-                  Role ID: {role.id}
-                </p>
-              </button>
-            ))}
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Step 2b: Church Admin User Selection (only for CHURCH_ADMIN) */}
-      {selectedRole === 'CHURCH_ADMIN' ? (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Shield className="h-5 w-5" />
-              Step 2b: Select a Church Admin
-            </CardTitle>
-            <CardDescription>
-              Permissions for Church Admin are applied per user (not all Church Admins)
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {selectedTenantId === null ? (
-              <div className="text-sm text-muted-foreground">
-                Select a tenant scope first to list Church Admin users.
-              </div>
-            ) : churchAdminsQuery.isLoading ? (
-              <div className="flex items-center justify-center py-4">
-                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-              </div>
-            ) : churchAdmins.length === 0 ? (
-              <div className="text-sm text-muted-foreground">
-                No Church Admin users found for this tenant.
-              </div>
-            ) : (
-              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {churchAdmins.map((u) => (
-                  <button
-                    key={u.id}
-                    onClick={() => setSelectedUserId(u.id)}
-                    className={cn(
-                      "p-4 rounded-lg border text-left transition-all",
-                      selectedUserId === u.id
-                        ? "border-primary bg-primary/5 ring-2 ring-primary shadow-md"
-                        : "border-border hover:border-primary/50 hover:bg-muted/50"
-                    )}
-                  >
-                    <div className="flex items-center justify-between mb-2">
-                      <Badge variant={u.isActive ? 'default' : 'secondary'}>
-                        {u.isActive ? 'Active' : 'Inactive'}
-                      </Badge>
-                      {selectedUserId === u.id && <Check className="h-4 w-4 text-primary" />}
+                  {selectedTenantId === null ? (
+                    <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
+                      <AlertCircle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                      <p className="text-xs text-amber-700 dark:text-amber-300">
+                        Select a specific tenant above to list Church Admin users.
+                      </p>
                     </div>
-                    <p className="font-medium truncate">{u.firstName} {u.lastName}</p>
-                    <p className="text-xs text-muted-foreground mt-1 truncate">{u.email}</p>
-                    <p className="text-xs text-muted-foreground mt-2 font-mono truncate">ID: {u.id}</p>
-                  </button>
-                ))}
-              </div>
+                  ) : churchAdminsQuery.isLoading ? (
+                    <div className="flex justify-center py-3">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    </div>
+                  ) : churchAdmins.length === 0 ? (
+                    <p className="text-xs text-muted-foreground px-3 py-2 bg-muted/50 rounded-lg">
+                      No Church Admin users found for this tenant.
+                    </p>
+                  ) : (
+                    <div className="max-h-36 overflow-y-auto space-y-0.5 pr-0.5">
+                      {churchAdmins.map((u) => (
+                        <button
+                          key={u.id}
+                          onClick={() => setSelectedUserId(u.id)}
+                          className={cn(
+                            'w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all',
+                            selectedUserId === u.id
+                              ? 'bg-primary/8 border border-primary/30 text-foreground'
+                              : 'border border-transparent hover:bg-muted/60 text-muted-foreground hover:text-foreground'
+                          )}
+                        >
+                          <div className="h-7 w-7 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
+                            <User className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-medium text-sm leading-none truncate">
+                              {u.firstName} {u.lastName}
+                            </p>
+                            <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                              {u.email}
+                            </p>
+                          </div>
+                          {selectedUserId === u.id && (
+                            <Check className="h-3.5 w-3.5 text-primary shrink-0" />
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </>
             )}
           </CardContent>
         </Card>
-      ) : null}
 
-      {/* Step 3: Permissions Matrix - Only show when target is selected */}
-      {selectedRole && selectedRoleDetails && (!isChurchAdminRole || isEditingChurchAdminUser) ? (
-        <Card className="border-primary/50">
-          <CardHeader className="bg-primary/5">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="flex items-center gap-2">
-                  <Key className="h-5 w-5" />
-                  Step 3: Configure Permissions
-                </CardTitle>
-                <CardDescription className="mt-1">
-                  Managing permissions for role: <strong className="text-foreground">{selectedRoleDetails.name}</strong>
-                  <span className="ml-2 font-mono text-xs">({selectedRole})</span>
-                  {isChurchAdminRole && selectedUser && (
-                    <span className="ml-2">
-                      for user: <strong className="text-foreground">{selectedUser.firstName} {selectedUser.lastName}</strong>
-                    </span>
+        {/* ── RIGHT: Permission Matrix ───────────────────────────────────── */}
+        <div className="lg:col-span-2">
+          {canShowMatrix ? (
+            <Card>
+              {/* Matrix Header */}
+              <CardHeader className="pb-4 border-b">
+                <div className="space-y-3">
+                  {/* Context Badges */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <CardTitle className="text-sm flex items-center gap-1.5">
+                      <Key className="h-4 w-4 text-primary" />
+                      Permissions
+                    </CardTitle>
+                    <Badge className={cn('text-xs', roleColors[selectedRole!])}>
+                      {selectedRoleDetails!.name}
+                    </Badge>
+                    {selectedTenantId === null ? (
+                      <Badge variant="outline" className="text-xs gap-1">
+                        <Globe className="h-3 w-3" />
+                        Global
+                      </Badge>
+                    ) : (
+                      <Badge variant="outline" className="text-xs gap-1 max-w-[140px]">
+                        <Building2 className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{selectedTenant?.name}</span>
+                      </Badge>
+                    )}
+                    {isEditingChurchAdminUser && selectedUser && (
+                      <Badge variant="outline" className="text-xs gap-1">
+                        <User className="h-3 w-3" />
+                        {selectedUser.firstName} {selectedUser.lastName}
+                      </Badge>
+                    )}
+                  </div>
+
+                  {/* Summary / Warning */}
+                  {isSuperAdminRole ? (
+                    <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
+                      <Lock className="h-3.5 w-3.5 shrink-0" />
+                      Super Admin always has full platform access — permissions are fixed and cannot be modified.
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3">
+                      <span className="text-xs text-muted-foreground">
+                        <span className="text-foreground font-semibold text-sm">{grantedCount}</span>
+                        {' '}/ {totalPermissions} permissions granted
+                      </span>
+                      <div className="flex-1 max-w-32 h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div
+                          className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                          style={{ width: `${(grantedCount / totalPermissions) * 100}%` }}
+                        />
+                      </div>
+                      <span className="text-xs text-muted-foreground ml-auto hidden sm:block">
+                        Changes save automatically
+                      </span>
+                    </div>
                   )}
-                  {selectedTenantId && selectedTenant && (
-                    <span className="ml-2">
-                      in tenant: <strong className="text-foreground">{selectedTenant.name}</strong>
-                    </span>
-                  )}
-                </CardDescription>
-              </div>
-              <Badge className={cn(roleColors[selectedRole], "text-sm px-3 py-1")}>
-                {selectedRoleDetails.name}
-              </Badge>
-            </div>
-          </CardHeader>
-        <CardContent>
-          {(isEditingChurchAdminUser ? isLoadingUserPermissions : isLoadingRolePermissions) ? (
-            <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
-            </div>
+                </div>
+              </CardHeader>
+
+              <CardContent className="p-0">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-16">
+                    <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b bg-muted/30">
+                          <th className="px-4 py-3 text-left text-[10px] font-semibold text-muted-foreground uppercase tracking-widest">
+                            Module
+                          </th>
+                          <th className="px-2 py-3 text-center text-[10px] font-semibold text-muted-foreground uppercase tracking-widest whitespace-nowrap">
+                            <Eye className="h-3.5 w-3.5 inline-block" />
+                            <span className="ml-1 hidden sm:inline">View</span>
+                          </th>
+                          <th className="px-2 py-3 text-center text-[10px] font-semibold text-muted-foreground uppercase tracking-widest whitespace-nowrap">
+                            <Plus className="h-3.5 w-3.5 inline-block" />
+                            <span className="ml-1 hidden sm:inline">Create</span>
+                          </th>
+                          <th className="px-2 py-3 text-center text-[10px] font-semibold text-muted-foreground uppercase tracking-widest whitespace-nowrap">
+                            <Pencil className="h-3.5 w-3.5 inline-block" />
+                            <span className="ml-1 hidden sm:inline">Edit</span>
+                          </th>
+                          <th className="px-2 py-3 text-center text-[10px] font-semibold text-muted-foreground uppercase tracking-widest whitespace-nowrap">
+                            <Trash2 className="h-3.5 w-3.5 inline-block" />
+                            <span className="ml-1 hidden sm:inline">Delete</span>
+                          </th>
+                          {!isSuperAdminRole && (
+                            <th className="px-3 py-3 text-center text-[10px] font-semibold text-muted-foreground uppercase tracking-widest whitespace-nowrap">
+                              Quick
+                            </th>
+                          )}
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {modules.map((module) => {
+                          const { Icon } = module;
+                          const perms = isSuperAdminRole
+                            ? { view: true, create: true, edit: true, delete: true }
+                            : currentPermissions[module.id] || {
+                                view: false,
+                                create: false,
+                                edit: false,
+                                delete: false,
+                              };
+                          const isRowUpdating = updatingRow === module.id;
+                          const allGranted =
+                            perms.view && perms.create && perms.edit && perms.delete;
+                          const noneGranted =
+                            !perms.view && !perms.create && !perms.edit && !perms.delete;
+
+                          return (
+                            <tr key={module.id} className="hover:bg-muted/20 transition-colors group">
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-2.5">
+                                  <div
+                                    className={cn(
+                                      'p-1.5 rounded-md transition-colors',
+                                      perms.view
+                                        ? 'bg-emerald-100 dark:bg-emerald-900/30'
+                                        : 'bg-muted'
+                                    )}
+                                  >
+                                    <Icon
+                                      className={cn(
+                                        'h-3.5 w-3.5',
+                                        perms.view
+                                          ? 'text-emerald-600 dark:text-emerald-400'
+                                          : 'text-muted-foreground/50'
+                                      )}
+                                    />
+                                  </div>
+                                  <span className="text-sm font-medium">{module.name}</span>
+                                </div>
+                              </td>
+
+                              {(['view', 'create', 'edit', 'delete'] as const).map((perm) => (
+                                <td key={perm} className="px-2 py-3 text-center">
+                                  <PermissionToggle
+                                    granted={perms[perm]}
+                                    onClick={() =>
+                                      handleTogglePermission(module.id, perm, perms[perm])
+                                    }
+                                    isLoading={isUpdating(module.id, perm)}
+                                    disabled={isSuperAdminRole}
+                                  />
+                                </td>
+                              ))}
+
+                              {!isSuperAdminRole && (
+                                <td className="px-3 py-3 text-center">
+                                  {isRowUpdating ? (
+                                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground mx-auto" />
+                                  ) : (
+                                    <div className="flex items-center justify-center gap-1">
+                                      <button
+                                        onClick={() => handleSetRowPermissions(module.id, true)}
+                                        disabled={allGranted}
+                                        title="Grant all permissions for this module"
+                                        className={cn(
+                                          'flex items-center justify-center w-6 h-6 rounded transition-colors text-xs font-bold',
+                                          allGranted
+                                            ? 'text-muted-foreground/25 cursor-not-allowed'
+                                            : 'text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-900/30'
+                                        )}
+                                      >
+                                        ✓
+                                      </button>
+                                      <button
+                                        onClick={() => handleSetRowPermissions(module.id, false)}
+                                        disabled={noneGranted}
+                                        title="Revoke all permissions for this module"
+                                        className={cn(
+                                          'flex items-center justify-center w-6 h-6 rounded transition-colors text-xs font-bold',
+                                          noneGranted
+                                            ? 'text-muted-foreground/25 cursor-not-allowed'
+                                            : 'text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30'
+                                        )}
+                                      >
+                                        ✕
+                                      </button>
+                                    </div>
+                                  )}
+                                </td>
+                              )}
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Legend */}
+                {!isSuperAdminRole && (
+                  <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 border-t bg-muted/20">
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                      Granted — hover to revoke
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <Circle className="h-3.5 w-3.5 text-muted-foreground/40" />
+                      Denied — hover to grant
+                    </div>
+                    <div className="flex items-center gap-1.5 text-xs text-muted-foreground ml-auto">
+                      <Info className="h-3.5 w-3.5" />
+                      Tenant overrides take precedence over global defaults
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b bg-muted/50">
-                    <th className="px-4 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Module
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      <Eye className="h-4 w-4 inline mr-1" />
-                      View
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      <Plus className="h-4 w-4 inline mr-1" />
-                      Create
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      <Pencil className="h-4 w-4 inline mr-1" />
-                      Edit
-                    </th>
-                    <th className="px-4 py-3 text-center text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      <Trash2 className="h-4 w-4 inline mr-1" />
-                      Delete
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {modules.map((module) => {
-                    const perms = currentPermissions[module.id] || { view: false, create: false, edit: false, delete: false };
-                    return (
-                      <tr key={module.id} className="hover:bg-muted/30">
-                        <td className="px-4 py-3">
-                          <div>
-                            <p className="text-sm font-medium">{module.name}</p>
-                            <p className="text-xs text-muted-foreground">{module.description}</p>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <PermissionToggle
-                            granted={perms.view}
-                            onClick={() => handleTogglePermission(module.id, 'view', perms.view)}
-                            isLoading={isUpdating(module.id, 'view')}
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <PermissionToggle
-                            granted={perms.create}
-                            onClick={() => handleTogglePermission(module.id, 'create', perms.create)}
-                            isLoading={isUpdating(module.id, 'create')}
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <PermissionToggle
-                            granted={perms.edit}
-                            onClick={() => handleTogglePermission(module.id, 'edit', perms.edit)}
-                            isLoading={isUpdating(module.id, 'edit')}
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-center">
-                          <PermissionToggle
-                            granted={perms.delete}
-                            onClick={() => handleTogglePermission(module.id, 'delete', perms.delete)}
-                            isLoading={isUpdating(module.id, 'delete')}
-                          />
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+            /* ── Empty State ──────────────────────────────────────────── */
+            <Card className="border-dashed">
+              <CardContent className="py-20">
+                <div className="text-center space-y-5 max-w-xs mx-auto">
+                  <div className="mx-auto w-14 h-14 rounded-2xl bg-muted flex items-center justify-center">
+                    <Shield className="h-7 w-7 text-muted-foreground" />
+                  </div>
+                  <div>
+                    <h3 className="text-base font-semibold">
+                      {!selectedRole ? 'Select a Role' : 'Select a Church Admin'}
+                    </h3>
+                    <p className="text-sm text-muted-foreground mt-1.5">
+                      {!selectedRole
+                        ? 'Choose a scope and role from the left panel to configure permissions.'
+                        : 'Church Admin permissions are user-specific. Select a user from the left panel to continue.'}
+                    </p>
+                  </div>
+
+                  <div className="text-left space-y-2 p-4 bg-muted/40 rounded-xl border border-dashed">
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground">
+                      Permission Hierarchy
+                    </p>
+                    <div className="space-y-1.5 text-xs text-muted-foreground">
+                      <div className="flex items-center gap-2">
+                        <span className="w-4 h-4 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-[8px] font-bold text-blue-600 dark:text-blue-400">1</span>
+                        <span>Hardcoded role defaults (baseline)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-4 h-4 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-[8px] font-bold text-blue-600 dark:text-blue-400">2</span>
+                        <span>Global role overrides (apply to all tenants)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-4 h-4 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-[8px] font-bold text-purple-600 dark:text-purple-400">3</span>
+                        <span>Tenant-specific overrides (higher priority)</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-[8px] font-bold text-emerald-600 dark:text-emerald-400">4</span>
+                        <span>User-specific overrides (highest priority)</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           )}
-        </CardContent>
-      </Card>
-      ) : (
-        /* Prompt to select a role */
-        <Card className="border-dashed">
-          <CardContent className="py-12">
-            <div className="text-center space-y-4">
-              <div className="mx-auto w-16 h-16 rounded-full bg-muted flex items-center justify-center">
-                <Shield className="h-8 w-8 text-muted-foreground" />
-              </div>
-              <div>
-                <h3 className="text-lg font-semibold">Select a Role</h3>
-                <p className="text-muted-foreground mt-1">
-                  Choose a role from the list above to view and manage its permissions
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Legend - Only show when role is selected */}
-      {selectedRole && (
-        <Card>
-          <CardContent className="pt-6">
-            <div className="flex flex-wrap items-center gap-6">
-              <div className="flex items-center gap-2">
-                <div className="p-1 rounded-md bg-green-100 dark:bg-green-900/30">
-                  <Unlock className="h-4 w-4 text-green-600 dark:text-green-400" />
-                </div>
-                <span className="text-sm text-muted-foreground">Permission Granted (click to revoke)</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="p-1 rounded-md bg-red-100 dark:bg-red-900/30">
-                  <Lock className="h-4 w-4 text-red-500 dark:text-red-400" />
-                </div>
-                <span className="text-sm text-muted-foreground">Permission Denied (click to grant)</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Info */}
-      <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4">
-        <p className="text-sm text-blue-800 dark:text-blue-200">
-          <strong>Tip:</strong> First select a scope (Global or specific Tenant), then select a role, and finally click on permission icons to toggle access. 
-          Changes are saved automatically. Tenant-specific permissions override global defaults.
-        </p>
+        </div>
       </div>
     </div>
   );

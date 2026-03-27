@@ -1,8 +1,6 @@
 
 'use client';
 
-import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Church, Users, Phone, Heart, DollarSign, BarChart3, Shield, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -80,9 +78,11 @@ export default function HomePage() {
               <ArrowRight className="h-4 w-4" />
             </Button>
           </Link>
-          <Button size="lg" variant="outline">
-            Learn More
-          </Button>
+          <Link href="/learn-more">
+            <Button size="lg" variant="outline">
+              Learn More
+            </Button>
+          </Link>
         </div>
       </section>
 

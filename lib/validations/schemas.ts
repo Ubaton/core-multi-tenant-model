@@ -108,6 +108,17 @@ export const createTenantSchema = z.object({
     password: z.string().min(8, 'Password must be at least 8 characters'),
     phone: z.string().max(20).optional(),
   }).optional(),
+  // Additional users with specific roles to create alongside the tenant
+  additionalUsers: z.array(
+    z.object({
+      role: z.enum(['CHURCH_ADMIN', 'STAFF', 'CALL_CENTER', 'SUBSCRIBER', 'MEMBER']),
+      firstName: z.string().min(1, 'First name is required').max(100),
+      lastName: z.string().min(1, 'Last name is required').max(100),
+      email: z.string().email('Invalid email address'),
+      password: z.string().min(8, 'Password must be at least 8 characters'),
+      phone: z.string().max(20).optional(),
+    })
+  ).optional(),
 });
 
 export const updateTenantSchema = createTenantSchema.partial();

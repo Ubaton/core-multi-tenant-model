@@ -8,12 +8,12 @@
 
 import { use } from 'react';
 import Link from 'next/link';
-import { 
-  ArrowLeft, 
-  User, 
-  Mail, 
-  Phone, 
-  Building2, 
+import {
+  ArrowLeft,
+  User,
+  Mail,
+  Phone,
+  Building2,
   Shield,
   Calendar,
   Clock,
@@ -22,11 +22,15 @@ import {
   PhoneCall,
   Users,
   MessageSquare,
+  Key,
+  CheckCircle2,
+  Circle,
+  ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useUser } from '@/lib/client';
+import { useUser, useUserPermissionsAdmin } from '@/lib/client';
 import { cn } from '@/lib/utils';
 
 const roleColors: Record<string, string> = {
@@ -51,9 +55,26 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+const permissionModules = [
+  { id: 'dashboard', name: 'Dashboard' },
+  { id: 'members', name: 'Members' },
+  { id: 'leads', name: 'Leads' },
+  { id: 'offerings', name: 'Offerings' },
+  { id: 'prayer_requests', name: 'Prayer Requests' },
+  { id: 'communications', name: 'Comms' },
+  { id: 'calls', name: 'Calls' },
+  { id: 'reports', name: 'Reports' },
+  { id: 'settings', name: 'Settings' },
+  { id: 'users', name: 'Users' },
+  { id: 'tenants', name: 'Tenants' },
+];
+
 export default function UserDetailPage({ params }: PageProps) {
   const { id } = use(params);
   const { data: user, isLoading, error } = useUser(id);
+  const { data: userPermData, isLoading: isLoadingPerms } = useUserPermissionsAdmin(
+    user?.role === 'CHURCH_ADMIN' ? id : null
+  );
 
   if (isLoading) {
     return (
@@ -293,6 +314,90 @@ export default function UserDetailPage({ params }: PageProps) {
                   <p className="text-sm text-muted-foreground">Communications Sent</p>
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Permissions Overview — Church Admin only */}
+        {user.role === 'CHURCH_ADMIN' && (
+          <Card className="lg:col-span-3">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <Key className="h-4 w-4" />
+                    Permission Overview
+                  </CardTitle>
+                  <CardDescription>
+                    Effective module permissions for this Church Admin user
+                  </CardDescription>
+                </div>
+                <Link href="/super-admin/access">
+                  <Button variant="outline" size="sm" className="gap-1.5">
+                    <Key className="h-3.5 w-3.5" />
+                    Manage Permissions
+                    <ExternalLink className="h-3 w-3" />
+                  </Button>
+                </Link>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {isLoadingPerms ? (
+                <div className="flex items-center justify-center py-6">
+                  <div className="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+                </div>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                  {permissionModules.map((mod) => {
+                    const perms = userPermData?.permissions?.[mod.id] || {
+                      view: false,
+                      create: false,
+                      edit: false,
+                      delete: false,
+                    };
+                    const grantedCount = [perms.view, perms.create, perms.edit, perms.delete].filter(Boolean).length;
+                    const hasAny = grantedCount > 0;
+
+                    return (
+                      <div
+                        key={mod.id}
+                        className={cn(
+                          'p-3 rounded-lg border',
+                          hasAny
+                            ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800'
+                            : 'bg-muted/30 border-border'
+                        )}
+                      >
+                        <div className="flex items-center justify-between mb-2">
+                          <p className={cn('text-sm font-medium', !hasAny && 'text-muted-foreground')}>
+                            {mod.name}
+                          </p>
+                          <span className={cn(
+                            'text-xs font-semibold',
+                            hasAny ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'
+                          )}>
+                            {grantedCount}/4
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1.5">
+                          {(['view', 'create', 'edit', 'delete'] as const).map((perm) => (
+                            <div key={perm} title={perm} className="flex flex-col items-center gap-0.5">
+                              {perms[perm] ? (
+                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                              ) : (
+                                <Circle className="h-3.5 w-3.5 text-muted-foreground/30" />
+                              )}
+                              <span className="text-[8px] text-muted-foreground uppercase">
+                                {perm === 'delete' ? 'del' : perm.slice(0, 3)}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardContent>
           </Card>
         )}

@@ -101,19 +101,35 @@ export const GET = withSuperAdmin(async (request, { user }) => {
 export const POST = withSuperAdmin(async (request, { user }) => {
   const data = await parseBody(request, createTenantSchema);
 
-  // Extract admin user data if provided
-  const { adminUser, ...tenantData } = data;
+  // Extract user data from tenant data
+  const { adminUser, additionalUsers, ...tenantData } = data;
 
-  // If admin user is provided, check if email already exists
-  if (adminUser) {
+  // Collect all users to be created for duplicate-email checks
+  const allUsersToCreate = [
+    ...(adminUser ? [{ ...adminUser, role: 'CHURCH_ADMIN' as const }] : []),
+    ...(additionalUsers ?? []),
+  ];
+
+  // Check for duplicate emails within the submitted payload
+  const submittedEmails = allUsersToCreate.map((u) => u.email.toLowerCase());
+  const uniqueEmails = new Set(submittedEmails);
+  if (submittedEmails.length !== uniqueEmails.size) {
+    return errorResponse(
+      'DUPLICATE_EMAIL',
+      'Duplicate email addresses found in the user list',
+      400
+    );
+  }
+
+  // Check that none of these emails already exist in the DB
+  for (const userEntry of allUsersToCreate) {
     const existingUser = await prisma.user.findUnique({
-      where: { email: adminUser.email },
+      where: { email: userEntry.email },
     });
-
     if (existingUser) {
       return errorResponse(
         'EMAIL_EXISTS',
-        'A user account with this email already exists',
+        `A user account with email "${userEntry.email}" already exists`,
         400
       );
     }
@@ -132,7 +148,7 @@ export const POST = withSuperAdmin(async (request, { user }) => {
     );
   }
 
-  // Create tenant and optionally admin user in a transaction
+  // Create tenant and all users in a single transaction
   const result = await prisma.$transaction(async (tx) => {
     // Create tenant
     const tenant = await tx.tenant.create({
@@ -151,23 +167,28 @@ export const POST = withSuperAdmin(async (request, { user }) => {
       },
     });
 
-    let createdUser = null;
+    // Create all users (admin + additional) with their respective roles
+    const createdUsers: Array<{
+      id: string;
+      email: string;
+      firstName: string;
+      lastName: string;
+      role: string;
+    }> = [];
 
-    // If admin user data is provided, create the admin account
-    if (adminUser) {
-      const hashedPassword = await hashPassword(adminUser.password);
-
-      createdUser = await tx.user.create({
+    for (const userEntry of allUsersToCreate) {
+      const hashedPassword = await hashPassword(userEntry.password);
+      const createdUser = await tx.user.create({
         data: {
-          email: adminUser.email,
+          email: userEntry.email,
           passwordHash: hashedPassword,
-          firstName: adminUser.firstName,
-          lastName: adminUser.lastName,
-          phone: adminUser.phone,
-          role: 'CHURCH_ADMIN',
+          firstName: userEntry.firstName,
+          lastName: userEntry.lastName,
+          phone: userEntry.phone,
+          role: userEntry.role,
           tenantId: tenant.id,
           isActive: true,
-          mustChangePassword: true, // Enforce password change on first login
+          mustChangePassword: true,
         },
         select: {
           id: true,
@@ -177,9 +198,10 @@ export const POST = withSuperAdmin(async (request, { user }) => {
           role: true,
         },
       });
+      createdUsers.push(createdUser);
     }
 
-    return { tenant, adminUser: createdUser };
+    return { tenant, createdUsers };
   });
 
   // Log audit
@@ -192,19 +214,23 @@ export const POST = withSuperAdmin(async (request, { user }) => {
     null,
     {
       tenant: result.tenant,
-      adminUser: result.adminUser ? { 
-        id: result.adminUser.id, 
-        email: result.adminUser.email 
-      } : null,
+      usersCreated: result.createdUsers.map((u) => ({ id: u.id, email: u.email, role: u.role })),
     },
     request
   );
 
+  // Build a map of email -> plain-text password for the response (shown once)
+  const passwordMap: Record<string, string> = {};
+  for (const userEntry of allUsersToCreate) {
+    passwordMap[userEntry.email] = userEntry.password;
+  }
+
   return createdResponse({
     tenant: result.tenant,
-    adminUser: result.adminUser,
-    // Include the password in response so Super Admin can share it with tenant
-    // This is only shown once and should be communicated to the tenant
-    generatedPassword: adminUser?.password,
+    // Keep backward-compat: adminUser is the first CHURCH_ADMIN created
+    adminUser: result.createdUsers.find((u) => u.role === 'CHURCH_ADMIN') ?? null,
+    createdUsers: result.createdUsers,
+    // Passwords shown once so Super Admin can share them with users
+    generatedPasswords: passwordMap,
   });
 });
