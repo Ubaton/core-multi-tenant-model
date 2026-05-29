@@ -110,15 +110,6 @@ npx prisma db push
 ```bash
 npx tsx prisma/seed.ts
 ```
-
-This creates:
-
-- HQ tenant: churchhub-hq
-- Super admin email: superadmin@churchhub.com
-- Super admin password: SuperAdmin@123
-
-Change this password immediately after first login.
-
 ### 6. Start development server
 
 ```bash
