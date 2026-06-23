@@ -10,7 +10,6 @@
 import 'dotenv/config';
 import { PrismaClient } from '../lib/generated/prisma';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { Pool } from 'pg';
 import * as bcrypt from 'bcryptjs';
 
 async function main() {
@@ -27,8 +26,7 @@ async function main() {
       accelerateUrl: connectionString,
     });
   } else {
-    const pool = new Pool({ connectionString });
-    const adapter = new PrismaPg(pool);
+    const adapter = new PrismaPg({ connectionString });
     prisma = new PrismaClient({ adapter });
   }
 

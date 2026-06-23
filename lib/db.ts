@@ -12,13 +12,15 @@
 
 import { PrismaClient, Prisma } from './generated/prisma';
 import { PrismaPg } from '@prisma/adapter-pg';
-import { Pool } from 'pg';
+import { config as loadEnv } from 'dotenv';
 
 export { Prisma };
 
+// Fallback for non-Next runtimes where .env is not auto-loaded.
+loadEnv();
+
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
-  pool: Pool | undefined;
 };
 
 // Create a connection pool for PostgreSQL
@@ -39,17 +41,13 @@ if (connectionString.startsWith('prisma+postgres://')) {
       : ['error'],
   });
 } else {
-  // Reuse pool in development to avoid connection exhaustion
-  const pool = globalForPrisma.pool ?? new Pool({ 
+  const adapter = new PrismaPg({
     connectionString,
-    max: 10, // Maximum connections in pool
-    idleTimeoutMillis: 30000, // Close idle connections after 30s
-    connectionTimeoutMillis: 10000, // Timeout after 10s trying to connect
+    max: 10,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 10000,
     ssl: connectionString.includes('sslmode=require') ? { rejectUnauthorized: false } : undefined,
   });
-
-  // Create the Prisma adapter using the pg pool
-  const adapter = new PrismaPg(pool);
 
   prismaClient = globalForPrisma.prisma ?? new PrismaClient({
     adapter,
@@ -57,10 +55,6 @@ if (connectionString.startsWith('prisma+postgres://')) {
       ? ['query', 'error', 'warn'] 
       : ['error'],
   });
-
-  if (process.env.NODE_ENV !== 'production') {
-    globalForPrisma.pool = pool;
-  }
 }
 
 export const prisma = prismaClient;
