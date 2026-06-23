@@ -193,6 +193,35 @@ API routes are located under app/api and grouped by domain:
 - Ensure HTTPS in production for secure cookies
 - Run prisma generate as part of build or install (already wired in scripts)
 
+## Docker and GCP Deployment
+
+This repository now includes a production Docker image and a local Docker Compose setup.
+
+### Build the image
+
+```bash
+docker build -t core-multi-tenant-model .
+```
+
+### Run locally with Docker Compose
+
+```bash
+docker compose up --build
+```
+
+The app will be available at http://localhost:8080 and PostgreSQL will run on port 5432.
+
+### Cloud Run
+
+- The container listens on port 8080 and binds to 0.0.0.0.
+- Required runtime secrets: DATABASE_URL, JWT_SECRET, JWT_REFRESH_SECRET.
+- The health endpoint is available at /api/health.
+- Cloud Run can deploy from this Dockerfile directly or from a built container image in Artifact Registry.
+
+### Environment template
+
+Use .env.example as the starting point for local or deployment-specific environment values.
+
 ## Additional Documentation
 
 - Database architecture: docs/DATABASE_ARCHITECTURE.md
