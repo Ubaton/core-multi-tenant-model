@@ -105,7 +105,7 @@ export default function SuperAdminStatsPage() {
 
   const tenantStatusChartConfig = {
     tenants: {
-      label: 'Tenants',
+      label: 'Churches',
     },
     active: {
       label: 'Active',
@@ -160,7 +160,7 @@ export default function SuperAdminStatsPage() {
             <Card>
               <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium text-muted-foreground">
-                  Total Tenants
+                  Total Churches
                 </CardTitle>
                 <Building2 className="h-4 w-4 text-muted-foreground" />
               </CardHeader>
@@ -316,12 +316,12 @@ export default function SuperAdminStatsPage() {
           {/* Top Tenants */}
           <Card>
             <CardHeader>
-              <CardTitle>Top Tenants by Members</CardTitle>
+              <CardTitle>Top Churches by Members</CardTitle>
               <CardDescription>Organizations with the most registered members</CardDescription>
             </CardHeader>
             <CardContent>
               {topTenants.length === 0 ? (
-                <p className="text-center text-sm text-muted-foreground py-4">No tenants found</p>
+                <p className="text-center text-sm text-muted-foreground py-4">No churches found</p>
               ) : (
                 <div className="grid gap-6 lg:grid-cols-2">
                   <ChartContainer

@@ -24,6 +24,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useSidebar } from '@/context/sidebar-context';
 import { useCurrentUser, useLogout } from '@/lib/client';
+import Image from 'next/image';
 
 // ─── Navigation Definition ───────────────────────────────────────────────────
 
@@ -37,7 +38,7 @@ const navGroups = [
   {
     label: 'Management',
     items: [
-      { name: 'Tenants',  href: '/super-admin/tenants',        icon: Building2    },
+      { name: 'Churches',  href: '/super-admin/tenants',        icon: Building2    },
       { name: 'Users',    href: '/super-admin/users',          icon: Users        },
       { name: 'Messages', href: '/super-admin/communications', icon: MessageSquare },
     ],
@@ -269,7 +270,7 @@ function SidebarContent({
             {/* Avatar */}
             <div className="h-8 w-8 shrink-0 rounded-lg bg-muted/60 ring-1 ring-border flex items-center justify-center overflow-hidden">
               {user?.avatar ? (
-                <img
+                <Image
                   src={user.avatar}
                   alt=""
                   className="h-8 w-8 object-cover"

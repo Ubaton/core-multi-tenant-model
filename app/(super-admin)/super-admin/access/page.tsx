@@ -87,7 +87,7 @@ const modules = [
   { id: 'reports', name: 'Reports', Icon: BarChart3 },
   { id: 'settings', name: 'Settings', Icon: Settings },
   { id: 'users', name: 'User Mgmt', Icon: UserCog },
-  { id: 'tenants', name: 'Tenants', Icon: Building },
+  { id: 'tenants', name: 'Churches', Icon: Building },
 ];
 
 const roleColors: Record<string, string> = {

@@ -91,7 +91,7 @@ export default function TenantDetailPage() {
       <div className="space-y-6">
         <Link href="/super-admin/tenants" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Tenants
+          Back to Churches
         </Link>
         <Card>
           <CardContent className="py-12 text-center">
@@ -103,7 +103,7 @@ export default function TenantDetailPage() {
               The tenant you're looking for doesn't exist or you don't have access to it.
             </p>
             <Link href="/super-admin/tenants" className="mt-4 inline-block">
-              <Button>Return to Tenants</Button>
+              <Button>Return to Churches</Button>
             </Link>
           </CardContent>
         </Card>
@@ -125,7 +125,7 @@ export default function TenantDetailPage() {
       <div className="flex flex-col gap-4">
         <Link href="/super-admin/tenants" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 w-fit">
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Tenants
+          Back to Churches
         </Link>
         
         <div className="flex items-start justify-between">

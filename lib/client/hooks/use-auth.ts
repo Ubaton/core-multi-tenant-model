@@ -34,6 +34,7 @@ interface AuthUser {
   firstName: string;
   lastName: string;
   phone?: string | null;
+  avatar?: string | null;
   role: string;
   tenantId: string | null;
   tenant?: {

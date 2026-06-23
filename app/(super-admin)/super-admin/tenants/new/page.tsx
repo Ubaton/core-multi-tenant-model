@@ -684,7 +684,7 @@ export default function NewTenantPage() {
 
             <div className="pt-2 border-t">
               <Button onClick={() => router.push('/super-admin/tenants')}>
-                Continue to Tenants List
+                Continue to Churches List
               </Button>
             </div>
           </CardContent>

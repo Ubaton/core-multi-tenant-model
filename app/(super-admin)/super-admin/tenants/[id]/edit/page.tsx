@@ -302,7 +302,7 @@ export default function EditTenantPage() {
       <div className="space-y-6">
         <Link href="/super-admin/tenants" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
           <ArrowLeft className="h-4 w-4 mr-2" />
-          Back to Tenants
+          Back to Churches
         </Link>
         <Card>
           <CardContent className="py-12 text-center">
@@ -314,7 +314,7 @@ export default function EditTenantPage() {
               The tenant you're trying to edit doesn't exist.
             </p>
             <Link href="/super-admin/tenants" className="mt-4 inline-block">
-              <Button>Return to Tenants</Button>
+              <Button>Return to Churches</Button>
             </Link>
           </CardContent>
         </Card>

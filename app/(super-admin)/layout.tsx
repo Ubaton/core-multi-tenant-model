@@ -19,12 +19,12 @@ export default function SuperAdminLayout({
 }) {
   return (
     <SidebarProvider>
-      <div className="min-h-screen bg-muted/30">
+      <div className="h-dvh overflow-hidden bg-muted/30">
         <SuperAdminSidebar />
         <SuperAdminContentWrapper>
           <Header MobileNav={SuperAdminMobileNav} />
-          <main className="py-6">
-            <div className="mx-auto w-full px-4 sm:px-6 lg:px-8">
+          <main className="h-[calc(100dvh-4rem)] py-6 overflow-hidden">
+            <div className="mx-auto h-full w-full px-4 sm:px-6 lg:px-8">
               {children}
             </div>
           </main>
