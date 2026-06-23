@@ -8,7 +8,7 @@
 
 import { useState, useMemo } from 'react';
 import { Plus, Search, MoreHorizontal, Eye, Pencil, Trash2, Check, Loader2, X, AlertTriangle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -633,10 +633,8 @@ function PrayerRequestCard({ request, onDelete, canEdit, canDelete }: PrayerRequ
               </div>
             </div>
             <DropdownMenu>
-              <DropdownMenuTrigger>
-                <Button variant="ghost" size="icon">
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
+              <DropdownMenuTrigger className={buttonVariants({ variant: 'ghost', size: 'icon' })}>
+                <MoreHorizontal className="h-4 w-4" />
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
                 <DropdownMenuItem onClick={() => setIsViewDialogOpen(true)}>

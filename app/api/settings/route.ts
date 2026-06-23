@@ -26,6 +26,7 @@ export const GET = withSuperAdmin(async (request, { user }) => {
   // Get or create default settings
   let settings = await prisma.systemSettings.findUnique({
     where: { id: SETTINGS_ID },
+    cacheStrategy: { ttl: 300, swr: 60 },
   });
 
   if (!settings) {

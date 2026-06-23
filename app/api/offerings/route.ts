@@ -58,6 +58,7 @@ export const GET = withPermission('list', 'offering', async (request, context) =
       skip,
       take,
       orderBy: { [sortBy || 'givenAt']: sortOrder },
+      cacheStrategy: { ttl: 30, swr: 10 },
       include: {
         member: {
           select: {
@@ -81,6 +82,7 @@ export const GET = withPermission('list', 'offering', async (request, context) =
       _sum: { amount: true },
       _avg: { amount: true },
       _count: true,
+      cacheStrategy: { ttl: 30, swr: 10 },
     }),
   ]);
 

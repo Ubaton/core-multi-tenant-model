@@ -33,21 +33,22 @@ export const GET = withSuperAdmin(async () => {
     offeringsAggregate,
   ] = await Promise.all([
     // Tenants
-    prisma.tenant.count(),
-    prisma.tenant.count({ where: { isActive: true } }),
-    prisma.tenant.count({ where: { isHQ: true } }),
+    prisma.tenant.count({ cacheStrategy: { ttl: 300, swr: 60 } }),
+    prisma.tenant.count({ where: { isActive: true }, cacheStrategy: { ttl: 300, swr: 60 } }),
+    prisma.tenant.count({ where: { isHQ: true }, cacheStrategy: { ttl: 300, swr: 60 } }),
 
     // Users
-    prisma.user.count(),
-    prisma.user.count({ where: { isActive: true } }),
+    prisma.user.count({ cacheStrategy: { ttl: 300, swr: 60 } }),
+    prisma.user.count({ where: { isActive: true }, cacheStrategy: { ttl: 300, swr: 60 } }),
 
     // Members
-    prisma.member.count(),
+    prisma.member.count({ cacheStrategy: { ttl: 300, swr: 60 } }),
 
     // Offerings - aggregate total
     prisma.offering.aggregate({
       _sum: { amount: true },
       _count: true,
+      cacheStrategy: { ttl: 300, swr: 60 },
     }),
   ]);
 

@@ -61,6 +61,7 @@ export const GET = withPermission('list', 'service', async (request, context) =>
       skip,
       take,
       orderBy: { [sortBy || 'serviceDate']: sortOrder || 'desc' },
+      cacheStrategy: { ttl: 30, swr: 10 },
       include: {
         _count: {
           select: {
@@ -76,12 +77,14 @@ export const GET = withPermission('list', 'service', async (request, context) =>
       _count: true,
       _sum: { attendanceCount: true },
       _avg: { attendanceCount: true },
+      cacheStrategy: { ttl: 30, swr: 10 },
     }),
   ]);
 
   // Calculate upcoming vs past
   const upcomingCount = await prisma.service.count({
     where: { tenantId: context.tenantId, serviceDate: { gte: now } },
+    cacheStrategy: { ttl: 30, swr: 10 },
   });
 
   return successResponse(

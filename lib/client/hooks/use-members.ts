@@ -8,8 +8,9 @@
 
 'use client';
 
-import { useMutation, useQuery, useQueryClient, useInfiniteQuery } from '@tanstack/react-query';
+import { useQuery, useInfiniteQuery } from '@tanstack/react-query';
 import { get, post, patch, del } from '../api-client';
+import { useAppMutation } from './use-app-mutation';
 import type { PaginationMeta } from '@/lib/types';
 import type { CreateMemberInput, UpdateMemberInput } from '@/lib/validations/schemas';
 
@@ -126,53 +127,54 @@ export function useMember(id: string) {
 
 /**
  * Create member
+ * Invalidates all list queries so the new entry appears everywhere.
  */
 export function useCreateMember() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: CreateMemberInput) => {
+  return useAppMutation<Member, Error, CreateMemberInput>({
+    mutationFn: async (data) => {
       const response = await post<Member>('/api/members', data);
       return response.data!;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: memberKeys.lists() });
-    },
+    invalidateKeys: [memberKeys.lists()],
   });
 }
 
 /**
  * Update member
+ * Optimistically patches the detail cache for instant feedback; then
+ * invalidates lists so any derived columns (name, status, etc.) refresh.
  */
 export function useUpdateMember(id: string) {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (data: UpdateMemberInput) => {
+  return useAppMutation<Member, Error, UpdateMemberInput>({
+    mutationFn: async (data) => {
       const response = await patch<Member>(`/api/members/${id}`, data);
       return response.data!;
     },
-    onSuccess: (data) => {
-      queryClient.setQueryData(memberKeys.detail(id), data);
-      queryClient.invalidateQueries({ queryKey: memberKeys.lists() });
+    optimisticUpdate: {
+      queryKey: memberKeys.detail(id),
+      updater: (current: Member, vars) => ({ ...current, ...vars }),
     },
+    invalidateKeys: [memberKeys.lists()],
   });
 }
 
 /**
  * Delete member
+ * Optimistically removes the item from the list cache; rolls back on error.
  */
 export function useDeleteMember() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: async (id: string) => {
+  return useAppMutation<string, Error, string>({
+    mutationFn: async (id) => {
       await del(`/api/members/${id}`);
       return id;
     },
-    onSuccess: (id) => {
-      queryClient.removeQueries({ queryKey: memberKeys.detail(id) });
-      queryClient.invalidateQueries({ queryKey: memberKeys.lists() });
+    optimisticUpdate: {
+      queryKey: memberKeys.lists(),
+      updater: (current: MembersResponse, id) => ({
+        ...current,
+        data: current.data.filter((m) => m.id !== id),
+      }),
     },
+    invalidateKeys: [memberKeys.lists()],
   });
 }

@@ -12,6 +12,7 @@
 
 import { PrismaClient, Prisma } from './generated/prisma';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { withAccelerate } from '@prisma/extension-accelerate';
 import { config as loadEnv } from 'dotenv';
 
 export { Prisma };
@@ -19,8 +20,12 @@ export { Prisma };
 // Fallback for non-Next runtimes where .env is not auto-loaded.
 loadEnv();
 
+// The withAccelerate() extension changes the return type, so we infer it.
+const createExtendedClient = () => new PrismaClient({ log: ['error'] }).$extends(withAccelerate());
+type ExtendedPrismaClient = ReturnType<typeof createExtendedClient>;
+
 const globalForPrisma = globalThis as unknown as {
-  prisma: PrismaClient | undefined;
+  prisma: ExtendedPrismaClient | undefined;
 };
 
 // Create a connection pool for PostgreSQL
@@ -31,16 +36,16 @@ if (!connectionString) {
 }
 
 const logLevel = process.env.NODE_ENV === 'development'
-  ? ['query', 'error', 'warn']
-  : ['error'];
+  ? (['query', 'error', 'warn'] as const)
+  : (['error'] as const);
 
-function createPrismaClient(): PrismaClient {
-  if (connectionString.startsWith('prisma+postgres://')) {
-    // Use accelerateUrl for Prisma Postgres / Accelerate
+function createPrismaClient(): ExtendedPrismaClient {
+  if (connectionString.startsWith('prisma://') || connectionString.startsWith('prisma+postgres://')) {
+    // Use Accelerate for connection pooling + caching
     return new PrismaClient({
       accelerateUrl: connectionString,
       log: logLevel,
-    });
+    }).$extends(withAccelerate()) as unknown as ExtendedPrismaClient;
   }
 
   // Create the pool only when we actually instantiate PrismaClient.
@@ -56,12 +61,13 @@ function createPrismaClient(): PrismaClient {
   return new PrismaClient({
     adapter,
     log: logLevel,
-  });
+  }).$extends(withAccelerate()) as unknown as ExtendedPrismaClient;
 }
 
 const prismaClient = globalForPrisma.prisma ?? createPrismaClient();
 
 export const prisma = prismaClient;
+export type { ExtendedPrismaClient };
 
 if (process.env.NODE_ENV !== 'production') {
   globalForPrisma.prisma = prisma;

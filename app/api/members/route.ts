@@ -59,6 +59,7 @@ export const GET = withPermission('list', 'member', async (request, context) => 
       skip,
       take,
       orderBy: { [sortBy || 'createdAt']: sortOrder },
+      cacheStrategy: { ttl: 30, swr: 10 },
       include: {
         departments: {
           include: {

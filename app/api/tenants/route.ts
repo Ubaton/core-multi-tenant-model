@@ -52,6 +52,7 @@ export const GET = withSuperAdmin(async (request, { user }) => {
       skip,
       take,
       orderBy: { [sortBy || 'createdAt']: sortOrder },
+      cacheStrategy: { ttl: 60, swr: 10 },
       include: {
         _count: {
           select: {
@@ -79,6 +80,7 @@ export const GET = withSuperAdmin(async (request, { user }) => {
     by: ['tenantId'],
     where: { tenantId: { in: tenantIds } },
     _sum: { amount: true },
+    cacheStrategy: { ttl: 60, swr: 10 },
   });
 
   // Map offering totals to tenants

@@ -51,6 +51,7 @@ export const GET = withAuth(async (request, { user }) => {
         role: userRole,
         tenantId: null,
       },
+      cacheStrategy: { ttl: 300, swr: 60 },
     });
 
     for (const perm of globalPermissions) {
@@ -69,6 +70,7 @@ export const GET = withAuth(async (request, { user }) => {
           role: userRole,
           tenantId: userTenantId,
         },
+        cacheStrategy: { ttl: 60, swr: 10 },
       });
 
       // Tenant-specific permissions override global ones for specific modules

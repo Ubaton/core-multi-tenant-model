@@ -27,6 +27,7 @@ import { updateTenantSchema } from '@/lib/validations';
 export const GET = withAuth(async (request, { user, tenantId }) => {
   const tenant = await prisma.tenant.findUnique({
     where: { id: tenantId },
+    cacheStrategy: { ttl: 60, swr: 10 },
     include: {
       parent: {
         select: {
@@ -63,6 +64,7 @@ export const GET = withAuth(async (request, { user, tenantId }) => {
   const offeringTotal = await prisma.offering.aggregate({
     where: { tenantId },
     _sum: { amount: true },
+    cacheStrategy: { ttl: 60, swr: 10 },
   });
 
   // Get this month's offerings
@@ -75,6 +77,7 @@ export const GET = withAuth(async (request, { user, tenantId }) => {
     },
     _sum: { amount: true },
     _count: true,
+    cacheStrategy: { ttl: 60, swr: 10 },
   });
 
   return successResponse({

@@ -49,6 +49,7 @@ export const GET = withSuperAdmin(async (request: NextRequest) => {
     // First, apply global overrides
     const globalPermissions = await prisma.rolePermission.findMany({
       where: { tenantId: null },
+      cacheStrategy: { ttl: 300, swr: 60 },
     });
 
     for (const perm of globalPermissions) {
@@ -66,6 +67,7 @@ export const GET = withSuperAdmin(async (request: NextRequest) => {
     // Then, apply tenant-specific overrides
     const tenantPermissions = await prisma.rolePermission.findMany({
       where: { tenantId },
+      cacheStrategy: { ttl: 60, swr: 10 },
     });
 
     for (const perm of tenantPermissions) {
@@ -83,6 +85,7 @@ export const GET = withSuperAdmin(async (request: NextRequest) => {
     // For global permissions view, just apply global overrides
     const globalPermissions = await prisma.rolePermission.findMany({
       where: { tenantId: null },
+      cacheStrategy: { ttl: 300, swr: 60 },
     });
 
     for (const perm of globalPermissions) {
