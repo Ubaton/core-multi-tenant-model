@@ -30,32 +30,36 @@ if (!connectionString) {
   throw new Error('DATABASE_URL environment variable is not set');
 }
 
-let prismaClient: PrismaClient;
+const logLevel = process.env.NODE_ENV === 'development'
+  ? ['query', 'error', 'warn']
+  : ['error'];
 
-if (connectionString.startsWith('prisma+postgres://')) {
-  // Use accelerateUrl for Prisma Postgres / Accelerate
-  prismaClient = globalForPrisma.prisma ?? new PrismaClient({
-    accelerateUrl: connectionString,
-    log: process.env.NODE_ENV === 'development' 
-      ? ['query', 'error', 'warn'] 
-      : ['error'],
-  });
-} else {
+function createPrismaClient(): PrismaClient {
+  if (connectionString.startsWith('prisma+postgres://')) {
+    // Use accelerateUrl for Prisma Postgres / Accelerate
+    return new PrismaClient({
+      accelerateUrl: connectionString,
+      log: logLevel,
+    });
+  }
+
+  // Create the pool only when we actually instantiate PrismaClient.
+  // This avoids leaking pools during Next.js hot-reload cycles.
   const adapter = new PrismaPg({
     connectionString,
-    max: 10,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
+    max: Number(process.env.DB_POOL_MAX ?? 5),
+    idleTimeoutMillis: Number(process.env.DB_IDLE_TIMEOUT_MS ?? 30000),
+    connectionTimeoutMillis: Number(process.env.DB_CONNECTION_TIMEOUT_MS ?? 15000),
     ssl: connectionString.includes('sslmode=require') ? { rejectUnauthorized: false } : undefined,
   });
 
-  prismaClient = globalForPrisma.prisma ?? new PrismaClient({
+  return new PrismaClient({
     adapter,
-    log: process.env.NODE_ENV === 'development' 
-      ? ['query', 'error', 'warn'] 
-      : ['error'],
+    log: logLevel,
   });
 }
+
+const prismaClient = globalForPrisma.prisma ?? createPrismaClient();
 
 export const prisma = prismaClient;
 
