@@ -3,14 +3,13 @@
 import "dotenv/config";
 import { defineConfig } from "prisma/config";
 
-// DATABASE_URL = Accelerate prisma+postgres:// URL (used at runtime by the app)
-// DIRECT_DATABASE_URL = raw postgres:// URL (used by Prisma CLI: migrate, introspect, studio)
+// DATABASE_URL = direct PostgreSQL connection string used by the app and Prisma CLI.
 export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
   },
   datasource: {
-    url: process.env["DIRECT_DATABASE_URL"] ?? process.env["DATABASE_URL"],
+    url: process.env["DATABASE_URL"],
   },
 });

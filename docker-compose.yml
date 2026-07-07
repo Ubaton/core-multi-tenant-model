@@ -32,9 +32,20 @@ services:
       DATABASE_URL: postgresql://app:app@db:5432/app?schema=public
       JWT_SECRET: replace-with-a-long-random-secret
       JWT_REFRESH_SECRET: replace-with-a-different-long-random-secret
-      NEXT_PUBLIC_API_URL: http://localhost:8080/api
+    expose:
+      - "8080"
+
+  nginx:
+    image: nginx:1.27-alpine
+    restart: unless-stopped
+    depends_on:
+      - app
     ports:
-      - "8080:8080"
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - nginx-cache:/var/cache/nginx
 
 volumes:
   postgres-data:
+  nginx-cache:

@@ -19,16 +19,8 @@ async function main() {
     throw new Error('DATABASE_URL environment variable is not set');
   }
 
-  let prisma: PrismaClient;
-  
-  if (connectionString.startsWith('prisma+postgres://')) {
-    prisma = new PrismaClient({
-      accelerateUrl: connectionString,
-    });
-  } else {
-    const adapter = new PrismaPg({ connectionString });
-    prisma = new PrismaClient({ adapter });
-  }
+  const adapter = new PrismaPg({ connectionString });
+  const prisma = new PrismaClient({ adapter });
 
   console.log('🌱 Starting database seed...');
 

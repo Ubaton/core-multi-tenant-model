@@ -131,9 +131,9 @@ DB_POOL_SIZE=5
 # With max-instances 10: 10 × 5 + 10 × 1 = 60 connections — well within limit
 ```
 
-### Using PgBouncer / Prisma Accelerate
+### Using PgBouncer
 
-If you use Prisma Accelerate or PgBouncer as a pooler:
+If you use PgBouncer as a pooler:
 
 - Set `DATABASE_URL` to the pooler URL (transaction mode for Prisma).
 - Set `DATABASE_DIRECT_URL` to the direct Postgres URL.

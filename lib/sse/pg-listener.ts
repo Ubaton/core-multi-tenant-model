@@ -9,7 +9,7 @@
  * pg_notify payload shape:
  *   { table, action, tenantId, id, ts }
  *
- * GOTCHA (Prisma + Cloud Run):
+ * GOTCHA (Cloud Run):
  *  Prisma's connection pool uses short-lived connections optimised for
  *  query/response cycles.  LISTEN requires a persistent connection that
  *  MUST NOT be returned to the pool.  That's why we use a raw pg.Client here
@@ -57,9 +57,9 @@ class PgListenerPool {
     const connectionString = process.env.DATABASE_URL;
     if (!connectionString) throw new Error('DATABASE_URL is not set');
 
-    // Use a direct pg connection — NOT through Prisma Accelerate/PgBouncer,
-    // which proxies do not support LISTEN.  If DATABASE_URL points to a
-    // pooler, set DATABASE_DIRECT_URL to the direct connection string.
+    // Use a direct pg connection, because poolers such as PgBouncer do not
+    // support LISTEN in transaction mode. If DATABASE_URL points to a pooler,
+    // set DATABASE_DIRECT_URL to the direct connection string.
     const url = process.env.DATABASE_DIRECT_URL ?? connectionString;
 
     this.client = new pg.Client({ connectionString: url });

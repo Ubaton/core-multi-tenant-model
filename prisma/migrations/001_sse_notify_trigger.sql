@@ -2,7 +2,7 @@
 -- Postgres NOTIFY trigger setup
 -- prisma/migrations/001_sse_notify_trigger.sql
 --
--- Run once via:  psql $DATABASE_DIRECT_URL -f prisma/migrations/001_sse_notify_trigger.sql
+-- Run once via:  psql $DATABASE_URL -f prisma/migrations/001_sse_notify_trigger.sql
 -- Or add to your Prisma migration workflow.
 --
 -- This function fires pg_notify('app_changes', payload) after every

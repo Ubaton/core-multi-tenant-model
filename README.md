@@ -97,8 +97,6 @@ JWT_REFRESH_SECRET="replace-with-a-different-long-random-secret"
 NEXT_PUBLIC_API_URL="http://localhost:4020/api"
 ```
 
-If you use Prisma Postgres Accelerate, DATABASE_URL can also use a prisma+postgres:// URL.
-
 ### 4. Generate schema in the target database
 
 ```bash
@@ -124,7 +122,7 @@ The app runs on:
 
 Required variables:
 
-- DATABASE_URL: PostgreSQL or Prisma Accelerate connection string
+- DATABASE_URL: PostgreSQL connection string
 - JWT_SECRET: Secret for short-lived access token signing
 - JWT_REFRESH_SECRET: Secret for refresh token signing
 
@@ -209,7 +207,18 @@ docker build -t core-multi-tenant-model .
 docker compose up --build
 ```
 
-The app will be available at http://localhost:8080 and PostgreSQL will run on port 5432.
+The stack runs three services: PostgreSQL, the Next.js app, and an Nginx reverse proxy. Nginx is the only public entry point — the app is available at http://localhost (port 80) and PostgreSQL on port 5432. The Next.js container is not published directly; all traffic flows through Nginx.
+
+### Nginx reverse proxy
+
+The proxy configuration lives in [nginx/nginx.conf](nginx/nginx.conf) and provides:
+
+- Gzip compression for HTML, CSS, JS, and JSON responses
+- Proxy caching of immutable Next.js build assets (`/_next/static/`) with one-year browser cache headers
+- SSE-safe handling of `/api/events`: buffering and caching disabled, one-hour read timeout so event streams are never cut off or delayed
+- Upstream keep-alive connections and baseline security headers (X-Content-Type-Options, X-Frame-Options, Referrer-Policy)
+
+For TLS in production, terminate HTTPS at Nginx (add a `listen 443 ssl` server block with your certificates) or at a load balancer in front of it.
 
 ### Cloud Run
 
