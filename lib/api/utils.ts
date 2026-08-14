@@ -8,12 +8,13 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { ZodError, ZodSchema } from 'zod';
-import { prisma } from '../db';
+import { query } from '../db';
 import { getCurrentUser, AuthenticationError, AuthorizationError } from '../auth';
 import { requireTenantContext, TenantResolutionError, type TenantContext } from '../tenant';
 import { hasPermission, PermissionDeniedError, type Action, type Resource } from '../permissions';
 import type { ApiResponse, ApiError, PaginationMeta, AuthUser } from '../types';
-import { UserRole } from '../generated/prisma';
+import { UserRole } from '../types/db';
+import { randomUUID } from 'crypto';
 
 // ════════════════════════════════════════════════════════════════════════════
 // RESPONSE HELPERS
@@ -117,63 +118,55 @@ export function handleError(error: unknown): NextResponse<ApiResponse> {
     return errorResponse('TENANT_NOT_FOUND', error.message, 404);
   }
 
-  // Prisma known errors
+  // Postgres (pg) known errors, identified by SQLSTATE code
   if (error && typeof error === 'object' && 'code' in error) {
-    const prismaError = error as { code: string; meta?: { target?: string | string[]; modelName?: string } };
-    
-    switch (prismaError.code) {
-      case 'P2002': // Unique constraint violation
-        const target = prismaError.meta?.target;
-        // target can be string[] or string (constraint name)
-        const fieldsArray = Array.isArray(target) ? target : [];
-        const targetStr = typeof target === 'string' ? target : fieldsArray.join(' ');
-        
-        // Check if phone is involved in the constraint (case-insensitive, handles quoted names)
-        if (targetStr.toLowerCase().includes('phone')) {
+    const pgError = error as { code: string; constraint?: string; detail?: string; table?: string };
+
+    switch (pgError.code) {
+      case '23505': { // unique_violation
+        const targetStr = `${pgError.constraint ?? ''} ${pgError.detail ?? ''}`.toLowerCase();
+
+        if (targetStr.includes('phone')) {
           return errorResponse(
             'DUPLICATE_PHONE',
             'A member with this phone number already exists',
             409
           );
         }
-        // Check if email is involved
-        if (targetStr.toLowerCase().includes('email')) {
+        if (targetStr.includes('email')) {
           return errorResponse(
             'DUPLICATE_EMAIL',
             'A record with this email address already exists',
             409
           );
         }
-        // Check if membershipId is involved
-        if (targetStr.toLowerCase().includes('membershipid')) {
+        if (targetStr.includes('membership_id') || targetStr.includes('membershipid')) {
           return errorResponse(
             'DUPLICATE_MEMBERSHIP_ID',
             'A member with this membership ID already exists',
             409
           );
         }
-        // Check if slug is involved (for tenants)
-        if (targetStr.toLowerCase().includes('slug')) {
+        if (targetStr.includes('slug')) {
           return errorResponse(
             'DUPLICATE_SLUG',
             'A tenant with this slug already exists',
             409
           );
         }
-        
-        // Generic unique constraint message
-        const fieldNames = fieldsArray.length > 0 
-          ? fieldsArray.filter(f => f.toLowerCase() !== 'tenantid').join(', ') 
-          : 'field';
+
         return errorResponse(
           'DUPLICATE_ENTRY',
-          `A record with this ${fieldNames || 'value'} already exists`,
+          `A record with this value already exists`,
           409
         );
-      case 'P2025': // Record not found
-        return errorResponse('NOT_FOUND', 'Record not found', 404);
-      case 'P2003': // Foreign key constraint
+      }
+      case '23503': // foreign_key_violation
         return errorResponse('INVALID_REFERENCE', 'Referenced record not found', 400);
+      case '23502': // not_null_violation
+        return errorResponse('VALIDATION_ERROR', 'A required field is missing', 400);
+      case '23514': // check_violation
+        return errorResponse('VALIDATION_ERROR', 'Value violates a database constraint', 400);
     }
   }
 
@@ -408,21 +401,27 @@ export async function logAudit(
   request?: NextRequest
 ): Promise<void> {
   try {
-    await prisma.auditLog.create({
-      data: {
+    const ipAddress = request?.headers.get('x-forwarded-for') ??
+                       request?.headers.get('x-real-ip') ??
+                       null;
+    const userAgent = request?.headers.get('user-agent') ?? null;
+
+    await query(
+      `INSERT INTO "AuditLog" (id, "userId", "tenantId", action, "entityType", "entityId", "oldData", "newData", "ipAddress", "userAgent")
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [
+        randomUUID(),
         userId,
         tenantId,
         action,
         entityType,
         entityId,
-        oldData: oldData ?? undefined,
-        newData: newData ?? undefined,
-        ipAddress: request?.headers.get('x-forwarded-for') ?? 
-                   request?.headers.get('x-real-ip') ?? 
-                   undefined,
-        userAgent: request?.headers.get('user-agent') ?? undefined,
-      },
-    });
+        oldData != null ? JSON.stringify(oldData) : null,
+        newData != null ? JSON.stringify(newData) : null,
+        ipAddress,
+        userAgent,
+      ]
+    );
   } catch (error) {
     // Log but don't fail the main operation
     console.error('Failed to create audit log:', error);

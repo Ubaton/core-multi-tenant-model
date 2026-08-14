@@ -7,14 +7,15 @@
 
 import { NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
-import { prisma } from '@/lib/db';
-import { 
-  verifyRefreshToken, 
-  generateAccessToken, 
+import { query } from '@/lib/db';
+import {
+  verifyRefreshToken,
+  generateAccessToken,
   generateRefreshToken,
-  setAuthCookies 
+  setAuthCookies
 } from '@/lib/auth';
 import { successResponse, errorResponse, handleError } from '@/lib/api';
+import type { UserRole } from '@/lib/types/db';
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,22 +39,34 @@ export async function POST(request: NextRequest) {
     }
 
     // Get user
-    const user = await prisma.user.findUnique({
-      where: { id: payload.userId },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        tenantId: true,
-        isActive: true,
-      },
-    });
+    const rows = await query<{
+      id: string;
+      email: string;
+      first_name: string;
+      last_name: string;
+      role: UserRole;
+      tenant_id: string | null;
+      is_active: boolean;
+    }>(
+      `SELECT id, email, "firstName" AS first_name, "lastName" AS last_name, role, "tenantId" AS tenant_id, "isActive" AS is_active
+       FROM "User" WHERE id = $1`,
+      [payload.userId]
+    );
+    const row = rows[0];
 
-    if (!user || !user.isActive) {
+    if (!row || !row.is_active) {
       return errorResponse('USER_NOT_FOUND', 'User not found or inactive', 401);
     }
+
+    const user = {
+      id: row.id,
+      email: row.email,
+      firstName: row.first_name,
+      lastName: row.last_name,
+      role: row.role,
+      tenantId: row.tenant_id,
+      isActive: row.is_active,
+    };
 
     // Generate new tokens
     const newAccessToken = generateAccessToken({

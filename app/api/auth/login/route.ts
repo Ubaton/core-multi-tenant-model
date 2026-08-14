@@ -6,52 +6,88 @@
  */
 
 import { NextRequest } from 'next/server';
-import { prisma } from '@/lib/db';
-import { 
-  verifyPassword, 
-  generateAccessToken, 
+import { query } from '@/lib/db';
+import {
+  verifyPassword,
+  generateAccessToken,
   generateRefreshToken,
-  setAuthCookies 
+  setAuthCookies
 } from '@/lib/auth';
-import { 
-  successResponse, 
-  errorResponse, 
-  handleError, 
-  parseBody 
+import {
+  successResponse,
+  errorResponse,
+  handleError,
+  parseBody
 } from '@/lib/api';
 import { loginSchema } from '@/lib/validations';
+import type { UserRole } from '@/lib/types/db';
+
+interface LoginUserRow {
+  id: string;
+  email: string;
+  password_hash: string;
+  first_name: string;
+  last_name: string;
+  role: UserRole;
+  tenant_id: string | null;
+  is_active: boolean;
+  must_change_password: boolean;
+  tenant_id_ref: string | null;
+  tenant_name: string | null;
+  tenant_slug: string | null;
+  tenant_is_active: boolean | null;
+}
 
 export async function POST(request: NextRequest) {
   try {
     const { email, password } = await parseBody(request, loginSchema);
 
     // Find user by email
-    const user = await prisma.user.findUnique({
-      where: { email: email.toLowerCase() },
-      select: {
-        id: true,
-        email: true,
-        passwordHash: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-        tenantId: true,
-        isActive: true,
-        mustChangePassword: true,
-        tenant: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-            isActive: true,
-          },
-        },
-      },
-    });
+    const rows = await query<LoginUserRow>(
+      `SELECT
+         u.id,
+         u.email,
+         u."passwordHash" AS password_hash,
+         u."firstName" AS first_name,
+         u."lastName" AS last_name,
+         u.role,
+         u."tenantId" AS tenant_id,
+         u."isActive" AS is_active,
+         u."mustChangePassword" AS must_change_password,
+         t.id AS tenant_id_ref,
+         t.name AS tenant_name,
+         t.slug AS tenant_slug,
+         t."isActive" AS tenant_is_active
+       FROM "User" u
+       LEFT JOIN "Tenant" t ON t.id = u."tenantId"
+       WHERE u.email = $1`,
+      [email.toLowerCase()]
+    );
+    const row = rows[0];
 
-    if (!user) {
+    if (!row) {
       return errorResponse('INVALID_CREDENTIALS', 'Invalid email or password', 401);
     }
+
+    const user = {
+      id: row.id,
+      email: row.email,
+      passwordHash: row.password_hash,
+      firstName: row.first_name,
+      lastName: row.last_name,
+      role: row.role,
+      tenantId: row.tenant_id,
+      isActive: row.is_active,
+      mustChangePassword: row.must_change_password,
+      tenant: row.tenant_id_ref
+        ? {
+            id: row.tenant_id_ref,
+            name: row.tenant_name!,
+            slug: row.tenant_slug!,
+            isActive: row.tenant_is_active!,
+          }
+        : null,
+    };
 
     // Verify password
     const isValidPassword = await verifyPassword(password, user.passwordHash);
@@ -82,10 +118,10 @@ export async function POST(request: NextRequest) {
     await setAuthCookies(accessToken, refreshToken);
 
     // Update last login
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { lastLoginAt: new Date() },
-    });
+    await query(
+      `UPDATE "User" SET "lastLoginAt" = NOW() WHERE id = $1`,
+      [user.id]
+    );
 
     // Calculate expiry (15 minutes from now)
     const expiresAt = Date.now() + 15 * 60 * 1000;

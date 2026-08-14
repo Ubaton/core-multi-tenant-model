@@ -16,8 +16,8 @@ import {
   CommunicationType,
   OfferingType,
   CallOutcome,
-  Gender 
-} from '../generated/prisma';
+  Gender
+} from '../types/db';
 
 // ════════════════════════════════════════════════════════════════════════════
 // COMMON SCHEMAS
@@ -35,7 +35,7 @@ export const searchSchema = paginationSchema.extend({
 });
 
 export const idParamSchema = z.object({
-  id: z.string().cuid(),
+  id: z.string().min(1),
 });
 
 export const dateRangeSchema = z.object({

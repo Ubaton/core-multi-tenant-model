@@ -7,10 +7,11 @@
  */
 
 import { NextRequest } from 'next/server';
-import { prisma } from '@/lib/db';
-import { 
-  withPermission, 
-  successResponse, 
+import { randomUUID } from 'crypto';
+import { query } from '@/lib/db';
+import {
+  withPermission,
+  successResponse,
   createdResponse,
   parseBody,
   parseSearchParams,
@@ -19,7 +20,7 @@ import {
   logAudit,
 } from '@/lib/api';
 import { z } from 'zod';
-import { CommunicationType, CommunicationStatus } from '@/lib/generated/prisma';
+import { CommunicationType, CommunicationStatus } from '@/lib/types/db';
 
 // Validation schemas
 const communicationFilterSchema = z.object({
@@ -44,6 +45,103 @@ const createCommunicationSchema = z.object({
   recipientEmail: z.string().email().optional(),
 });
 
+const SORT_COLUMN_MAP: Record<string, string> = {
+  createdAt: '"createdAt"',
+  updatedAt: '"updatedAt"',
+  sentAt: '"sentAt"',
+  deliveredAt: '"deliveredAt"',
+  type: 'type',
+  status: 'status',
+  subject: 'subject',
+};
+
+interface CommunicationRow {
+  id: string;
+  tenant_id: string;
+  type: CommunicationType;
+  subject: string | null;
+  message: string;
+  member_id: string | null;
+  lead_id: string | null;
+  recipient_phone: string | null;
+  recipient_email: string | null;
+  sender_id: string;
+  status: CommunicationStatus;
+  sent_at: Date | null;
+  delivered_at: Date | null;
+  failure_reason: string | null;
+  external_id: string | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+function mapCommunicationRow(row: CommunicationRow) {
+  return {
+    id: row.id,
+    tenantId: row.tenant_id,
+    type: row.type,
+    subject: row.subject,
+    message: row.message,
+    memberId: row.member_id,
+    leadId: row.lead_id,
+    recipientPhone: row.recipient_phone,
+    recipientEmail: row.recipient_email,
+    senderId: row.sender_id,
+    status: row.status,
+    sentAt: row.sent_at,
+    deliveredAt: row.delivered_at,
+    failureReason: row.failure_reason,
+    externalId: row.external_id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+interface PersonBrief {
+  id: string;
+  first_name: string;
+  last_name: string;
+  phone: string | null;
+  email: string | null;
+}
+
+async function fetchMembersById(ids: string[]) {
+  if (ids.length === 0) return new Map<string, PersonBrief>();
+  const rows = await query<PersonBrief>(
+    `SELECT id, "firstName" AS first_name, "lastName" AS last_name, phone, email FROM "Member" WHERE id = ANY($1::text[])`,
+    [ids]
+  );
+  return new Map(rows.map((r) => [r.id, r]));
+}
+
+async function fetchLeadsById(ids: string[]) {
+  if (ids.length === 0) return new Map<string, PersonBrief>();
+  const rows = await query<PersonBrief>(
+    `SELECT id, "firstName" AS first_name, "lastName" AS last_name, phone, email FROM "Lead" WHERE id = ANY($1::text[])`,
+    [ids]
+  );
+  return new Map(rows.map((r) => [r.id, r]));
+}
+
+async function fetchUsersById(ids: string[]) {
+  if (ids.length === 0) return new Map<string, { id: string; first_name: string; last_name: string }>();
+  const rows = await query<{ id: string; first_name: string; last_name: string }>(
+    `SELECT id, "firstName" AS first_name, "lastName" AS last_name FROM "User" WHERE id = ANY($1::text[])`,
+    [ids]
+  );
+  return new Map(rows.map((r) => [r.id, r]));
+}
+
+function briefMember(m?: PersonBrief) {
+  if (!m) return null;
+  return { id: m.id, firstName: m.first_name, lastName: m.last_name, phone: m.phone, email: m.email };
+}
+
+function briefUser(u?: { id: string; first_name: string; last_name: string }) {
+  if (!u) return null;
+  return { id: u.id, firstName: u.first_name, lastName: u.last_name };
+}
+
 /**
  * GET /api/communications
  * List communications with filtering and pagination
@@ -53,60 +151,91 @@ export const GET = withPermission('list', 'communication', async (request, conte
   const filters = parseSearchParams(searchParams, communicationFilterSchema);
   const { page, pageSize, search, sortBy, sortOrder, type, status, memberId, leadId } = filters;
 
-  const where = {
-    tenantId: context.tenantId,
-    ...(search && {
-      OR: [
-        { subject: { contains: search, mode: 'insensitive' as const } },
-        { message: { contains: search, mode: 'insensitive' as const } },
-        { recipientPhone: { contains: search, mode: 'insensitive' as const } },
-        { recipientEmail: { contains: search, mode: 'insensitive' as const } },
-      ],
-    }),
-    ...(type && { type }),
-    ...(status && { status }),
-    ...(memberId && { memberId }),
-    ...(leadId && { leadId }),
-  };
+  const conditions: string[] = ['"tenantId" = $1'];
+  const params: unknown[] = [context.tenantId];
 
+  if (search) {
+    params.push(`%${search}%`);
+    const idx = params.length;
+    conditions.push(
+      `(subject ILIKE $${idx} OR message ILIKE $${idx} OR "recipientPhone" ILIKE $${idx} OR "recipientEmail" ILIKE $${idx})`
+    );
+  }
+
+  if (type) {
+    params.push(type);
+    conditions.push(`type = $${params.length}`);
+  }
+
+  if (status) {
+    params.push(status);
+    conditions.push(`status = $${params.length}`);
+  }
+
+  if (memberId) {
+    params.push(memberId);
+    conditions.push(`"memberId" = $${params.length}`);
+  }
+
+  if (leadId) {
+    params.push(leadId);
+    conditions.push(`"leadId" = $${params.length}`);
+  }
+
+  const whereClause = `WHERE ${conditions.join(' AND ')}`;
   const { skip, take } = calculatePagination(page, pageSize);
+  const sortColumn = SORT_COLUMN_MAP[sortBy || 'createdAt'] || '"createdAt"';
+  const sortDirection = sortOrder === 'asc' ? 'ASC' : 'DESC';
 
-  const [communications, totalCount] = await Promise.all([
-    prisma.communication.findMany({
-      where,
-      skip,
-      take,
-      orderBy: { [sortBy || 'createdAt']: sortOrder },
-      include: {
-        member: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-            email: true,
-          },
-        },
-        lead: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            phone: true,
-            email: true,
-          },
-        },
-        sender: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-          },
-        },
-      },
-    }),
-    prisma.communication.count({ where }),
+  const dataParams = [...params, take, skip];
+
+  const [rows, countRows] = await Promise.all([
+    query<CommunicationRow>(
+      `SELECT
+         id,
+         "tenantId" AS tenant_id,
+         type,
+         subject,
+         message,
+         "memberId" AS member_id,
+         "leadId" AS lead_id,
+         "recipientPhone" AS recipient_phone,
+         "recipientEmail" AS recipient_email,
+         "senderId" AS sender_id,
+         status,
+         "sentAt" AS sent_at,
+         "deliveredAt" AS delivered_at,
+         "failureReason" AS failure_reason,
+         "externalId" AS external_id,
+         "createdAt" AS created_at,
+         "updatedAt" AS updated_at
+       FROM "Communication"
+       ${whereClause}
+       ORDER BY ${sortColumn} ${sortDirection}
+       LIMIT $${dataParams.length - 1} OFFSET $${dataParams.length}`,
+      dataParams
+    ),
+    query<{ count: string }>(`SELECT COUNT(*) AS count FROM "Communication" ${whereClause}`, params),
   ]);
+
+  const totalCount = Number(countRows[0]?.count ?? 0);
+
+  const memberIds = [...new Set(rows.map((r) => r.member_id).filter((v): v is string => !!v))];
+  const leadIds = [...new Set(rows.map((r) => r.lead_id).filter((v): v is string => !!v))];
+  const senderIds = [...new Set(rows.map((r) => r.sender_id).filter((v): v is string => !!v))];
+
+  const [membersById, leadsById, sendersById] = await Promise.all([
+    fetchMembersById(memberIds),
+    fetchLeadsById(leadIds),
+    fetchUsersById(senderIds),
+  ]);
+
+  const communications = rows.map((row) => ({
+    ...mapCommunicationRow(row),
+    member: row.member_id ? briefMember(membersById.get(row.member_id)) : null,
+    lead: row.lead_id ? briefMember(leadsById.get(row.lead_id)) : null,
+    sender: briefUser(sendersById.get(row.sender_id)),
+  }));
 
   return successResponse(communications, createPaginationMeta(page, pageSize, totalCount));
 });
@@ -128,56 +257,71 @@ export const POST = withPermission('create', 'communication', async (request, co
   let recipientEmail = data.recipientEmail;
 
   if (data.memberId && !recipientPhone && !recipientEmail) {
-    const member = await prisma.member.findUnique({
-      where: { id: data.memberId },
-      select: { phone: true, email: true },
-    });
+    const rows = await query<{ phone: string | null; email: string | null }>(
+      `SELECT phone, email FROM member WHERE id = $1`,
+      [data.memberId]
+    );
+    const member = rows[0];
     recipientPhone = member?.phone || undefined;
     recipientEmail = member?.email || undefined;
   }
 
   if (data.leadId && !recipientPhone && !recipientEmail) {
-    const lead = await prisma.lead.findUnique({
-      where: { id: data.leadId },
-      select: { phone: true, email: true },
-    });
+    const rows = await query<{ phone: string | null; email: string | null }>(
+      `SELECT phone, email FROM lead WHERE id = $1`,
+      [data.leadId]
+    );
+    const lead = rows[0];
     recipientPhone = lead?.phone || undefined;
     recipientEmail = lead?.email || undefined;
   }
 
-  const communication = await prisma.communication.create({
-    data: {
-      ...data,
-      tenantId: context.tenantId,
-      senderId: context.user.id,
-      recipientPhone,
-      recipientEmail,
-      status: CommunicationStatus.PENDING,
-    },
-    include: {
-      member: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-        },
-      },
-      lead: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-        },
-      },
-      sender: {
-        select: {
-          id: true,
-          firstName: true,
-          lastName: true,
-        },
-      },
-    },
-  });
+  const id = randomUUID();
+  const rows = await query<CommunicationRow>(
+    `INSERT INTO communication (
+       id, tenant_id, type, subject, message, member_id, lead_id,
+       recipient_phone, recipient_email, sender_id, status
+     ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+     RETURNING *`,
+    [
+      id,
+      context.tenantId,
+      data.type,
+      data.subject ?? null,
+      data.message,
+      data.memberId ?? null,
+      data.leadId ?? null,
+      recipientPhone ?? null,
+      recipientEmail ?? null,
+      context.user.id,
+      CommunicationStatus.PENDING,
+    ]
+  );
+
+  const communicationRow = rows[0];
+
+  const [membersById, leadsById, sendersById] = await Promise.all([
+    fetchMembersById(communicationRow.member_id ? [communicationRow.member_id] : []),
+    fetchLeadsById(communicationRow.lead_id ? [communicationRow.lead_id] : []),
+    fetchUsersById([communicationRow.sender_id]),
+  ]);
+
+  const communication = {
+    ...mapCommunicationRow(communicationRow),
+    member: communicationRow.member_id
+      ? (() => {
+          const m = membersById.get(communicationRow.member_id!);
+          return m ? { id: m.id, firstName: m.first_name, lastName: m.last_name } : null;
+        })()
+      : null,
+    lead: communicationRow.lead_id
+      ? (() => {
+          const l = leadsById.get(communicationRow.lead_id!);
+          return l ? { id: l.id, firstName: l.first_name, lastName: l.last_name } : null;
+        })()
+      : null,
+    sender: briefUser(sendersById.get(communicationRow.sender_id)),
+  };
 
   // Log audit
   await logAudit(

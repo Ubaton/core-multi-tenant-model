@@ -6,7 +6,7 @@
  * Type definitions for authentication, authorization, and session management.
  */
 
-import { UserRole } from '../generated/prisma';
+import { UserRole } from './db';
 
 /**
  * JWT Token payload structure

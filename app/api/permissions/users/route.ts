@@ -8,7 +8,7 @@
 
 import { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { prisma } from '@/lib/db';
+import { query } from '@/lib/db';
 import {
   withSuperAdmin,
   successResponse,
@@ -17,7 +17,8 @@ import {
   logAudit,
 } from '@/lib/api';
 import { DEFAULT_MODULE_PERMISSIONS } from '@/lib/permissions-matrix';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/types/db';
+import { randomUUID } from 'crypto';
 
 const updateUserPermissionSchema = z.object({
   userId: z.string().min(1),
@@ -25,6 +26,24 @@ const updateUserPermissionSchema = z.object({
   permission: z.enum(['view', 'create', 'edit', 'delete']),
   granted: z.boolean(),
 });
+
+interface RolePermissionRow {
+  module: string;
+  can_view: boolean;
+  can_create: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+}
+
+interface UserPermissionRow {
+  id: string;
+  user_id: string;
+  module: string;
+  can_view: boolean;
+  can_create: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+}
 
 function cloneRoleDefaults(role: UserRole) {
   return JSON.parse(JSON.stringify(DEFAULT_MODULE_PERMISSIONS[role] || {})) as Record<
@@ -34,16 +53,17 @@ function cloneRoleDefaults(role: UserRole) {
 }
 
 async function computeEffectivePermissionsForUser(targetUserId: string) {
-  const targetUser = await prisma.user.findUnique({
-    where: { id: targetUserId },
-    select: { id: true, role: true, tenantId: true },
-  });
+  const targetUserRows = await query<{ id: string; role: UserRole; tenant_id: string | null }>(
+    `SELECT id, role, "tenantId" AS tenant_id FROM "User" WHERE id = $1`,
+    [targetUserId]
+  );
+  const targetUser = targetUserRows[0];
 
   if (!targetUser) {
     return { targetUser: null, permissions: null } as const;
   }
 
-  const role = targetUser.role as UserRole;
+  const role = targetUser.role;
 
   // SUPER_ADMIN gets full defaults; we don't apply overrides here.
   if (role === UserRole.SUPER_ADMIN) {
@@ -58,54 +78,60 @@ async function computeEffectivePermissionsForUser(targetUserId: string) {
 
   if (applyRoleOverrides) {
     // 1) Global role overrides
-    const globalRoleOverrides = await prisma.rolePermission.findMany({
-      where: { role, tenantId: null },
-    });
+    const globalRoleOverrides = await query<RolePermissionRow>(
+      `SELECT module, "canView" AS can_view, "canCreate" AS can_create, "canEdit" AS can_edit, "canDelete" AS can_delete
+       FROM "RolePermission" WHERE role = $1 AND "tenantId" IS NULL`,
+      [role]
+    );
 
     for (const perm of globalRoleOverrides) {
       permissions[perm.module] = {
-        view: perm.canView,
-        create: perm.canCreate,
-        edit: perm.canEdit,
-        delete: perm.canDelete,
+        view: perm.can_view,
+        create: perm.can_create,
+        edit: perm.can_edit,
+        delete: perm.can_delete,
       };
     }
 
     // 2) Tenant role overrides
-    if (targetUser.tenantId) {
-      const tenantRoleOverrides = await prisma.rolePermission.findMany({
-        where: { role, tenantId: targetUser.tenantId },
-      });
+    if (targetUser.tenant_id) {
+      const tenantRoleOverrides = await query<RolePermissionRow>(
+        `SELECT module, "canView" AS can_view, "canCreate" AS can_create, "canEdit" AS can_edit, "canDelete" AS can_delete
+         FROM "RolePermission" WHERE role = $1 AND "tenantId" = $2`,
+        [role, targetUser.tenant_id]
+      );
 
       for (const perm of tenantRoleOverrides) {
         permissions[perm.module] = {
-          view: perm.canView,
-          create: perm.canCreate,
-          edit: perm.canEdit,
-          delete: perm.canDelete,
+          view: perm.can_view,
+          create: perm.can_create,
+          edit: perm.can_edit,
+          delete: perm.can_delete,
         };
       }
     }
   }
 
   // 3) User-specific overrides (final)
-  const userOverrides = await prisma.userPermission.findMany({
-    where: { userId: targetUser.id },
-  });
+  const userOverrides = await query<RolePermissionRow>(
+    `SELECT module, "canView" AS can_view, "canCreate" AS can_create, "canEdit" AS can_edit, "canDelete" AS can_delete
+     FROM "UserPermission" WHERE "userId" = $1`,
+    [targetUser.id]
+  );
 
   for (const perm of userOverrides) {
     permissions[perm.module] = {
-      view: perm.canView,
-      create: perm.canCreate,
-      edit: perm.canEdit,
-      delete: perm.canDelete,
+      view: perm.can_view,
+      create: perm.can_create,
+      edit: perm.can_edit,
+      delete: perm.can_delete,
     };
   }
 
   return { targetUser, permissions } as const;
 }
 
-export const GET = withSuperAdmin(async (request: NextRequest, { user }) => {
+export const GET = withSuperAdmin(async (request: NextRequest) => {
   const { searchParams } = new URL(request.url);
   const userId = searchParams.get('userId');
 
@@ -123,7 +149,7 @@ export const GET = withSuperAdmin(async (request: NextRequest, { user }) => {
   return successResponse({
     userId: result.targetUser.id,
     role: result.targetUser.role,
-    tenantId: result.targetUser.tenantId,
+    tenantId: result.targetUser.tenant_id,
     permissions: result.permissions,
   });
 });
@@ -132,10 +158,11 @@ export const PUT = withSuperAdmin(async (request: NextRequest, { user }) => {
   const body = await parseBody(request, updateUserPermissionSchema);
   const { userId, module, permission, granted } = body;
 
-  const targetUser = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { id: true, role: true, tenantId: true },
-  });
+  const targetUserRows = await query<{ id: string; role: UserRole; tenant_id: string | null }>(
+    `SELECT id, role, "tenantId" AS tenant_id FROM "User" WHERE id = $1`,
+    [userId]
+  );
+  const targetUser = targetUserRows[0];
 
   if (!targetUser) {
     return errorResponse('NOT_FOUND', 'User not found', 404);
@@ -146,20 +173,36 @@ export const PUT = withSuperAdmin(async (request: NextRequest, { user }) => {
     return errorResponse('BAD_REQUEST', 'Cannot override permissions for SUPER_ADMIN', 400);
   }
 
-  const permissionField =
-    ({ view: 'canView', create: 'canCreate', edit: 'canEdit', delete: 'canDelete' } as const)[permission];
+  const permissionColumn =
+    ({ view: '"canView"', create: '"canCreate"', edit: '"canEdit"', delete: '"canDelete"' } as const)[permission];
 
-  const existing = await prisma.userPermission.findFirst({
-    where: { userId, module },
-  });
+  const USER_PERMISSION_SELECT = `
+    SELECT
+      id,
+      "userId" AS user_id,
+      module,
+      "canView" AS can_view,
+      "canCreate" AS can_create,
+      "canEdit" AS can_edit,
+      "canDelete" AS can_delete
+    FROM "UserPermission"
+  `;
 
-  let updated;
+  const existingRows = await query<UserPermissionRow>(
+    `${USER_PERMISSION_SELECT} WHERE "userId" = $1 AND module = $2 LIMIT 1`,
+    [userId, module]
+  );
+  const existing = existingRows[0];
+
+  let updated: UserPermissionRow;
 
   if (existing) {
-    updated = await prisma.userPermission.update({
-      where: { id: existing.id },
-      data: { [permissionField]: granted },
-    });
+    const updatedRows = await query<UserPermissionRow>(
+      `UPDATE "UserPermission" SET ${permissionColumn} = $1, "updatedAt" = NOW() WHERE id = $2
+       RETURNING id, "userId" AS user_id, module, "canView" AS can_view, "canCreate" AS can_create, "canEdit" AS can_edit, "canDelete" AS can_delete`,
+      [granted, existing.id]
+    );
+    updated = updatedRows[0];
   } else {
     // Create a new override record seeded from current effective permissions,
     // but with the single toggled value changed.
@@ -171,16 +214,18 @@ export const PUT = withSuperAdmin(async (request: NextRequest, { user }) => {
 
     const seed = effective.permissions[module] || { view: false, create: false, edit: false, delete: false };
 
-    updated = await prisma.userPermission.create({
-      data: {
-        userId,
-        module,
-        canView: permission === 'view' ? granted : seed.view,
-        canCreate: permission === 'create' ? granted : seed.create,
-        canEdit: permission === 'edit' ? granted : seed.edit,
-        canDelete: permission === 'delete' ? granted : seed.delete,
-      },
-    });
+    const canView = permission === 'view' ? granted : seed.view;
+    const canCreate = permission === 'create' ? granted : seed.create;
+    const canEdit = permission === 'edit' ? granted : seed.edit;
+    const canDelete = permission === 'delete' ? granted : seed.delete;
+
+    const insertedRows = await query<UserPermissionRow>(
+      `INSERT INTO "UserPermission" (id, "userId", module, "canView", "canCreate", "canEdit", "canDelete")
+       VALUES ($1, $2, $3, $4, $5, $6, $7)
+       RETURNING id, "userId" AS user_id, module, "canView" AS can_view, "canCreate" AS can_create, "canEdit" AS can_edit, "canDelete" AS can_delete`,
+      [randomUUID(), userId, module, canView, canCreate, canEdit, canDelete]
+    );
+    updated = insertedRows[0];
   }
 
   await logAudit(
@@ -196,9 +241,9 @@ export const PUT = withSuperAdmin(async (request: NextRequest, { user }) => {
   return successResponse({
     userId,
     module,
-    view: updated.canView,
-    create: updated.canCreate,
-    edit: updated.canEdit,
-    delete: updated.canDelete,
+    view: updated.can_view,
+    create: updated.can_create,
+    edit: updated.can_edit,
+    delete: updated.can_delete,
   });
 });

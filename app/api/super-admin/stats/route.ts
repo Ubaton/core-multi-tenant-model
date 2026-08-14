@@ -5,9 +5,9 @@
  * ════════════════════════════════════════════════════════════════════════════
  */
 
-import { prisma } from '@/lib/db';
-import { 
-  withSuperAdmin, 
+import { query } from '@/lib/db';
+import {
+  withSuperAdmin,
   successResponse,
 } from '@/lib/api';
 
@@ -17,43 +17,46 @@ import {
  */
 export const GET = withSuperAdmin(async () => {
   const [
-    // Tenant counts
-    totalTenants,
-    activeTenants,
-    hqTenants,
+    totalTenantsRows,
+    activeTenantsRows,
+    hqTenantsRows,
 
-    // User counts
-    totalUsers,
-    activeUsers,
+    totalUsersRows,
+    activeUsersRows,
 
-    // Member counts
-    totalMembers,
+    totalMembersRows,
 
-    // Offering totals
-    offeringsAggregate,
+    offeringsAggregateRows,
   ] = await Promise.all([
     // Tenants
-    prisma.tenant.count({ cacheStrategy: { ttl: 300, swr: 60 } }),
-    prisma.tenant.count({ where: { isActive: true }, cacheStrategy: { ttl: 300, swr: 60 } }),
-    prisma.tenant.count({ where: { isHQ: true }, cacheStrategy: { ttl: 300, swr: 60 } }),
+    query<{ count: string }>(`SELECT COUNT(*) AS count FROM "Tenant"`),
+    query<{ count: string }>(`SELECT COUNT(*) AS count FROM "Tenant" WHERE "isActive" = true`),
+    query<{ count: string }>(`SELECT COUNT(*) AS count FROM "Tenant" WHERE "isHQ" = true`),
 
     // Users
-    prisma.user.count({ cacheStrategy: { ttl: 300, swr: 60 } }),
-    prisma.user.count({ where: { isActive: true }, cacheStrategy: { ttl: 300, swr: 60 } }),
+    query<{ count: string }>(`SELECT COUNT(*) AS count FROM "User"`),
+    query<{ count: string }>(`SELECT COUNT(*) AS count FROM "User" WHERE "isActive" = true`),
 
     // Members
-    prisma.member.count({ cacheStrategy: { ttl: 300, swr: 60 } }),
+    query<{ count: string }>(`SELECT COUNT(*) AS count FROM "Member"`),
 
     // Offerings - aggregate total
-    prisma.offering.aggregate({
-      _sum: { amount: true },
-      _count: true,
-      cacheStrategy: { ttl: 300, swr: 60 },
-    }),
+    query<{ sum: string | null; count: string }>(
+      `SELECT COALESCE(SUM(amount), 0) AS sum, COUNT(*) AS count FROM "Offering"`
+    ),
   ]);
 
-  const totalOfferings = offeringsAggregate._sum.amount?.toString() ?? '0';
-  const offeringsCount = offeringsAggregate._count ?? 0;
+  const totalTenants = Number(totalTenantsRows[0]?.count ?? 0);
+  const activeTenants = Number(activeTenantsRows[0]?.count ?? 0);
+  const hqTenants = Number(hqTenantsRows[0]?.count ?? 0);
+
+  const totalUsers = Number(totalUsersRows[0]?.count ?? 0);
+  const activeUsers = Number(activeUsersRows[0]?.count ?? 0);
+
+  const totalMembers = Number(totalMembersRows[0]?.count ?? 0);
+
+  const totalOfferings = offeringsAggregateRows[0]?.sum?.toString() ?? '0';
+  const offeringsCount = Number(offeringsAggregateRows[0]?.count ?? 0);
 
   return successResponse({
     tenants: {

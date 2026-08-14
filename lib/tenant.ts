@@ -8,9 +8,9 @@
  */
 
 import { headers } from 'next/headers';
-import { prisma } from './db';
+import { query } from './db';
 import { getCurrentUser } from './auth';
-import type { Tenant, UserRole } from './generated/prisma';
+import type { Tenant } from './types/db';
 
 // ════════════════════════════════════════════════════════════════════════════
 // CONFIGURATION
@@ -86,10 +86,8 @@ export async function resolveTenantContext(): Promise<TenantContext | null> {
     const headerTenantId = await getTenantIdFromHeader();
     
     if (headerTenantId) {
-      const tenant = await prisma.tenant.findUnique({
-        where: { id: headerTenantId, isActive: true },
-      });
-      
+      const tenant = await findActiveTenant('id', headerTenantId);
+
       if (tenant) {
         return {
           tenant,
@@ -111,10 +109,8 @@ export async function resolveTenantContext(): Promise<TenantContext | null> {
 
   // Regular user - use their assigned tenant
   if (user?.tenantId) {
-    const tenant = await prisma.tenant.findUnique({
-      where: { id: user.tenantId, isActive: true },
-    });
-    
+    const tenant = await findActiveTenant('id', user.tenantId);
+
     if (tenant) {
       return {
         tenant,
@@ -132,10 +128,8 @@ export async function resolveTenantContext(): Promise<TenantContext | null> {
   const slug = await getTenantSlugFromHost();
   
   if (slug) {
-    const tenant = await prisma.tenant.findUnique({
-      where: { slug, isActive: true },
-    });
-    
+    const tenant = await findActiveTenant('slug', slug);
+
     if (tenant) {
       return {
         tenant,
@@ -190,10 +184,11 @@ export async function canAccessTenant(
   userId: string,
   targetTenantId: string
 ): Promise<boolean> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { role: true, tenantId: true },
-  });
+  const rows = await query<{ role: string; tenant_id: string | null }>(
+    `SELECT role, "tenantId" AS tenant_id FROM "User" WHERE id = $1`,
+    [userId]
+  );
+  const user = rows[0];
 
   if (!user) {
     return false;
@@ -205,7 +200,7 @@ export async function canAccessTenant(
   }
 
   // Other users can only access their own tenant
-  return user.tenantId === targetTenantId;
+  return user.tenant_id === targetTenantId;
 }
 
 /**
@@ -216,32 +211,72 @@ export async function canAccessTenant(
 export async function getAccessibleTenants(
   userId: string
 ): Promise<Pick<Tenant, 'id' | 'name' | 'slug'>[]> {
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { role: true, tenantId: true },
-  });
+  const rows = await query<{ role: string; tenant_id: string | null }>(
+    `SELECT role, "tenantId" AS tenant_id FROM "User" WHERE id = $1`,
+    [userId]
+  );
+  const user = rows[0];
 
   if (!user) {
     return [];
   }
 
   if (user.role === 'SUPER_ADMIN') {
-    return prisma.tenant.findMany({
-      where: { isActive: true },
-      select: { id: true, name: true, slug: true },
-      orderBy: { name: 'asc' },
-    });
+    return query<Pick<Tenant, 'id' | 'name' | 'slug'>>(
+      `SELECT id, name, slug FROM "Tenant" WHERE "isActive" = true ORDER BY name ASC`
+    );
   }
 
-  if (user.tenantId) {
-    const tenant = await prisma.tenant.findUnique({
-      where: { id: user.tenantId, isActive: true },
-      select: { id: true, name: true, slug: true },
-    });
-    return tenant ? [tenant] : [];
+  if (user.tenant_id) {
+    const tenant = await findActiveTenant('id', user.tenant_id);
+    return tenant ? [{ id: tenant.id, name: tenant.name, slug: tenant.slug }] : [];
   }
 
   return [];
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// INTERNAL HELPERS
+// ════════════════════════════════════════════════════════════════════════════
+
+async function findActiveTenant(column: 'id' | 'slug', value: string): Promise<Tenant | null> {
+  const rows = await query<{
+    id: string; name: string; slug: string; description: string | null;
+    logo: string | null; website: string | null; email: string | null;
+    phone: string | null; address: string | null; city: string | null;
+    state: string | null; postal_code: string | null; country: string;
+    timezone: string; is_active: boolean; is_hq: boolean; parent_id: string | null;
+    created_at: Date; updated_at: Date;
+  }>(
+    `SELECT id, name, slug, description, logo, website, email, phone, address, city, state,
+            "postalCode" AS postal_code, country, timezone, "isActive" AS is_active, "isHQ" AS is_hq,
+            "parentId" AS parent_id, "createdAt" AS created_at, "updatedAt" AS updated_at
+     FROM "Tenant" WHERE "${column === 'id' ? 'id' : 'slug'}" = $1 AND "isActive" = true`,
+    [value]
+  );
+  const row = rows[0];
+  if (!row) return null;
+  return {
+    id: row.id,
+    name: row.name,
+    slug: row.slug,
+    description: row.description,
+    logo: row.logo,
+    website: row.website,
+    email: row.email,
+    phone: row.phone,
+    address: row.address,
+    city: row.city,
+    state: row.state,
+    postalCode: row.postal_code,
+    country: row.country,
+    timezone: row.timezone,
+    isActive: row.is_active,
+    isHQ: row.is_hq,
+    parentId: row.parent_id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
 }
 
 // ════════════════════════════════════════════════════════════════════════════

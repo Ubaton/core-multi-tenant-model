@@ -7,7 +7,8 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
-import { prisma } from '@/lib/db';
+import { randomUUID } from 'crypto';
+import { query, withTransaction } from '@/lib/db';
 import { hashPassword } from '@/lib/auth';
 import { handleError, successResponse, createdResponse } from '@/lib/api';
 
@@ -30,11 +31,12 @@ export async function POST(request: NextRequest) {
     const data = registerSchema.parse(body);
 
     // Check if email already exists
-    const existingUser = await prisma.user.findUnique({
-      where: { email: data.email },
-    });
+    const existingUserRows = await query<{ id: string }>(
+      `SELECT id FROM "User" WHERE email = $1`,
+      [data.email]
+    );
 
-    if (existingUser) {
+    if (existingUserRows[0]) {
       return NextResponse.json(
         {
           success: false,
@@ -48,11 +50,12 @@ export async function POST(request: NextRequest) {
     }
 
     // Check if slug already exists
-    const existingTenant = await prisma.tenant.findUnique({
-      where: { slug: data.tenant.slug },
-    });
+    const existingTenantRows = await query<{ id: string }>(
+      `SELECT id FROM "Tenant" WHERE slug = $1`,
+      [data.tenant.slug]
+    );
 
-    if (existingTenant) {
+    if (existingTenantRows[0]) {
       return NextResponse.json(
         {
           success: false,
@@ -69,31 +72,36 @@ export async function POST(request: NextRequest) {
     const hashedPassword = await hashPassword(data.password);
 
     // Create tenant and admin user in a transaction
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await withTransaction(async (client) => {
       // Create tenant
-      const tenant = await tx.tenant.create({
-        data: {
-          name: data.tenant.name,
-          slug: data.tenant.slug,
-          isActive: true,
-          isHQ: false,
-        },
-      });
+      const tenantId = randomUUID();
+      const tenantRows = await client.query(
+        `INSERT INTO "Tenant" (id, name, slug, "isActive", "isHQ")
+         VALUES ($1, $2, $3, TRUE, FALSE)
+         RETURNING id, name, slug`,
+        [tenantId, data.tenant.name, data.tenant.slug]
+      );
+      const tenant = tenantRows.rows[0];
 
       // Create admin user
-      const user = await tx.user.create({
-        data: {
-          email: data.email,
-          passwordHash: hashedPassword,
-          firstName: data.firstName,
-          lastName: data.lastName,
-          role: 'CHURCH_ADMIN',
-          tenantId: tenant.id,
-          isActive: true,
-        },
-      });
+      const userId = randomUUID();
+      const userRows = await client.query(
+        `INSERT INTO "User" (id, email, "passwordHash", "firstName", "lastName", role, "tenantId", "isActive")
+         VALUES ($1, $2, $3, $4, $5, 'CHURCH_ADMIN', $6, TRUE)
+         RETURNING id, email, "firstName" AS first_name, "lastName" AS last_name`,
+        [userId, data.email, hashedPassword, data.firstName, data.lastName, tenantId]
+      );
+      const user = userRows.rows[0];
 
-      return { tenant, user };
+      return {
+        tenant: { id: tenant.id, name: tenant.name, slug: tenant.slug },
+        user: {
+          id: user.id,
+          email: user.email,
+          firstName: user.first_name,
+          lastName: user.last_name,
+        },
+      };
     });
 
     return NextResponse.json(

@@ -10,9 +10,9 @@
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { cookies, headers } from 'next/headers';
-import { prisma } from './db';
+import { query } from './db';
 import type { AuthUser, TokenPayload, SessionContext } from './types';
-import { UserRole } from './generated/prisma';
+import { UserRole } from './types/db';
 
 // ════════════════════════════════════════════════════════════════════════════
 // CONFIGURATION
@@ -138,24 +138,34 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
   }
 
   // Fetch fresh user data from database to ensure it's current
-  const user = await prisma.user.findUnique({
-    where: { id: payload.userId },
-    select: {
-      id: true,
-      email: true,
-      firstName: true,
-      lastName: true,
-      role: true,
-      tenantId: true,
-      isActive: true,
-    },
-  });
+  const rows = await query<{
+    id: string;
+    email: string;
+    first_name: string;
+    last_name: string;
+    role: UserRole;
+    tenant_id: string | null;
+    is_active: boolean;
+  }>(
+    `SELECT id, email, "firstName" AS first_name, "lastName" AS last_name, role, "tenantId" AS tenant_id, "isActive" AS is_active
+     FROM "User" WHERE id = $1`,
+    [payload.userId]
+  );
+  const row = rows[0];
 
-  if (!user || !user.isActive) {
+  if (!row || !row.is_active) {
     return null;
   }
 
-  return user;
+  return {
+    id: row.id,
+    email: row.email,
+    firstName: row.first_name,
+    lastName: row.last_name,
+    role: row.role,
+    tenantId: row.tenant_id,
+    isActive: row.is_active,
+  };
 }
 
 /**

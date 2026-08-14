@@ -7,10 +7,11 @@
  */
 
 import { NextRequest } from 'next/server';
-import { prisma } from '@/lib/db';
+import { query } from '@/lib/db';
+import { randomUUID } from 'crypto';
 import { hashPassword } from '@/lib/auth';
-import { 
-  withSuperAdmin, 
+import {
+  withSuperAdmin,
   successResponse,
   createdResponse,
   errorResponse,
@@ -38,33 +39,37 @@ export const GET = withSuperAdmin<RouteParams>(async (request, { user }, params)
   const { id } = idParamSchema.parse(params);
 
   // Check if tenant exists
-  const tenant = await prisma.tenant.findUnique({
-    where: { id },
-    select: { id: true, name: true },
-  });
+  const tenantRows = await query<{ id: string; name: string }>(
+    `SELECT id, name FROM tenant WHERE id = $1`,
+    [id]
+  );
+  const tenant = tenantRows[0];
 
   if (!tenant) {
     return errorResponse('NOT_FOUND', 'Tenant not found', 404);
   }
 
   // Get all admin users for this tenant
-  const adminUsers = await prisma.user.findMany({
-    where: {
-      tenantId: id,
-      role: 'CHURCH_ADMIN',
-    },
-    select: {
-      id: true,
-      email: true,
-      firstName: true,
-      lastName: true,
-      phone: true,
-      isActive: true,
-      lastLoginAt: true,
-      createdAt: true,
-    },
-    orderBy: { createdAt: 'desc' },
-  });
+  const adminUserRows = await query<{
+    id: string; email: string; first_name: string; last_name: string;
+    phone: string | null; is_active: boolean; last_login_at: Date | null; created_at: Date;
+  }>(
+    `SELECT id, email, first_name, last_name, phone, is_active, last_login_at, created_at
+     FROM "user" WHERE tenant_id = $1 AND role = 'CHURCH_ADMIN'
+     ORDER BY created_at DESC`,
+    [id]
+  );
+
+  const adminUsers = adminUserRows.map((row) => ({
+    id: row.id,
+    email: row.email,
+    firstName: row.first_name,
+    lastName: row.last_name,
+    phone: row.phone,
+    isActive: row.is_active,
+    lastLoginAt: row.last_login_at,
+    createdAt: row.created_at,
+  }));
 
   return successResponse({
     tenant: { id: tenant.id, name: tenant.name },
@@ -82,21 +87,23 @@ export const POST = withSuperAdmin<RouteParams>(async (request, { user }, params
   const data = await parseBody(request, createTenantAdminSchema);
 
   // Check if tenant exists
-  const tenant = await prisma.tenant.findUnique({
-    where: { id },
-    select: { id: true, name: true },
-  });
+  const tenantRows = await query<{ id: string; name: string }>(
+    `SELECT id, name FROM tenant WHERE id = $1`,
+    [id]
+  );
+  const tenant = tenantRows[0];
 
   if (!tenant) {
     return errorResponse('NOT_FOUND', 'Tenant not found', 404);
   }
 
   // Check if email already exists
-  const existingUser = await prisma.user.findUnique({
-    where: { email: data.email },
-  });
+  const existingUserRows = await query<{ id: string }>(
+    `SELECT id FROM "user" WHERE email = $1`,
+    [data.email]
+  );
 
-  if (existingUser) {
+  if (existingUserRows.length > 0) {
     return errorResponse(
       'EMAIL_EXISTS',
       'A user account with this email already exists',
@@ -108,28 +115,34 @@ export const POST = withSuperAdmin<RouteParams>(async (request, { user }, params
   const hashedPassword = await hashPassword(data.password);
 
   // Create admin user
-  const adminUser = await prisma.user.create({
-    data: {
-      email: data.email,
-      passwordHash: hashedPassword,
-      firstName: data.firstName,
-      lastName: data.lastName,
-      phone: data.phone,
-      role: 'CHURCH_ADMIN',
-      tenantId: id,
-      isActive: true,
-      mustChangePassword: true, // Enforce password change on first login
-    },
-    select: {
-      id: true,
-      email: true,
-      firstName: true,
-      lastName: true,
-      role: true,
-      isActive: true,
-      createdAt: true,
-    },
-  });
+  const userId = randomUUID();
+  const createdRows = await query<{
+    id: string; email: string; first_name: string; last_name: string;
+    role: string; is_active: boolean; created_at: Date;
+  }>(
+    `INSERT INTO "user" (id, email, password_hash, first_name, last_name, phone, role, tenant_id, is_active, must_change_password)
+     VALUES ($1, $2, $3, $4, $5, $6, 'CHURCH_ADMIN', $7, true, true)
+     RETURNING id, email, first_name, last_name, role, is_active, created_at`,
+    [
+      userId,
+      data.email,
+      hashedPassword,
+      data.firstName,
+      data.lastName,
+      data.phone ?? null,
+      id,
+    ]
+  );
+  const createdRow = createdRows[0];
+  const adminUser = {
+    id: createdRow.id,
+    email: createdRow.email,
+    firstName: createdRow.first_name,
+    lastName: createdRow.last_name,
+    role: createdRow.role,
+    isActive: createdRow.is_active,
+    createdAt: createdRow.created_at,
+  };
 
   // Log audit
   await logAudit(

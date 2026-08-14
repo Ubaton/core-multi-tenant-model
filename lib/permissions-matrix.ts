@@ -1,4 +1,4 @@
-import type { UserRole } from '@/lib/generated/prisma';
+import type { UserRole } from '@/lib/types/db';
 
 export type ModulePermissions = {
   view: boolean;

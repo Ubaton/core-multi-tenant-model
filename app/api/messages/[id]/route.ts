@@ -8,7 +8,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import { prisma } from '@/lib/db';
+import { query, withTransaction } from '@/lib/db';
 import { getCurrentUser } from '@/lib/auth';
 import {
   successResponse,
@@ -17,7 +17,7 @@ import {
   logAudit,
 } from '@/lib/api';
 import { z } from 'zod';
-import { UserRole, MessageStatus } from '@/lib/generated/prisma';
+import { UserRole, MessageStatus } from '@/lib/types/db';
 
 const updateMessageSchema = z.object({
   status: z.nativeEnum(MessageStatus).optional(),
@@ -26,6 +26,65 @@ const updateMessageSchema = z.object({
 });
 
 type RouteContext = { params: Promise<{ id: string }> };
+
+const userSelect = `id, first_name AS "firstName", last_name AS "lastName", email, role`;
+
+interface UserSummary {
+  id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  role: UserRole;
+}
+
+interface MessageDbRow {
+  id: string;
+  sender_id: string;
+  receiver_id: string | null;
+  tenant_id: string | null;
+  subject: string;
+  message: string;
+  priority: string;
+  status: MessageStatus;
+  parent_id: string | null;
+  read_at: Date | null;
+  archived_at: Date | null;
+  created_at: Date;
+  updated_at: Date;
+}
+
+function mapBaseMessage(row: MessageDbRow) {
+  return {
+    id: row.id,
+    senderId: row.sender_id,
+    receiverId: row.receiver_id,
+    tenantId: row.tenant_id,
+    subject: row.subject,
+    message: row.message,
+    priority: row.priority,
+    status: row.status,
+    parentId: row.parent_id,
+    readAt: row.read_at,
+    archivedAt: row.archived_at,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+async function getUserSummary(userId: string | null): Promise<UserSummary | null> {
+  if (!userId) return null;
+  const rows = await query<UserSummary>(`SELECT ${userSelect} FROM "user" WHERE id = $1`, [userId]);
+  return rows[0] ?? null;
+}
+
+async function getTenantSummary(tenantId: string | null) {
+  if (!tenantId) return null;
+  const rows = await query<{ id: string; name: string; slug: string }>(
+    `SELECT id, name, slug FROM tenant WHERE id = $1`,
+    [tenantId]
+  );
+  return rows[0] ?? null;
+}
 
 /**
  * GET /api/messages/:id
@@ -38,79 +97,18 @@ export async function GET(
   try {
     const { id } = await context.params;
     const user = await getCurrentUser();
-    
+
     if (!user) {
       return errorResponse('UNAUTHENTICATED', 'Authentication required', 401);
     }
 
-    const message = await prisma.internalMessage.findUnique({
-      where: { id },
-      include: {
-        sender: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            role: true,
-          },
-        },
-        receiver: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            role: true,
-          },
-        },
-        tenant: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
-        },
-        parent: {
-          include: {
-            sender: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-                role: true,
-              },
-            },
-          },
-        },
-        replies: {
-          orderBy: { createdAt: 'asc' },
-          include: {
-            sender: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-                role: true,
-              },
-            },
-            receiver: {
-              select: {
-                id: true,
-                firstName: true,
-                lastName: true,
-                email: true,
-                role: true,
-              },
-            },
-          },
-        },
-      },
-    });
+    const messageRows = await query<MessageDbRow>(
+      `SELECT * FROM internal_message WHERE id = $1`,
+      [id]
+    );
+    const messageRow = messageRows[0];
 
-    if (!message) {
+    if (!messageRow) {
       return errorResponse('NOT_FOUND', 'Message not found', 404);
     }
 
@@ -118,33 +116,76 @@ export async function GET(
 
     // Check access permissions
     const hasAccess =
-      message.senderId === user.id ||
-      message.receiverId === user.id ||
-      (isSuperAdmin && (message.receiverId === null || message.tenantId)) ||
-      (!isSuperAdmin && message.tenantId === user.tenantId);
+      messageRow.sender_id === user.id ||
+      messageRow.receiver_id === user.id ||
+      (isSuperAdmin && (messageRow.receiver_id === null || messageRow.tenant_id)) ||
+      (!isSuperAdmin && messageRow.tenant_id === user.tenantId);
 
     if (!hasAccess) {
       return errorResponse('FORBIDDEN', 'Access denied', 403);
     }
 
     // Auto-mark as read if user is the receiver
+    let effectiveStatus = messageRow.status;
+    let effectiveReadAt = messageRow.read_at;
     if (
-      message.status === MessageStatus.UNREAD &&
-      (message.receiverId === user.id ||
-        (isSuperAdmin && message.receiverId === null && message.tenantId))
+      messageRow.status === MessageStatus.UNREAD &&
+      (messageRow.receiver_id === user.id ||
+        (isSuperAdmin && messageRow.receiver_id === null && messageRow.tenant_id))
     ) {
-      await prisma.internalMessage.update({
-        where: { id },
-        data: {
-          status: MessageStatus.READ,
-          readAt: new Date(),
-        },
-      });
-      
-      // Update the returned message
-      message.status = MessageStatus.READ;
-      message.readAt = new Date();
+      const now = new Date();
+      await query(
+        `UPDATE internal_message SET status = $1, read_at = $2, updated_at = NOW() WHERE id = $3`,
+        [MessageStatus.READ, now, id]
+      );
+      effectiveStatus = MessageStatus.READ;
+      effectiveReadAt = now;
     }
+
+    // Build parent (with its sender)
+    let parent = null;
+    if (messageRow.parent_id) {
+      const parentRows = await query<MessageDbRow>(
+        `SELECT * FROM internal_message WHERE id = $1`,
+        [messageRow.parent_id]
+      );
+      const parentRow = parentRows[0];
+      if (parentRow) {
+        const parentSender = await getUserSummary(parentRow.sender_id);
+        parent = {
+          ...mapBaseMessage(parentRow),
+          sender: parentSender,
+        };
+      }
+    }
+
+    // Build replies (with sender + receiver), ordered by createdAt asc
+    const replyRows = await query<MessageDbRow>(
+      `SELECT * FROM internal_message WHERE parent_id = $1 ORDER BY created_at ASC`,
+      [id]
+    );
+    const replies = await Promise.all(
+      replyRows.map(async (r) => ({
+        ...mapBaseMessage(r),
+        sender: await getUserSummary(r.sender_id),
+        receiver: await getUserSummary(r.receiver_id),
+      }))
+    );
+
+    const sender = await getUserSummary(messageRow.sender_id);
+    const receiver = await getUserSummary(messageRow.receiver_id);
+    const tenant = await getTenantSummary(messageRow.tenant_id);
+
+    const message = {
+      ...mapBaseMessage(messageRow),
+      status: effectiveStatus,
+      readAt: effectiveReadAt,
+      sender,
+      receiver,
+      tenant,
+      parent,
+      replies,
+    };
 
     return successResponse(message);
   } catch (error) {
@@ -163,7 +204,7 @@ export async function PATCH(
   try {
     const { id } = await context.params;
     const user = await getCurrentUser();
-    
+
     if (!user) {
       return errorResponse('UNAUTHENTICATED', 'Authentication required', 401);
     }
@@ -171,16 +212,17 @@ export async function PATCH(
     const body = await request.json();
     const data = updateMessageSchema.parse(body);
 
-    const message = await prisma.internalMessage.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        senderId: true,
-        receiverId: true,
-        tenantId: true,
-        status: true,
-      },
-    });
+    const messageRows = await query<{
+      id: string;
+      sender_id: string;
+      receiver_id: string | null;
+      tenant_id: string | null;
+      status: MessageStatus;
+    }>(
+      `SELECT id, sender_id, receiver_id, tenant_id, status FROM internal_message WHERE id = $1`,
+      [id]
+    );
+    const message = messageRows[0];
 
     if (!message) {
       return errorResponse('NOT_FOUND', 'Message not found', 404);
@@ -190,63 +232,64 @@ export async function PATCH(
 
     // Check access permissions
     const hasAccess =
-      message.senderId === user.id ||
-      message.receiverId === user.id ||
-      (isSuperAdmin && (message.receiverId === null || message.tenantId)) ||
-      (!isSuperAdmin && message.tenantId === user.tenantId);
+      message.sender_id === user.id ||
+      message.receiver_id === user.id ||
+      (isSuperAdmin && (message.receiver_id === null || message.tenant_id)) ||
+      (!isSuperAdmin && message.tenant_id === user.tenantId);
 
     if (!hasAccess) {
       return errorResponse('FORBIDDEN', 'Access denied', 403);
     }
 
     // Build update data
+    const setClauses: string[] = [];
+    const params: unknown[] = [];
+    let idx = 1;
     const updateData: Record<string, unknown> = {};
-    
+
     if (data.status) {
+      setClauses.push(`status = $${idx++}`);
+      params.push(data.status);
       updateData.status = data.status;
     }
-    
+
     if (data.readAt) {
+      setClauses.push(`status = $${idx++}`);
+      params.push(MessageStatus.READ);
+      setClauses.push(`read_at = $${idx++}`);
+      params.push(new Date());
       updateData.status = MessageStatus.READ;
       updateData.readAt = new Date();
     }
-    
+
     if (data.archivedAt) {
+      setClauses.push(`status = $${idx++}`);
+      params.push(MessageStatus.ARCHIVED);
+      setClauses.push(`archived_at = $${idx++}`);
+      params.push(new Date());
       updateData.status = MessageStatus.ARCHIVED;
       updateData.archivedAt = new Date();
     }
 
-    const updatedMessage = await prisma.internalMessage.update({
-      where: { id },
-      data: updateData,
-      include: {
-        sender: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            role: true,
-          },
-        },
-        receiver: {
-          select: {
-            id: true,
-            firstName: true,
-            lastName: true,
-            email: true,
-            role: true,
-          },
-        },
-        tenant: {
-          select: {
-            id: true,
-            name: true,
-            slug: true,
-          },
-        },
-      },
-    });
+    setClauses.push(`updated_at = NOW()`);
+
+    params.push(id);
+    const updatedRows = await query<MessageDbRow>(
+      `UPDATE internal_message SET ${setClauses.join(', ')} WHERE id = $${idx} RETURNING *`,
+      params
+    );
+    const updatedRow = updatedRows[0];
+
+    const sender = await getUserSummary(updatedRow.sender_id);
+    const receiver = await getUserSummary(updatedRow.receiver_id);
+    const tenant = await getTenantSummary(updatedRow.tenant_id);
+
+    const updatedMessage = {
+      ...mapBaseMessage(updatedRow),
+      sender,
+      receiver,
+      tenant,
+    };
 
     await logAudit(
       user.id,
@@ -275,20 +318,21 @@ export async function DELETE(
   try {
     const { id } = await context.params;
     const user = await getCurrentUser();
-    
+
     if (!user) {
       return errorResponse('UNAUTHENTICATED', 'Authentication required', 401);
     }
 
-    const message = await prisma.internalMessage.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        senderId: true,
-        receiverId: true,
-        tenantId: true,
-      },
-    });
+    const messageRows = await query<{
+      id: string;
+      sender_id: string;
+      receiver_id: string | null;
+      tenant_id: string | null;
+    }>(
+      `SELECT id, sender_id, receiver_id, tenant_id FROM internal_message WHERE id = $1`,
+      [id]
+    );
+    const message = messageRows[0];
 
     if (!message) {
       return errorResponse('NOT_FOUND', 'Message not found', 404);
@@ -296,17 +340,14 @@ export async function DELETE(
 
     // Only sender or super admin can delete
     const isSuperAdmin = user.role === UserRole.SUPER_ADMIN;
-    if (message.senderId !== user.id && !isSuperAdmin) {
+    if (message.sender_id !== user.id && !isSuperAdmin) {
       return errorResponse('FORBIDDEN', 'Only the sender can delete this message', 403);
     }
 
-    // Delete all replies first, then the message
-    await prisma.internalMessage.deleteMany({
-      where: { parentId: id },
-    });
-
-    await prisma.internalMessage.delete({
-      where: { id },
+    // Delete all replies first, then the message (atomic)
+    await withTransaction(async (client) => {
+      await client.query(`DELETE FROM internal_message WHERE parent_id = $1`, [id]);
+      await client.query(`DELETE FROM internal_message WHERE id = $1`, [id]);
     });
 
     await logAudit(

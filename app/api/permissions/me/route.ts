@@ -5,15 +5,31 @@
  * ════════════════════════════════════════════════════════════════════════════
  */
 
-import { prisma } from '@/lib/db';
-import { 
-  withAuth, 
-  successResponse, 
+import { query } from '@/lib/db';
+import {
+  withAuth,
+  successResponse,
 } from '@/lib/api';
-import { UserRole } from '@/lib/generated/prisma';
+import { UserRole } from '@/lib/types/db';
 import { DEFAULT_MODULE_PERMISSIONS } from '@/lib/permissions-matrix';
 
 const defaultPermissions = DEFAULT_MODULE_PERMISSIONS;
+
+interface RolePermissionRow {
+  module: string;
+  can_view: boolean;
+  can_create: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+}
+
+interface UserPermissionRow {
+  module: string;
+  can_view: boolean;
+  can_create: boolean;
+  can_edit: boolean;
+  can_delete: boolean;
+}
 
 /**
  * GET /api/permissions/me
@@ -24,7 +40,8 @@ export const GET = withAuth(async (request, { user }) => {
   const userTenantId = user.tenantId;
 
   // Start with default permissions for this role
-  const rolePermissions = JSON.parse(JSON.stringify(defaultPermissions[userRole] || {}));
+  const rolePermissions: Record<string, { view: boolean; create: boolean; edit: boolean; delete: boolean }> =
+    JSON.parse(JSON.stringify(defaultPermissions[userRole] || {}));
 
   // SUPER_ADMIN always gets full default permissions (no tenant-specific overrides)
   if (userRole === 'SUPER_ADMIN') {
@@ -46,58 +63,54 @@ export const GET = withAuth(async (request, { user }) => {
 
   if (applyRoleOverrides) {
     // Step 2: Apply global permission overrides
-    const globalPermissions = await prisma.rolePermission.findMany({
-      where: {
-        role: userRole,
-        tenantId: null,
-      },
-      cacheStrategy: { ttl: 300, swr: 60 },
-    });
+    const globalPermissions = await query<RolePermissionRow>(
+      `SELECT module, "canView" AS can_view, "canCreate" AS can_create, "canEdit" AS can_edit, "canDelete" AS can_delete
+       FROM "RolePermission" WHERE role = $1 AND "tenantId" IS NULL`,
+      [userRole]
+    );
 
     for (const perm of globalPermissions) {
       rolePermissions[perm.module] = {
-        view: perm.canView,
-        create: perm.canCreate,
-        edit: perm.canEdit,
-        delete: perm.canDelete,
+        view: perm.can_view,
+        create: perm.can_create,
+        edit: perm.can_edit,
+        delete: perm.can_delete,
       };
     }
 
     // Step 3: Apply tenant-specific overrides (these take precedence)
     if (userTenantId) {
-      const tenantPermissions = await prisma.rolePermission.findMany({
-        where: {
-          role: userRole,
-          tenantId: userTenantId,
-        },
-        cacheStrategy: { ttl: 60, swr: 10 },
-      });
+      const tenantPermissions = await query<RolePermissionRow>(
+        `SELECT module, "canView" AS can_view, "canCreate" AS can_create, "canEdit" AS can_edit, "canDelete" AS can_delete
+         FROM "RolePermission" WHERE role = $1 AND "tenantId" = $2`,
+        [userRole, userTenantId]
+      );
 
       // Tenant-specific permissions override global ones for specific modules
       for (const perm of tenantPermissions) {
         rolePermissions[perm.module] = {
-          view: perm.canView,
-          create: perm.canCreate,
-          edit: perm.canEdit,
-          delete: perm.canDelete,
+          view: perm.can_view,
+          create: perm.can_create,
+          edit: perm.can_edit,
+          delete: perm.can_delete,
         };
       }
     }
   }
 
   // Step 4: Apply user-specific overrides (these take final precedence)
-  const userOverrides = await prisma.userPermission.findMany({
-    where: {
-      userId: user.id,
-    },
-  });
+  const userOverrides = await query<UserPermissionRow>(
+    `SELECT module, "canView" AS can_view, "canCreate" AS can_create, "canEdit" AS can_edit, "canDelete" AS can_delete
+     FROM "UserPermission" WHERE "userId" = $1`,
+    [user.id]
+  );
 
   for (const perm of userOverrides) {
     rolePermissions[perm.module] = {
-      view: perm.canView,
-      create: perm.canCreate,
-      edit: perm.canEdit,
-      delete: perm.canDelete,
+      view: perm.can_view,
+      create: perm.can_create,
+      edit: perm.can_edit,
+      delete: perm.can_delete,
     };
   }
 

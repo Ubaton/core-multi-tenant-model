@@ -6,7 +6,7 @@
 
 'use client';
 
-import { Suspense, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { useLogin } from '@/lib/client';
@@ -15,15 +15,21 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Loader2, Church, CheckCircle } from 'lucide-react';
-import { toast } from 'sonner';
 
 function LoginForm() {
   const searchParams = useSearchParams();
   const justRegistered = searchParams.get('registered') === 'true';
+  const isSuperAdminMode = searchParams.get('role') === 'super-admin';
   
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const login = useLogin();
+
+  useEffect(() => {
+    if (isSuperAdminMode && !email) {
+      setEmail('superadmin@churchhub.com');
+    }
+  }, [isSuperAdminMode, email]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,9 +42,13 @@ function LoginForm() {
         <div className="mx-auto mb-4 h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
           <Church className="h-6 w-6 text-primary" />
         </div>
-        <CardTitle className="text-2xl font-bold">Welcome back</CardTitle>
+        <CardTitle className="text-2xl font-bold">
+          {isSuperAdminMode ? 'Super Admin Sign in' : 'Welcome back'}
+        </CardTitle>
         <CardDescription>
-          Enter your credentials to access your account
+          {isSuperAdminMode
+            ? 'Sign in with your Super Admin credentials to access the control center'
+            : 'Enter your credentials to access your account'}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -46,6 +56,12 @@ function LoginForm() {
           <div className="mb-4 p-3 rounded-lg bg-green-50 dark:bg-green-950 text-green-600 dark:text-green-400 text-sm flex items-center gap-2">
             <CheckCircle className="h-4 w-4" />
             Registration successful! Please sign in with your new account.
+          </div>
+        )}
+
+        {isSuperAdminMode && (
+          <div className="mb-4 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 text-sm">
+            Super Admin default email is prefilled for convenience.
           </div>
         )}
         
@@ -103,6 +119,14 @@ function LoginForm() {
             Sign up
           </Link>
         </div>
+
+        {!isSuperAdminMode && (
+          <div className="mt-3 text-center text-sm">
+            <Link href="/super-admin-sign-in" className="text-primary hover:underline font-medium">
+              Super Admin Sign in
+            </Link>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

@@ -2,8 +2,8 @@
  * Central export for all types
  */
 
-// Re-export Prisma types
-export * from '../generated/prisma';
+// Re-export database types (formerly Prisma-generated)
+export * from './db';
 
 // Auth types
 export * from './auth.types';

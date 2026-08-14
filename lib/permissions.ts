@@ -7,7 +7,7 @@
  * All permission checks are enforced on the backend - never trust frontend.
  */
 
-import { UserRole } from './generated/prisma';
+import { UserRole } from './types/db';
 import type { AuthUser } from './types';
 
 // ════════════════════════════════════════════════════════════════════════════
