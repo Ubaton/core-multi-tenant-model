@@ -10,21 +10,27 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
-import { 
-  get, 
-  post, 
+import {
+  get,
+  post,
   patch,
-  setAccessToken, 
-  setRefreshToken, 
+  setAccessToken,
+  setRefreshToken,
   clearTokens,
   setTenantId,
 } from '../api-client';
-import type { LoginInput, RegisterInput } from '@/lib/validations';
+import type {
+  LoginInput,
+  RegisterInput,
+  ForgotPasswordInput,
+  ResetPasswordInput,
+} from '@/lib/validations';
 
 // Query keys
 export const authKeys = {
   all: ['auth'] as const,
   me: () => [...authKeys.all, 'me'] as const,
+  resetToken: (token: string | null) => [...authKeys.all, 'reset-token', token] as const,
 };
 
 // Types
@@ -55,6 +61,13 @@ interface UpdateProfileInput {
 interface ChangePasswordInput {
   currentPassword: string;
   newPassword: string;
+}
+
+interface ForgotPasswordResponse {
+  message: string;
+  emailConfigured: boolean;
+  /** Development-only fallback when no mail provider is configured */
+  resetUrl?: string;
 }
 
 interface LoginResponse {
@@ -186,6 +199,59 @@ export function useChangePassword() {
   return useMutation({
     mutationFn: async (data: ChangePasswordInput) => {
       const response = await post<{ message: string }>('/api/auth/change-password', data);
+      return response.data!;
+    },
+  });
+}
+
+/**
+ * Request a password reset link.
+ *
+ * The response is deliberately the same for known and unknown addresses.
+ * `resetUrl` is only present in development when no mail provider is set up.
+ */
+export function useForgotPassword() {
+  return useMutation({
+    mutationFn: async (data: ForgotPasswordInput) => {
+      const response = await post<ForgotPasswordResponse>(
+        '/api/auth/forgot-password',
+        data,
+        { skipAuth: true }
+      );
+      return response.data!;
+    },
+  });
+}
+
+/**
+ * Check whether a reset token is still valid before rendering the form
+ */
+export function useValidateResetToken(token: string | null) {
+  return useQuery({
+    queryKey: authKeys.resetToken(token),
+    queryFn: async () => {
+      const response = await get<{ valid: boolean; expiresAt: string }>(
+        '/api/auth/reset-password',
+        { token: token! },
+        { skipAuth: true }
+      );
+      return response.data!;
+    },
+    enabled: Boolean(token),
+    retry: false,
+    staleTime: Infinity,
+  });
+}
+
+/**
+ * Redeem a reset token and set a new password
+ */
+export function useResetPassword() {
+  return useMutation({
+    mutationFn: async (data: ResetPasswordInput) => {
+      const response = await post<{ message: string }>('/api/auth/reset-password', data, {
+        skipAuth: true,
+      });
       return response.data!;
     },
   });
