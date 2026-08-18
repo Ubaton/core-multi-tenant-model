@@ -64,8 +64,8 @@ export const GET = withAuth(async (request, { user }) => {
   if (applyRoleOverrides) {
     // Step 2: Apply global permission overrides
     const globalPermissions = await query<RolePermissionRow>(
-      `SELECT module, "canView" AS can_view, "canCreate" AS can_create, "canEdit" AS can_edit, "canDelete" AS can_delete
-       FROM "RolePermission" WHERE role = $1 AND "tenantId" IS NULL`,
+      `SELECT module, can_view, can_create, can_edit, can_delete
+       FROM role_permission WHERE role = $1 AND tenant_id IS NULL`,
       [userRole]
     );
 
@@ -81,8 +81,8 @@ export const GET = withAuth(async (request, { user }) => {
     // Step 3: Apply tenant-specific overrides (these take precedence)
     if (userTenantId) {
       const tenantPermissions = await query<RolePermissionRow>(
-        `SELECT module, "canView" AS can_view, "canCreate" AS can_create, "canEdit" AS can_edit, "canDelete" AS can_delete
-         FROM "RolePermission" WHERE role = $1 AND "tenantId" = $2`,
+        `SELECT module, can_view, can_create, can_edit, can_delete
+         FROM role_permission WHERE role = $1 AND tenant_id = $2`,
         [userRole, userTenantId]
       );
 
@@ -100,8 +100,8 @@ export const GET = withAuth(async (request, { user }) => {
 
   // Step 4: Apply user-specific overrides (these take final precedence)
   const userOverrides = await query<UserPermissionRow>(
-    `SELECT module, "canView" AS can_view, "canCreate" AS can_create, "canEdit" AS can_edit, "canDelete" AS can_delete
-     FROM "UserPermission" WHERE "userId" = $1`,
+    `SELECT module, can_view, can_create, can_edit, can_delete
+     FROM user_permission WHERE user_id = $1`,
     [user.id]
   );
 

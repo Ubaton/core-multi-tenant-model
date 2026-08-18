@@ -47,19 +47,19 @@ export async function POST(request: NextRequest) {
       `SELECT
          u.id,
          u.email,
-         u."passwordHash" AS password_hash,
-         u."firstName" AS first_name,
-         u."lastName" AS last_name,
+         u.password_hash,
+         u.first_name,
+         u.last_name,
          u.role,
-         u."tenantId" AS tenant_id,
-         u."isActive" AS is_active,
-         u."mustChangePassword" AS must_change_password,
+         u.tenant_id,
+         u.is_active,
+         u.must_change_password,
          t.id AS tenant_id_ref,
          t.name AS tenant_name,
          t.slug AS tenant_slug,
-         t."isActive" AS tenant_is_active
-       FROM "User" u
-       LEFT JOIN "Tenant" t ON t.id = u."tenantId"
+         t.is_active AS tenant_is_active
+       FROM "user" u
+       LEFT JOIN tenant t ON t.id = u.tenant_id
        WHERE u.email = $1`,
       [email.toLowerCase()]
     );
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
 
     // Update last login
     await query(
-      `UPDATE "User" SET "lastLoginAt" = NOW() WHERE id = $1`,
+      `UPDATE "user" SET last_login_at = NOW() WHERE id = $1`,
       [user.id]
     );
 

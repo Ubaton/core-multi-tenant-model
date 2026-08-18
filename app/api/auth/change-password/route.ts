@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
 
     // Get user with password hash
     const rows = await query<{ id: string; password_hash: string }>(
-      `SELECT id, "passwordHash" AS password_hash FROM "User" WHERE id = $1`,
+      `SELECT id, password_hash FROM "user" WHERE id = $1`,
       [user.id]
     );
     const fullUser = rows[0];
@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     // Update password and clear mustChangePassword flag
     await query(
-      `UPDATE "User" SET "passwordHash" = $1, "mustChangePassword" = FALSE WHERE id = $2`,
+      `UPDATE "user" SET password_hash = $1, must_change_password = FALSE WHERE id = $2`,
       [newPasswordHash, user.id]
     );
 

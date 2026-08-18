@@ -88,7 +88,7 @@ export const GET = withPermission('read', 'statistics', async (request, context)
       [tenantId, LeadStatus.CONVERTED]
     ),
     query<{ count: string }>(
-      `SELECT COUNT(*) AS count FROM lead WHERE tenant_id = $1 AND status = ANY($2::lead_status[])`,
+      `SELECT COUNT(*) AS count FROM lead WHERE tenant_id = $1 AND status = ANY($2::"LeadStatus"[])`,
       [tenantId, [LeadStatus.NEW, LeadStatus.CONTACTED, LeadStatus.FOLLOW_UP]]
     ),
 

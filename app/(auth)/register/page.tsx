@@ -9,7 +9,8 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Church, Loader2 } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
+import { Logo } from '@/components/logo';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -100,11 +101,7 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-12">
       <Card className="w-full max-w-lg">
         <CardHeader className="text-center">
-          <div className="flex justify-center mb-4">
-            <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Church className="h-6 w-6 text-primary" />
-            </div>
-          </div>
+          <Logo size="lg" className="mx-auto mb-4 flex-col gap-2" />
           <CardTitle className="text-2xl">Create your account</CardTitle>
           <CardDescription>
             Register your church and start managing your congregation

@@ -185,7 +185,7 @@ export async function canAccessTenant(
   targetTenantId: string
 ): Promise<boolean> {
   const rows = await query<{ role: string; tenant_id: string | null }>(
-    `SELECT role, "tenantId" AS tenant_id FROM "User" WHERE id = $1`,
+    `SELECT role, tenant_id FROM "user" WHERE id = $1`,
     [userId]
   );
   const user = rows[0];
@@ -212,7 +212,7 @@ export async function getAccessibleTenants(
   userId: string
 ): Promise<Pick<Tenant, 'id' | 'name' | 'slug'>[]> {
   const rows = await query<{ role: string; tenant_id: string | null }>(
-    `SELECT role, "tenantId" AS tenant_id FROM "User" WHERE id = $1`,
+    `SELECT role, tenant_id FROM "user" WHERE id = $1`,
     [userId]
   );
   const user = rows[0];
@@ -223,7 +223,7 @@ export async function getAccessibleTenants(
 
   if (user.role === 'SUPER_ADMIN') {
     return query<Pick<Tenant, 'id' | 'name' | 'slug'>>(
-      `SELECT id, name, slug FROM "Tenant" WHERE "isActive" = true ORDER BY name ASC`
+      `SELECT id, name, slug FROM tenant WHERE is_active = true ORDER BY name ASC`
     );
   }
 
@@ -249,9 +249,9 @@ async function findActiveTenant(column: 'id' | 'slug', value: string): Promise<T
     created_at: Date; updated_at: Date;
   }>(
     `SELECT id, name, slug, description, logo, website, email, phone, address, city, state,
-            "postalCode" AS postal_code, country, timezone, "isActive" AS is_active, "isHQ" AS is_hq,
-            "parentId" AS parent_id, "createdAt" AS created_at, "updatedAt" AS updated_at
-     FROM "Tenant" WHERE "${column === 'id' ? 'id' : 'slug'}" = $1 AND "isActive" = true`,
+            postal_code, country, timezone, is_active, is_hq,
+            parent_id, created_at, updated_at
+     FROM tenant WHERE ${column === 'id' ? 'id' : 'slug'} = $1 AND is_active = true`,
     [value]
   );
   const row = rows[0];

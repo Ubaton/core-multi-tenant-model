@@ -54,7 +54,7 @@ function cloneRoleDefaults(role: UserRole) {
 
 async function computeEffectivePermissionsForUser(targetUserId: string) {
   const targetUserRows = await query<{ id: string; role: UserRole; tenant_id: string | null }>(
-    `SELECT id, role, "tenantId" AS tenant_id FROM "User" WHERE id = $1`,
+    `SELECT id, role, tenant_id FROM "user" WHERE id = $1`,
     [targetUserId]
   );
   const targetUser = targetUserRows[0];
@@ -79,8 +79,8 @@ async function computeEffectivePermissionsForUser(targetUserId: string) {
   if (applyRoleOverrides) {
     // 1) Global role overrides
     const globalRoleOverrides = await query<RolePermissionRow>(
-      `SELECT module, "canView" AS can_view, "canCreate" AS can_create, "canEdit" AS can_edit, "canDelete" AS can_delete
-       FROM "RolePermission" WHERE role = $1 AND "tenantId" IS NULL`,
+      `SELECT module, can_view, can_create, can_edit, can_delete
+       FROM role_permission WHERE role = $1 AND tenant_id IS NULL`,
       [role]
     );
 
@@ -96,8 +96,8 @@ async function computeEffectivePermissionsForUser(targetUserId: string) {
     // 2) Tenant role overrides
     if (targetUser.tenant_id) {
       const tenantRoleOverrides = await query<RolePermissionRow>(
-        `SELECT module, "canView" AS can_view, "canCreate" AS can_create, "canEdit" AS can_edit, "canDelete" AS can_delete
-         FROM "RolePermission" WHERE role = $1 AND "tenantId" = $2`,
+        `SELECT module, can_view, can_create, can_edit, can_delete
+         FROM role_permission WHERE role = $1 AND tenant_id = $2`,
         [role, targetUser.tenant_id]
       );
 
@@ -114,8 +114,8 @@ async function computeEffectivePermissionsForUser(targetUserId: string) {
 
   // 3) User-specific overrides (final)
   const userOverrides = await query<RolePermissionRow>(
-    `SELECT module, "canView" AS can_view, "canCreate" AS can_create, "canEdit" AS can_edit, "canDelete" AS can_delete
-     FROM "UserPermission" WHERE "userId" = $1`,
+    `SELECT module, can_view, can_create, can_edit, can_delete
+     FROM user_permission WHERE user_id = $1`,
     [targetUser.id]
   );
 
@@ -159,7 +159,7 @@ export const PUT = withSuperAdmin(async (request: NextRequest, { user }) => {
   const { userId, module, permission, granted } = body;
 
   const targetUserRows = await query<{ id: string; role: UserRole; tenant_id: string | null }>(
-    `SELECT id, role, "tenantId" AS tenant_id FROM "User" WHERE id = $1`,
+    `SELECT id, role, tenant_id FROM "user" WHERE id = $1`,
     [userId]
   );
   const targetUser = targetUserRows[0];
@@ -174,22 +174,22 @@ export const PUT = withSuperAdmin(async (request: NextRequest, { user }) => {
   }
 
   const permissionColumn =
-    ({ view: '"canView"', create: '"canCreate"', edit: '"canEdit"', delete: '"canDelete"' } as const)[permission];
+    ({ view: 'can_view', create: 'can_create', edit: 'can_edit', delete: 'can_delete' } as const)[permission];
 
   const USER_PERMISSION_SELECT = `
     SELECT
       id,
-      "userId" AS user_id,
+      user_id,
       module,
-      "canView" AS can_view,
-      "canCreate" AS can_create,
-      "canEdit" AS can_edit,
-      "canDelete" AS can_delete
-    FROM "UserPermission"
+      can_view,
+      can_create,
+      can_edit,
+      can_delete
+    FROM user_permission
   `;
 
   const existingRows = await query<UserPermissionRow>(
-    `${USER_PERMISSION_SELECT} WHERE "userId" = $1 AND module = $2 LIMIT 1`,
+    `${USER_PERMISSION_SELECT} WHERE user_id = $1 AND module = $2 LIMIT 1`,
     [userId, module]
   );
   const existing = existingRows[0];
@@ -198,8 +198,8 @@ export const PUT = withSuperAdmin(async (request: NextRequest, { user }) => {
 
   if (existing) {
     const updatedRows = await query<UserPermissionRow>(
-      `UPDATE "UserPermission" SET ${permissionColumn} = $1, "updatedAt" = NOW() WHERE id = $2
-       RETURNING id, "userId" AS user_id, module, "canView" AS can_view, "canCreate" AS can_create, "canEdit" AS can_edit, "canDelete" AS can_delete`,
+      `UPDATE user_permission SET ${permissionColumn} = $1, updated_at = NOW() WHERE id = $2
+       RETURNING id, user_id, module, can_view, can_create, can_edit, can_delete`,
       [granted, existing.id]
     );
     updated = updatedRows[0];
@@ -220,9 +220,9 @@ export const PUT = withSuperAdmin(async (request: NextRequest, { user }) => {
     const canDelete = permission === 'delete' ? granted : seed.delete;
 
     const insertedRows = await query<UserPermissionRow>(
-      `INSERT INTO "UserPermission" (id, "userId", module, "canView", "canCreate", "canEdit", "canDelete")
+      `INSERT INTO user_permission (id, user_id, module, can_view, can_create, can_edit, can_delete)
        VALUES ($1, $2, $3, $4, $5, $6, $7)
-       RETURNING id, "userId" AS user_id, module, "canView" AS can_view, "canCreate" AS can_create, "canEdit" AS can_edit, "canDelete" AS can_delete`,
+       RETURNING id, user_id, module, can_view, can_create, can_edit, can_delete`,
       [randomUUID(), userId, module, canView, canCreate, canEdit, canDelete]
     );
     updated = insertedRows[0];

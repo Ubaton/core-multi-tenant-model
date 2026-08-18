@@ -3,6 +3,8 @@
  * AUTH API - RESET PASSWORD
  * GET  /api/auth/reset-password?token=...  Check a token before showing the form
  * POST /api/auth/reset-password            Redeem the token and set a password
+ *
+ * Consumed by the single-page recovery UI at /forgot-password?token=...
  * ════════════════════════════════════════════════════════════════════════════
  */
 
@@ -31,13 +33,13 @@ function hashToken(token: string): string {
 async function findToken(token: string): Promise<TokenRow | undefined> {
   const rows = await query<TokenRow>(
     `SELECT t.id,
-            t."userId"    AS user_id,
-            t."expiresAt" AS expires_at,
-            t."usedAt"    AS used_at,
-            u."isActive"  AS is_active
-     FROM "PasswordResetToken" t
-     JOIN "User" u ON u.id = t."userId"
-     WHERE t."tokenHash" = $1`,
+            t.user_id,
+            t.expires_at,
+            t.used_at,
+            u.is_active
+     FROM password_reset_token t
+     JOIN "user" u ON u.id = t.user_id
+     WHERE t.token_hash = $1`,
     [hashToken(token)]
   );
   return rows[0];
@@ -97,9 +99,9 @@ export async function POST(request: NextRequest) {
       // Redeem the token first, guarded on it still being unused so two
       // concurrent submissions cannot both succeed.
       const redeemed = await client.query(
-        `UPDATE "PasswordResetToken"
-         SET "usedAt" = NOW()
-         WHERE id = $1 AND "usedAt" IS NULL`,
+        `UPDATE password_reset_token
+         SET used_at = NOW()
+         WHERE id = $1 AND used_at IS NULL`,
         [row.id]
       );
 
@@ -108,17 +110,17 @@ export async function POST(request: NextRequest) {
       }
 
       await client.query(
-        `UPDATE "User"
-         SET "passwordHash" = $1, "mustChangePassword" = FALSE, "updatedAt" = NOW()
+        `UPDATE "user"
+         SET password_hash = $1, must_change_password = FALSE, updated_at = NOW()
          WHERE id = $2`,
         [passwordHash, row.user_id]
       );
 
       // Any other outstanding reset links for this user are now void.
       await client.query(
-        `UPDATE "PasswordResetToken"
-         SET "usedAt" = NOW()
-         WHERE "userId" = $1 AND "usedAt" IS NULL`,
+        `UPDATE password_reset_token
+         SET used_at = NOW()
+         WHERE user_id = $1 AND used_at IS NULL`,
         [row.user_id]
       );
     });

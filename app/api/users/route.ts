@@ -36,13 +36,13 @@ const createUserSchema = z.object({
 });
 
 const SORTABLE_COLUMNS: Record<string, string> = {
-  createdAt: '"createdAt"',
-  updatedAt: '"updatedAt"',
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
   email: 'email',
-  firstName: '"firstName"',
-  lastName: '"lastName"',
+  firstName: 'first_name',
+  lastName: 'last_name',
   role: 'role',
-  lastLoginAt: '"lastLoginAt"',
+  lastLoginAt: 'last_login_at',
 };
 
 interface UserRow {
@@ -105,7 +105,7 @@ export const GET = withSuperAdmin(async (request) => {
   if (search) {
     params.push(`%${search}%`);
     const idx = params.length;
-    conditions.push(`(u.email ILIKE $${idx} OR u."firstName" ILIKE $${idx} OR u."lastName" ILIKE $${idx})`);
+    conditions.push(`(u.email ILIKE $${idx} OR u.first_name ILIKE $${idx} OR u.last_name ILIKE $${idx})`);
   }
 
   if (role) {
@@ -115,18 +115,18 @@ export const GET = withSuperAdmin(async (request) => {
 
   if (tenantId) {
     params.push(tenantId);
-    conditions.push(`u."tenantId" = $${params.length}`);
+    conditions.push(`u.tenant_id = $${params.length}`);
   }
 
   if (isActive !== null && isActive !== undefined) {
     params.push(isActive === 'true');
-    conditions.push(`u."isActive" = $${params.length}`);
+    conditions.push(`u.is_active = $${params.length}`);
   }
 
   const whereClause = conditions.length > 0 ? `WHERE ${conditions.join(' AND ')}` : '';
 
   const { skip, take } = calculatePagination(page, pageSize);
-  const sortColumn = SORTABLE_COLUMNS[sortBy || 'createdAt'] || '"createdAt"';
+  const sortColumn = SORTABLE_COLUMNS[sortBy || 'createdAt'] || 'created_at';
   const sortDirection = sortOrder === 'asc' ? 'ASC' : 'DESC';
 
   const dataParams = [...params, take, skip];
@@ -135,19 +135,19 @@ export const GET = withSuperAdmin(async (request) => {
 
   const [users, countRows] = await Promise.all([
     query<UserRow>(
-      `SELECT u.id, u.email, u."firstName" AS first_name, u."lastName" AS last_name, u.phone, u.avatar, u.role,
-              u."isActive" AS is_active, u."emailVerified" AS email_verified, u."lastLoginAt" AS last_login_at, u."tenantId" AS tenant_id,
-              u."createdAt" AS created_at, u."updatedAt" AS updated_at,
+      `SELECT u.id, u.email, u.first_name, u.last_name, u.phone, u.avatar, u.role,
+              u.is_active, u.email_verified, u.last_login_at, u.tenant_id,
+              u.created_at, u.updated_at,
               t.name AS tenant_name, t.slug AS tenant_slug
-       FROM "User" u
-       LEFT JOIN "Tenant" t ON t.id = u."tenantId"
+       FROM "user" u
+       LEFT JOIN tenant t ON t.id = u.tenant_id
        ${whereClause}
        ORDER BY u.${sortColumn} ${sortDirection}
        LIMIT $${limitIdx} OFFSET $${dataParams.length}`,
       dataParams
     ),
     query<{ count: string }>(
-      `SELECT COUNT(*) AS count FROM "User" u ${whereClause}`,
+      `SELECT COUNT(*) AS count FROM "user" u ${whereClause}`,
       params
     ),
   ]);
@@ -169,7 +169,7 @@ export const POST = withSuperAdmin(async (request, { user }) => {
 
   // Check if email already exists
   const existing = await query<{ id: string }>(
-    `SELECT id FROM "User" WHERE email = $1`,
+    `SELECT id FROM "user" WHERE email = $1`,
     [body.email]
   );
 
@@ -182,9 +182,9 @@ export const POST = withSuperAdmin(async (request, { user }) => {
   const id = randomUUID();
 
   const rows = await query<UserRow>(
-    `INSERT INTO "User" (id, email, "passwordHash", "firstName", "lastName", phone, role, "tenantId", "isActive")
+    `INSERT INTO "user" (id, email, password_hash, first_name, last_name, phone, role, tenant_id, is_active)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-     RETURNING id, email, "firstName" AS first_name, "lastName" AS last_name, phone, avatar, role, "isActive" AS is_active, "emailVerified" AS email_verified, "lastLoginAt" AS last_login_at, "tenantId" AS tenant_id, "createdAt" AS created_at, "updatedAt" AS updated_at`,
+     RETURNING id, email, first_name, last_name, phone, avatar, role, is_active, email_verified, last_login_at, tenant_id, created_at, updated_at`,
     [
       id,
       body.email,
@@ -201,7 +201,7 @@ export const POST = withSuperAdmin(async (request, { user }) => {
   let tenant: { id: string; name: string; slug: string } | null = null;
   if (rows[0].tenant_id) {
     const tenantRows = await query<{ id: string; name: string; slug: string }>(
-      `SELECT id, name, slug FROM "Tenant" WHERE id = $1`,
+      `SELECT id, name, slug FROM tenant WHERE id = $1`,
       [rows[0].tenant_id]
     );
     tenant = tenantRows[0] ?? null;

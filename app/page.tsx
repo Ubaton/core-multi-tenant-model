@@ -1,26 +1,45 @@
-
-'use client';
+/**
+ * ════════════════════════════════════════════════════════════════════════════
+ * LANDING PAGE
+ * ════════════════════════════════════════════════════════════════════════════
+ *
+ * Server component - the page is static, so nothing here needs the client
+ * bundle.
+ */
 
 import Link from 'next/link';
-import { Church, Users, Phone, Heart, DollarSign, BarChart3, Shield, ArrowRight } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  ArrowRight,
+  BarChart3,
+  DollarSign,
+  Heart,
+  Phone,
+  Shield,
+  Users,
+} from 'lucide-react';
+import { buttonVariants } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { NoiseTexture } from '@/components/ui/noise-texture';
+import { Logo, BRAND_NAME } from '@/components/logo';
 
 const features = [
   {
     icon: Users,
     title: 'Member Management',
-    description: 'Track and manage your congregation with detailed member profiles and engagement tracking.',
+    description:
+      'Track and manage your congregation with detailed member profiles and engagement tracking.',
   },
   {
     icon: Phone,
     title: 'Call Center',
-    description: 'Reach out to members and leads with integrated call logging and follow-up scheduling.',
+    description:
+      'Reach out to members and leads with integrated call logging and follow-up scheduling.',
   },
   {
     icon: Heart,
     title: 'Prayer Requests',
-    description: 'Collect and manage prayer requests from members and visitors with status tracking.',
+    description:
+      'Collect and manage prayer requests from members and visitors with status tracking.',
   },
   {
     icon: DollarSign,
@@ -41,108 +60,139 @@ const features = [
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-linear-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900">
-      {/* Header */}
-      <header className="border-b bg-white/80 dark:bg-gray-950/80 backdrop-blur-sm sticky top-0 z-50">
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+    <div className="min-h-screen bg-background">
+      {/* ── Header ────────────────────────────────────────────────────────── */}
+      <header className="sticky top-0 z-50 border-b bg-background/70 backdrop-blur-md">
+        <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-6">
+          <Logo size="sm" />
+
           <div className="flex items-center gap-2">
-            <Church className="h-8 w-8 text-primary" />
-            <span className="text-xl font-bold">Unity Fellowship Church</span>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link href="/login">
-              <Button variant="ghost">Sign In</Button>
+            <Link href="/login" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}>
+              Sign in
             </Link>
-            <Link href="/login">
-              <Button>Get Started</Button>
+            <Link href="/register" className={cn(buttonVariants({ size: 'sm' }))}>
+              Get started
             </Link>
           </div>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="container mx-auto px-4 py-20 text-center">
-        <h1 className="text-4xl md:text-6xl font-bold tracking-tight text-gray-900 dark:text-white mb-6">
-          Unity Fellowship Church
-          <br />
-          <span className="text-primary">Management System</span>
-        </h1>
-        <p className="text-xl text-gray-600 dark:text-gray-400 max-w-2xl mx-auto mb-8">
-          A comprehensive multi-tenant platform for managing your church community, 
-          from member engagement to financial stewardship.
-        </p>
-        <div className="flex items-center justify-center gap-4">
-          <Link href="/login">
-            <Button size="lg" className="gap-2">
-              Get Started
-              <ArrowRight className="h-4 w-4" />
-            </Button>
-          </Link>
-          <Link href="/learn-more">
-            <Button size="lg" variant="outline">
-              Learn More
-            </Button>
-          </Link>
+      {/* ── Hero ──────────────────────────────────────────────────────────── */}
+      <section className="relative overflow-hidden border-b">
+        <NoiseTexture className="opacity-[0.3] dark:opacity-[0.45]" />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,var(--color-muted)_0%,transparent_65%)]"
+        />
+
+        <div className="relative mx-auto max-w-3xl px-6 py-28 text-center">
+          <span className="inline-flex items-center gap-2 rounded-full border bg-card/60 px-3 py-1 text-xs text-muted-foreground backdrop-blur-sm">
+            <span className="size-1.5 rounded-full bg-emerald-500" />
+            Multi-tenant church platform
+          </span>
+
+          <h1 className="mt-6 text-balance text-4xl font-semibold tracking-tight sm:text-6xl">
+            Everything your church runs on,{' '}
+            <span className="text-muted-foreground">in one place.</span>
+          </h1>
+
+          <p className="mx-auto mt-6 max-w-xl text-balance text-lg text-muted-foreground">
+            Members, leads, prayer requests, offerings, and reporting, with complete data
+            isolation between congregations.
+          </p>
+
+          <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <Link
+              href="/register"
+              className={cn(buttonVariants({ size: 'lg' }), 'h-11 w-full sm:w-auto')}
+            >
+              Get started
+              <ArrowRight className="ml-2 size-4" />
+            </Link>
+            <Link
+              href="/learn-more"
+              className={cn(
+                buttonVariants({ size: 'lg', variant: 'outline' }),
+                'h-11 w-full sm:w-auto'
+              )}
+            >
+              Learn more
+            </Link>
+          </div>
         </div>
       </section>
 
-      {/* Features Grid */}
-      <section className="container mx-auto px-4 py-20">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-            Everything You Need
-          </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
-            Powerful features designed specifically for church administration
+      {/* ── Features ──────────────────────────────────────────────────────── */}
+      <section className="mx-auto max-w-6xl px-6 py-24">
+        <div className="max-w-xl">
+          <h2 className="text-3xl font-semibold tracking-tight">Everything you need</h2>
+          <p className="mt-3 text-muted-foreground">
+            Built specifically for church administration, not adapted from generic CRM
+            software.
           </p>
         </div>
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+
+        {/* Hairline grid: cells share borders instead of each card drawing its own */}
+        <div className="mt-12 grid grid-cols-1 gap-px overflow-hidden rounded-2xl border bg-border sm:grid-cols-2 lg:grid-cols-3">
           {features.map((feature) => (
-            <Card key={feature.title} className="border-gray-200 dark:border-gray-800">
-              <CardHeader>
-                <div className="h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center mb-4">
-                  <feature.icon className="h-6 w-6 text-primary" />
-                </div>
-                <CardTitle>{feature.title}</CardTitle>
-                <CardDescription>{feature.description}</CardDescription>
-              </CardHeader>
-            </Card>
+            <div
+              key={feature.title}
+              className="group bg-card p-7 transition-colors hover:bg-accent/40"
+            >
+              <span className="flex size-10 items-center justify-center rounded-xl border border-primary/15 bg-primary/10 text-primary transition-transform group-hover:scale-105">
+                <feature.icon className="size-4.5" />
+              </span>
+              <h3 className="mt-5 font-medium tracking-tight">{feature.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+                {feature.description}
+              </p>
+            </div>
           ))}
         </div>
       </section>
 
-      {/* CTA Section */}
-      <section className="container mx-auto px-4 py-20">
-        <Card className="bg-primary text-primary-foreground">
-          <CardContent className="py-12 text-center">
-            <h2 className="text-3xl font-bold mb-4">
-              Ready to Transform Your Church Management?
+      {/* ── Call to action ────────────────────────────────────────────────── */}
+      <section className="mx-auto max-w-6xl px-6 pb-24">
+        <div className="relative overflow-hidden rounded-2xl border bg-card px-6 py-16 text-center">
+          <NoiseTexture className="opacity-[0.35] dark:opacity-[0.5]" />
+          <div
+            aria-hidden
+            className="pointer-events-none absolute -inset-x-20 -top-24 h-56 rounded-full bg-primary/10 blur-3xl"
+          />
+
+          <div className="relative">
+            <h2 className="text-balance text-3xl font-semibold tracking-tight">
+              Ready to transform your church management?
             </h2>
-            <p className="text-lg opacity-90 mb-8 max-w-xl mx-auto">
-              Join hundreds of churches already using Unity Fellowship Church to grow their ministry.
+            <p className="mx-auto mt-4 max-w-lg text-balance text-muted-foreground">
+              Set up your congregation in minutes and invite your team.
             </p>
-            <Link href="/login">
-              <Button size="lg" variant="secondary" className="gap-2">
-                Get Started Today
-                <ArrowRight className="h-4 w-4" />
-              </Button>
+            <Link
+              href="/register"
+              className={cn(buttonVariants({ size: 'lg' }), 'mt-8 h-11')}
+            >
+              Get started today
+              <ArrowRight className="ml-2 size-4" />
             </Link>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </section>
 
-      {/* Footer */}
-      <footer className="border-t bg-gray-50 dark:bg-gray-950">
-        <div className="container mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <Church className="h-6 w-6 text-primary" />
-              <span className="font-semibold">Unity Fellowship Church</span>
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              © {new Date().getFullYear()} Unity Fellowship Church. All rights reserved.
-            </p>
+      {/* ── Footer ────────────────────────────────────────────────────────── */}
+      <footer className="border-t">
+        <div className="mx-auto flex max-w-6xl flex-col items-center justify-between gap-4 px-6 py-8 sm:flex-row">
+          <Logo size="sm" />
+          <div className="flex items-center gap-6 text-sm text-muted-foreground">
+            <Link href="/learn-more" className="transition-colors hover:text-foreground">
+              Learn more
+            </Link>
+            <Link href="/login" className="transition-colors hover:text-foreground">
+              Sign in
+            </Link>
           </div>
+          <p className="text-sm text-muted-foreground">
+            © {new Date().getFullYear()} {BRAND_NAME}
+          </p>
         </div>
       </footer>
     </div>

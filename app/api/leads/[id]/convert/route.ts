@@ -81,7 +81,7 @@ export const POST = withPermission<RouteParams>('update', 'lead', async (request
          is_head_of_family, notes, photo
        ) VALUES (
          $1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13,
-         COALESCE($14, 'South Africa'), $15, $16, $17, COALESCE($18, 'ACTIVE'),
+         COALESCE($14, 'South Africa'), $15, $16, $17, COALESCE($18::"MemberStatus", 'ACTIVE'),
          COALESCE($19, CURRENT_DATE), $20, $21, $22, COALESCE($23, FALSE), $24, $25
        )
        RETURNING *`,

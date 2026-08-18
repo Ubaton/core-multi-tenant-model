@@ -34,9 +34,9 @@ const callLogFilterSchema = searchSchema.extend({
 });
 
 const SORT_COLUMN_MAP: Record<string, string> = {
-  createdAt: '"createdAt"',
-  updatedAt: '"updatedAt"',
-  calledAt: '"calledAt"',
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  calledAt: 'called_at',
   duration: 'duration',
   outcome: 'outcome',
 };
@@ -89,7 +89,7 @@ interface PersonBrief {
 async function fetchMembersById(ids: string[]) {
   if (ids.length === 0) return new Map<string, PersonBrief>();
   const rows = await query<PersonBrief>(
-    `SELECT id, "firstName" AS first_name, "lastName" AS last_name, phone FROM "Member" WHERE id = ANY($1::text[])`,
+    `SELECT id, first_name, last_name, phone FROM member WHERE id = ANY($1::text[])`,
     [ids]
   );
   return new Map(rows.map((r) => [r.id, r]));
@@ -98,7 +98,7 @@ async function fetchMembersById(ids: string[]) {
 async function fetchLeadsById(ids: string[]) {
   if (ids.length === 0) return new Map<string, PersonBrief>();
   const rows = await query<PersonBrief>(
-    `SELECT id, "firstName" AS first_name, "lastName" AS last_name, phone FROM "Lead" WHERE id = ANY($1::text[])`,
+    `SELECT id, first_name, last_name, phone FROM lead WHERE id = ANY($1::text[])`,
     [ids]
   );
   return new Map(rows.map((r) => [r.id, r]));
@@ -107,7 +107,7 @@ async function fetchLeadsById(ids: string[]) {
 async function fetchOperatorsById(ids: string[]) {
   if (ids.length === 0) return new Map<string, { id: string; first_name: string; last_name: string }>();
   const rows = await query<{ id: string; first_name: string; last_name: string }>(
-    `SELECT id, "firstName" AS first_name, "lastName" AS last_name FROM "User" WHERE id = ANY($1::text[])`,
+    `SELECT id, first_name, last_name FROM "user" WHERE id = ANY($1::text[])`,
     [ids]
   );
   return new Map(rows.map((r) => [r.id, r]));
@@ -135,13 +135,13 @@ export const GET = withPermission('list', 'call_log', async (request, context) =
     outcome, operatorId, memberId, leadId, requiresFollowUp, from, to
   } = filters;
 
-  const conditions: string[] = ['"tenantId" = $1'];
+  const conditions: string[] = ['tenant_id = $1'];
   const params: unknown[] = [context.tenantId];
 
   if (search) {
     params.push(`%${search}%`);
     const idx = params.length;
-    conditions.push(`("phoneNumber" ILIKE $${idx} OR notes ILIKE $${idx})`);
+    conditions.push(`(phone_number ILIKE $${idx} OR notes ILIKE $${idx})`);
   }
 
   if (outcome) {
@@ -151,37 +151,37 @@ export const GET = withPermission('list', 'call_log', async (request, context) =
 
   if (operatorId) {
     params.push(operatorId);
-    conditions.push(`"operatorId" = $${params.length}`);
+    conditions.push(`operator_id = $${params.length}`);
   }
 
   if (memberId) {
     params.push(memberId);
-    conditions.push(`"memberId" = $${params.length}`);
+    conditions.push(`member_id = $${params.length}`);
   }
 
   if (leadId) {
     params.push(leadId);
-    conditions.push(`"leadId" = $${params.length}`);
+    conditions.push(`lead_id = $${params.length}`);
   }
 
   if (requiresFollowUp !== undefined) {
     params.push(requiresFollowUp);
-    conditions.push(`"requiresFollowUp" = $${params.length}`);
+    conditions.push(`requires_follow_up = $${params.length}`);
   }
 
   if (from) {
     params.push(from);
-    conditions.push(`"calledAt" >= $${params.length}`);
+    conditions.push(`called_at >= $${params.length}`);
   }
 
   if (to) {
     params.push(to);
-    conditions.push(`"calledAt" <= $${params.length}`);
+    conditions.push(`called_at <= $${params.length}`);
   }
 
   const whereClause = `WHERE ${conditions.join(' AND ')}`;
   const { skip, take } = calculatePagination(page, pageSize);
-  const sortColumn = SORT_COLUMN_MAP[sortBy || 'calledAt'] || '"calledAt"';
+  const sortColumn = SORT_COLUMN_MAP[sortBy || 'calledAt'] || 'called_at';
   const sortDirection = sortOrder === 'asc' ? 'ASC' : 'DESC';
 
   const dataParams = [...params, take, skip];
@@ -190,27 +190,27 @@ export const GET = withPermission('list', 'call_log', async (request, context) =
     query<CallLogRow>(
       `SELECT
          id,
-         "tenantId" AS tenant_id,
-         "operatorId" AS operator_id,
-         "memberId" AS member_id,
-         "leadId" AS lead_id,
-         "phoneNumber" AS phone_number,
+         tenant_id,
+         operator_id,
+         member_id,
+         lead_id,
+         phone_number,
          outcome,
          duration,
          notes,
-         "requiresFollowUp" AS requires_follow_up,
-         "followUpDate" AS follow_up_date,
-         "followUpNotes" AS follow_up_notes,
-         "calledAt" AS called_at,
-         "createdAt" AS created_at,
-         "updatedAt" AS updated_at
-       FROM "CallLog"
+         requires_follow_up,
+         follow_up_date,
+         follow_up_notes,
+         called_at,
+         created_at,
+         updated_at
+       FROM call_log
        ${whereClause}
        ORDER BY ${sortColumn} ${sortDirection}
        LIMIT $${dataParams.length - 1} OFFSET $${dataParams.length}`,
       dataParams
     ),
-    query<{ count: string }>(`SELECT COUNT(*) AS count FROM "CallLog" ${whereClause}`, params),
+    query<{ count: string }>(`SELECT COUNT(*) AS count FROM call_log ${whereClause}`, params),
   ]);
 
   const totalCount = Number(countRows[0]?.count ?? 0);
@@ -244,26 +244,26 @@ export const POST = withPermission('create', 'call_log', async (request, context
 
   const id = randomUUID();
   const rows = await query<CallLogRow>(
-    `INSERT INTO "CallLog" (
-       id, "tenantId", "operatorId", "memberId", "leadId", "phoneNumber", outcome,
-       duration, notes, "requiresFollowUp", "followUpDate", "followUpNotes"
+    `INSERT INTO call_log (
+       id, tenant_id, operator_id, member_id, lead_id, phone_number, outcome,
+       duration, notes, requires_follow_up, follow_up_date, follow_up_notes
      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
      RETURNING
        id,
-       "tenantId" AS tenant_id,
-       "operatorId" AS operator_id,
-       "memberId" AS member_id,
-       "leadId" AS lead_id,
-       "phoneNumber" AS phone_number,
+       tenant_id,
+       operator_id,
+       member_id,
+       lead_id,
+       phone_number,
        outcome,
        duration,
        notes,
-       "requiresFollowUp" AS requires_follow_up,
-       "followUpDate" AS follow_up_date,
-       "followUpNotes" AS follow_up_notes,
-       "calledAt" AS called_at,
-       "createdAt" AS created_at,
-       "updatedAt" AS updated_at`,
+       requires_follow_up,
+       follow_up_date,
+       follow_up_notes,
+       called_at,
+       created_at,
+       updated_at`,
     [
       id,
       context.tenantId,
@@ -307,7 +307,7 @@ export const POST = withPermission('create', 'call_log', async (request, context
 
   // Update lead's lastContactAt if this is a lead call
   if (data.leadId) {
-    await query(`UPDATE "Lead" SET "lastContactAt" = NOW() WHERE id = $1`, [data.leadId]);
+    await query(`UPDATE lead SET last_contact_at = NOW() WHERE id = $1`, [data.leadId]);
   }
 
   await logAudit(

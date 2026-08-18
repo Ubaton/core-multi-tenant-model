@@ -71,28 +71,28 @@ export const GET = withSuperAdmin(async (request: NextRequest) => {
   const ROLE_PERMISSION_SELECT = `
     SELECT
       id,
-      "tenantId" AS tenant_id,
+      tenant_id,
       role,
       module,
-      "canView" AS can_view,
-      "canCreate" AS can_create,
-      "canEdit" AS can_edit,
-      "canDelete" AS can_delete,
-      "createdAt" AS created_at,
-      "updatedAt" AS updated_at
-    FROM "RolePermission"
+      can_view,
+      can_create,
+      can_edit,
+      can_delete,
+      created_at,
+      updated_at
+    FROM role_permission
   `;
 
   // 1. Apply global overrides
   const globalPermissions = await query<RolePermissionRow>(
-    `${ROLE_PERMISSION_SELECT} WHERE "tenantId" IS NULL`
+    `${ROLE_PERMISSION_SELECT} WHERE tenant_id IS NULL`
   );
   applyRows(globalPermissions);
 
   // 2. If requesting for a specific tenant, layer tenant-specific overrides
   if (tenantId) {
     const tenantPermissions = await query<RolePermissionRow>(
-      `${ROLE_PERMISSION_SELECT} WHERE "tenantId" = $1`,
+      `${ROLE_PERMISSION_SELECT} WHERE tenant_id = $1`,
       [tenantId]
     );
     applyRows(tenantPermissions);
@@ -114,30 +114,30 @@ export const PUT = withSuperAdmin(async (request: NextRequest, { user }) => {
   const ROLE_PERMISSION_SELECT_FULL = `
     SELECT
       id,
-      "tenantId" AS tenant_id,
+      tenant_id,
       role,
       module,
-      "canView" AS can_view,
-      "canCreate" AS can_create,
-      "canEdit" AS can_edit,
-      "canDelete" AS can_delete,
-      "createdAt" AS created_at,
-      "updatedAt" AS updated_at
+      can_view,
+      can_create,
+      can_edit,
+      can_delete,
+      created_at,
+      updated_at
   `;
 
   const existingRows = await query<RolePermissionRow>(
     effectiveTenantId === null
-      ? `${ROLE_PERMISSION_SELECT_FULL} FROM "RolePermission" WHERE role = $1 AND module = $2 AND "tenantId" IS NULL LIMIT 1`
-      : `${ROLE_PERMISSION_SELECT_FULL} FROM "RolePermission" WHERE role = $1 AND module = $2 AND "tenantId" = $3 LIMIT 1`,
+      ? `${ROLE_PERMISSION_SELECT_FULL} FROM role_permission WHERE role = $1 AND module = $2 AND tenant_id IS NULL LIMIT 1`
+      : `${ROLE_PERMISSION_SELECT_FULL} FROM role_permission WHERE role = $1 AND module = $2 AND tenant_id = $3 LIMIT 1`,
     effectiveTenantId === null ? [role, module] : [role, module, effectiveTenantId]
   );
   const existing = existingRows[0];
 
   const permissionColumn = {
-    view: '"canView"',
-    create: '"canCreate"',
-    edit: '"canEdit"',
-    delete: '"canDelete"',
+    view: 'can_view',
+    create: 'can_create',
+    edit: 'can_edit',
+    delete: 'can_delete',
   }[permission];
 
   let updatedPermission: RolePermissionRow;
@@ -145,8 +145,8 @@ export const PUT = withSuperAdmin(async (request: NextRequest, { user }) => {
   if (existing) {
     // Update existing permission by ID
     const updatedRows = await query<RolePermissionRow>(
-      `UPDATE "RolePermission" SET ${permissionColumn} = $1, "updatedAt" = NOW() WHERE id = $2
-       RETURNING id, "tenantId" AS tenant_id, role, module, "canView" AS can_view, "canCreate" AS can_create, "canEdit" AS can_edit, "canDelete" AS can_delete, "createdAt" AS created_at, "updatedAt" AS updated_at`,
+      `UPDATE role_permission SET ${permissionColumn} = $1, updated_at = NOW() WHERE id = $2
+       RETURNING id, tenant_id, role, module, can_view, can_create, can_edit, can_delete, created_at, updated_at`,
       [granted, existing.id]
     );
     updatedPermission = updatedRows[0];
@@ -159,9 +159,9 @@ export const PUT = withSuperAdmin(async (request: NextRequest, { user }) => {
     const canDelete = permission === 'delete' ? granted : defaults.delete;
 
     const insertedRows = await query<RolePermissionRow>(
-      `INSERT INTO "RolePermission" (id, "tenantId", role, module, "canView", "canCreate", "canEdit", "canDelete")
+      `INSERT INTO role_permission (id, tenant_id, role, module, can_view, can_create, can_edit, can_delete)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
-       RETURNING id, "tenantId" AS tenant_id, role, module, "canView" AS can_view, "canCreate" AS can_create, "canEdit" AS can_edit, "canDelete" AS can_delete, "createdAt" AS created_at, "updatedAt" AS updated_at`,
+       RETURNING id, tenant_id, role, module, can_view, can_create, can_edit, can_delete, created_at, updated_at`,
       [randomUUID(), effectiveTenantId, role, module, canView, canCreate, canEdit, canDelete]
     );
     updatedPermission = insertedRows[0];

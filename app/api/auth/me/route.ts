@@ -70,23 +70,23 @@ const FULL_USER_SELECT = `
   SELECT
     u.id,
     u.email,
-    u."firstName" AS first_name,
-    u."lastName" AS last_name,
+    u.first_name,
+    u.last_name,
     u.phone,
     u.avatar,
     u.role,
-    u."tenantId" AS tenant_id,
-    u."isActive" AS is_active,
-    u."emailVerified" AS email_verified,
-    u."mustChangePassword" AS must_change_password,
-    u."lastLoginAt" AS last_login_at,
-    u."createdAt" AS created_at,
+    u.tenant_id,
+    u.is_active,
+    u.email_verified,
+    u.must_change_password,
+    u.last_login_at,
+    u.created_at,
     t.id AS tenant_id_ref,
     t.name AS tenant_name,
     t.slug AS tenant_slug,
     t.logo AS tenant_logo
-  FROM "User" u
-  LEFT JOIN "Tenant" t ON t.id = u."tenantId"
+  FROM "user" u
+  LEFT JOIN tenant t ON t.id = u.tenant_id
   WHERE u.id = $1
 `;
 
@@ -130,7 +130,7 @@ export async function PATCH(request: NextRequest) {
     // Check if email is being changed and if it's already in use
     if (data.email && data.email !== user.email) {
       const existingRows = await query<{ id: string }>(
-        `SELECT id FROM "User" WHERE email = $1`,
+        `SELECT id FROM "user" WHERE email = $1`,
         [data.email]
       );
       if (existingRows[0]) {
@@ -144,11 +144,11 @@ export async function PATCH(request: NextRequest) {
     let idx = 1;
 
     if (data.firstName) {
-      setClauses.push(`"firstName" = $${idx++}`);
+      setClauses.push(`first_name = $${idx++}`);
       values.push(data.firstName);
     }
     if (data.lastName) {
-      setClauses.push(`"lastName" = $${idx++}`);
+      setClauses.push(`last_name = $${idx++}`);
       values.push(data.lastName);
     }
     if (data.phone !== undefined) {
@@ -163,7 +163,7 @@ export async function PATCH(request: NextRequest) {
     if (setClauses.length > 0) {
       values.push(user.id);
       await query(
-        `UPDATE "User" SET ${setClauses.join(', ')} WHERE id = $${idx}`,
+        `UPDATE "user" SET ${setClauses.join(', ')} WHERE id = $${idx}`,
         values
       );
     }

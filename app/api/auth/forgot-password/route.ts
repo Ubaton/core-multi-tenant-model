@@ -37,8 +37,8 @@ export async function POST(request: NextRequest) {
     const normalizedEmail = email.toLowerCase();
 
     const rows = await query<UserRow>(
-      `SELECT id, email, "firstName" AS first_name, "isActive" AS is_active
-       FROM "User"
+      `SELECT id, email, first_name, is_active
+       FROM "user"
        WHERE email = $1`,
       [normalizedEmail]
     );
@@ -51,9 +51,9 @@ export async function POST(request: NextRequest) {
 
     // Invalidate any outstanding tokens so only the newest link works.
     await query(
-      `UPDATE "PasswordResetToken"
-       SET "usedAt" = NOW()
-       WHERE "userId" = $1 AND "usedAt" IS NULL`,
+      `UPDATE password_reset_token
+       SET used_at = NOW()
+       WHERE user_id = $1 AND used_at IS NULL`,
       [user.id]
     );
 
@@ -62,12 +62,13 @@ export async function POST(request: NextRequest) {
     const expiresAt = new Date(Date.now() + TOKEN_EXPIRY_MINUTES * 60 * 1000);
 
     await query(
-      `INSERT INTO "PasswordResetToken" (id, "userId", "tokenHash", "expiresAt")
+      `INSERT INTO password_reset_token (id, user_id, token_hash, expires_at)
        VALUES ($1, $2, $3, $4)`,
       [randomUUID(), user.id, tokenHash, expiresAt]
     );
 
-    const resetUrl = `${resolveAppUrl(request.url)}/reset-password?token=${token}`;
+    // The recovery UI is a single page; the token selects the reset stage.
+    const resetUrl = `${resolveAppUrl(request.url)}/forgot-password?token=${token}`;
 
     const { delivered } = await sendPasswordResetEmail({
       to: user.email,

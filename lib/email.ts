@@ -143,7 +143,7 @@ export async function sendPasswordResetEmail(options: {
         This link expires in ${expiryMinutes} minutes and can only be used once.
       </p>
       <p style="margin: 0; font-size: 14px; color: #4b5563;">
-        If you did not request a password reset you can safely ignore this email &mdash; your password will stay the same.
+        If you did not request a password reset you can safely ignore this email. Your password will stay the same.
       </p>
     </div>
   `;

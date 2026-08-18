@@ -147,8 +147,8 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     tenant_id: string | null;
     is_active: boolean;
   }>(
-    `SELECT id, email, "firstName" AS first_name, "lastName" AS last_name, role, "tenantId" AS tenant_id, "isActive" AS is_active
-     FROM "User" WHERE id = $1`,
+    `SELECT id, email, first_name, last_name, role, tenant_id, is_active
+     FROM "user" WHERE id = $1`,
     [payload.userId]
   );
   const row = rows[0];

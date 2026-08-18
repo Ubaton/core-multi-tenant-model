@@ -407,7 +407,7 @@ export async function logAudit(
     const userAgent = request?.headers.get('user-agent') ?? null;
 
     await query(
-      `INSERT INTO "AuditLog" (id, "userId", "tenantId", action, "entityType", "entityId", "oldData", "newData", "ipAddress", "userAgent")
+      `INSERT INTO audit_log (id, user_id, tenant_id, action, entity_type, entity_id, old_data, new_data, ip_address, user_agent)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
       [
         randomUUID(),

@@ -14,7 +14,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Church, CheckCircle } from 'lucide-react';
+import { Loader2, CheckCircle } from 'lucide-react';
+import { Logo } from '@/components/logo';
 
 function LoginForm() {
   const searchParams = useSearchParams();
@@ -39,9 +40,7 @@ function LoginForm() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="space-y-1 text-center">
-        <div className="mx-auto mb-4 h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-          <Church className="h-6 w-6 text-primary" />
-        </div>
+        <Logo size="lg" className="mx-auto mb-4 flex-col gap-2" />
         <CardTitle className="text-2xl font-bold">
           {isSuperAdminMode ? 'Super Admin Sign in' : 'Welcome back'}
         </CardTitle>

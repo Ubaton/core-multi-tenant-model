@@ -29,20 +29,20 @@ export const GET = withSuperAdmin(async () => {
     offeringsAggregateRows,
   ] = await Promise.all([
     // Tenants
-    query<{ count: string }>(`SELECT COUNT(*) AS count FROM "Tenant"`),
-    query<{ count: string }>(`SELECT COUNT(*) AS count FROM "Tenant" WHERE "isActive" = true`),
-    query<{ count: string }>(`SELECT COUNT(*) AS count FROM "Tenant" WHERE "isHQ" = true`),
+    query<{ count: string }>(`SELECT COUNT(*) AS count FROM tenant`),
+    query<{ count: string }>(`SELECT COUNT(*) AS count FROM tenant WHERE is_active = true`),
+    query<{ count: string }>(`SELECT COUNT(*) AS count FROM tenant WHERE is_hq = true`),
 
     // Users
-    query<{ count: string }>(`SELECT COUNT(*) AS count FROM "User"`),
-    query<{ count: string }>(`SELECT COUNT(*) AS count FROM "User" WHERE "isActive" = true`),
+    query<{ count: string }>(`SELECT COUNT(*) AS count FROM "user"`),
+    query<{ count: string }>(`SELECT COUNT(*) AS count FROM "user" WHERE is_active = true`),
 
     // Members
-    query<{ count: string }>(`SELECT COUNT(*) AS count FROM "Member"`),
+    query<{ count: string }>(`SELECT COUNT(*) AS count FROM member`),
 
     // Offerings - aggregate total
     query<{ sum: string | null; count: string }>(
-      `SELECT COALESCE(SUM(amount), 0) AS sum, COUNT(*) AS count FROM "Offering"`
+      `SELECT COALESCE(SUM(amount), 0) AS sum, COUNT(*) AS count FROM offering`
     ),
   ]);
 

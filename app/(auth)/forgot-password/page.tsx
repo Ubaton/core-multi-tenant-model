@@ -1,123 +1,375 @@
 /**
  * ════════════════════════════════════════════════════════════════════════════
- * FORGOT PASSWORD PAGE
+ * PASSWORD RECOVERY PAGE
  * ════════════════════════════════════════════════════════════════════════════
+ *
+ * A single page covering the whole recovery flow. The stage is derived from the
+ * URL and mutation state rather than stored separately:
+ *
+ *   /forgot-password                → request a reset link
+ *   /forgot-password (after submit) → confirmation
+ *   /forgot-password?token=...      → set a new password (link from the email)
  */
 
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useState } from 'react';
 import Link from 'next/link';
-import { useForgotPassword } from '@/lib/client';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useForgotPassword, useResetPassword, useValidateResetToken } from '@/lib/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Loader2, Church, MailCheck, ArrowLeft } from 'lucide-react';
+import { NoiseTexture } from '@/components/ui/noise-texture';
+import { Logo } from '@/components/logo';
+import { cn } from '@/lib/utils';
+import { ArrowLeft, Check, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
 
-export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('');
+const PASSWORD_RULES = [
+  { label: '8+ characters', test: (v: string) => v.length >= 8 },
+  { label: 'Uppercase', test: (v: string) => /[A-Z]/.test(v) },
+  { label: 'Lowercase', test: (v: string) => /[a-z]/.test(v) },
+  { label: 'Number', test: (v: string) => /[0-9]/.test(v) },
+];
+
+function PasswordRecovery() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const token = searchParams.get('token');
+
   const forgotPassword = useForgotPassword();
-  const result = forgotPassword.data;
+  const resetPassword = useResetPassword();
+  const tokenCheck = useValidateResetToken(token);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [formError, setFormError] = useState('');
+
+  const sent = forgotPassword.data;
+
+  const handleRequest = (e: React.FormEvent) => {
     e.preventDefault();
     forgotPassword.mutate({ email });
   };
 
+  const handleReset = (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError('');
+
+    if (password !== confirmPassword) {
+      setFormError('Passwords do not match');
+      return;
+    }
+
+    const unmet = PASSWORD_RULES.find((rule) => !rule.test(password));
+    if (unmet) {
+      setFormError(`Password is missing: ${unmet.label.toLowerCase()}`);
+      return;
+    }
+
+    resetPassword.mutate(
+      { token: token!, password },
+      {
+        onSuccess: () => {
+          toast.success('Password reset. Please sign in.');
+          router.push('/login');
+        },
+        onError: (err) => {
+          setFormError(err instanceof Error ? err.message : 'Could not reset your password');
+        },
+      }
+    );
+  };
+
+  // ── Stage: verifying an incoming reset link ────────────────────────────────
+  if (token && tokenCheck.isPending) {
+    return (
+      <Shell>
+        <div className="flex flex-col items-center gap-3 py-12">
+          <Loader2 className="size-5 animate-spin text-muted-foreground" />
+          <p className="text-sm text-muted-foreground">Checking your reset link…</p>
+        </div>
+      </Shell>
+    );
+  }
+
+  // ── Stage: the link is expired, used, or malformed ─────────────────────────
+  if (token && tokenCheck.isError) {
+    return (
+      <Shell
+        title="Link no longer valid"
+        description="This reset link has expired or has already been used. Request a fresh one and we will send it right over."
+      >
+        <Button className="w-full" onClick={() => router.push('/forgot-password')}>
+          Request a new link
+        </Button>
+      </Shell>
+    );
+  }
+
+  // ── Stage: valid token, choose a new password ──────────────────────────────
+  if (token) {
+    return (
+      <Shell
+        title="Choose a new password"
+        description="Pick something you have not used here before."
+      >
+        <form onSubmit={handleReset} className="space-y-5">
+          {formError && <Alert>{formError}</Alert>}
+
+          <Field
+            id="password"
+            label="New password"
+            type="password"
+            value={password}
+            onChange={setPassword}
+            disabled={resetPassword.isPending}
+            autoFocus
+          />
+
+          <Field
+            id="confirmPassword"
+            label="Confirm password"
+            type="password"
+            value={confirmPassword}
+            onChange={setConfirmPassword}
+            disabled={resetPassword.isPending}
+          />
+
+          <div className="flex flex-wrap gap-1.5">
+            {PASSWORD_RULES.map((rule) => {
+              const met = rule.test(password);
+              return (
+                <span
+                  key={rule.label}
+                  className={cn(
+                    'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-colors',
+                    met
+                      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                      : 'border-border bg-muted/40 text-muted-foreground'
+                  )}
+                >
+                  <Check className={cn('size-3', !met && 'opacity-40')} />
+                  {rule.label}
+                </span>
+              );
+            })}
+          </div>
+
+          <SubmitButton pending={resetPassword.isPending}>Reset password</SubmitButton>
+        </form>
+      </Shell>
+    );
+  }
+
+  // ── Stage: link requested ──────────────────────────────────────────────────
+  if (sent) {
+    return (
+      <Shell
+        title="Check your email"
+        description={sent.message}
+      >
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            The link expires in 60 minutes and works once. Nothing in your inbox? Check
+            spam, or try another address.
+          </p>
+
+          {/* Development fallback: only sent when no mail provider is configured */}
+          {sent.resetUrl && (
+            <div className="space-y-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
+              <p className="font-medium">No email provider configured</p>
+              <Link
+                href={sent.resetUrl}
+                className="block truncate font-mono text-xs underline underline-offset-2"
+              >
+                {sent.resetUrl}
+              </Link>
+            </div>
+          )}
+
+          <Button variant="outline" className="w-full" onClick={() => forgotPassword.reset()}>
+            Use a different email
+          </Button>
+        </div>
+      </Shell>
+    );
+  }
+
+  // ── Stage: request a link ──────────────────────────────────────────────────
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 px-4 py-12">
-      <Card className="w-full max-w-md">
-        <CardHeader className="space-y-1 text-center">
-          <div className="mx-auto mb-4 h-12 w-12 rounded-lg bg-primary/10 flex items-center justify-center">
-            {result ? (
-              <MailCheck className="h-6 w-6 text-primary" />
-            ) : (
-              <Church className="h-6 w-6 text-primary" />
+    <Shell
+      title="Forgot your password?"
+      description="Enter the email on your account and we will send you a reset link."
+    >
+      <form onSubmit={handleRequest} className="space-y-5">
+        {forgotPassword.isError && (
+          <Alert>
+            {forgotPassword.error instanceof Error
+              ? forgotPassword.error.message
+              : 'Something went wrong. Please try again.'}
+          </Alert>
+        )}
+
+        <Field
+          id="email"
+          label="Email"
+          type="email"
+          placeholder="you@example.com"
+          value={email}
+          onChange={setEmail}
+          disabled={forgotPassword.isPending}
+          autoFocus
+        />
+
+        <SubmitButton pending={forgotPassword.isPending}>Send reset link</SubmitButton>
+      </form>
+    </Shell>
+  );
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// LAYOUT PRIMITIVES
+// ════════════════════════════════════════════════════════════════════════════
+
+/**
+ * Shared card frame. Every stage renders through this so the header, spacing,
+ * and footer stay identical as the content swaps underneath.
+ */
+function Shell({
+  title,
+  description,
+  children,
+}: {
+  title?: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="relative w-full max-w-md">
+      {/* Soft glow behind the card */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -inset-x-8 -top-10 h-40 rounded-full bg-primary/10 blur-3xl"
+      />
+
+      <div className="relative overflow-hidden rounded-2xl border bg-card/80 shadow-xl shadow-black/5 backdrop-blur-sm">
+        <NoiseTexture className="opacity-[0.35] dark:opacity-[0.5]" />
+
+        <div className="relative p-8">
+          {/* The logo anchors every stage; the title carries the state */}
+          <div className="mb-7 space-y-3 text-center">
+            <Logo size="lg" className="mx-auto flex-col gap-2" />
+            {title && <h1 className="text-xl font-semibold tracking-tight">{title}</h1>}
+            {description && (
+              <p className="text-balance text-sm text-muted-foreground">{description}</p>
             )}
           </div>
-          <CardTitle className="text-2xl font-bold">
-            {result ? 'Check your email' : 'Forgot your password?'}
-          </CardTitle>
-          <CardDescription>
-            {result
-              ? result.message
-              : 'Enter the email address on your account and we will send you a reset link.'}
-          </CardDescription>
-        </CardHeader>
 
-        <CardContent>
-          {result ? (
-            <div className="space-y-4">
-              <p className="text-sm text-muted-foreground">
-                The link expires in 60 minutes and can only be used once. If nothing arrives,
-                check your spam folder or try again.
-              </p>
+          {children}
+        </div>
+      </div>
 
-              {/* Development fallback: shown only when no mail provider is configured */}
-              {result.resetUrl && (
-                <div className="p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-300 text-sm space-y-2">
-                  <p className="font-medium">No email provider configured</p>
-                  <p>Use this link to continue in development:</p>
-                  <Link
-                    href={result.resetUrl}
-                    className="block break-all underline font-mono text-xs"
-                  >
-                    {result.resetUrl}
-                  </Link>
-                </div>
-              )}
+      <div className="mt-6 text-center">
+        <Link
+          href="/login"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ArrowLeft className="size-3.5" />
+          Back to sign in
+        </Link>
+      </div>
+    </div>
+  );
+}
 
-              <Button
-                variant="outline"
-                className="w-full"
-                onClick={() => forgotPassword.reset()}
-              >
-                Use a different email
-              </Button>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-4">
-              {forgotPassword.isError && (
-                <div className="p-3 rounded-lg bg-red-50 dark:bg-red-950 text-red-600 dark:text-red-400 text-sm">
-                  {forgotPassword.error instanceof Error
-                    ? forgotPassword.error.message
-                    : 'Something went wrong. Please try again.'}
-                </div>
-              )}
+function Field({
+  id,
+  label,
+  type,
+  value,
+  onChange,
+  placeholder,
+  disabled,
+  autoFocus,
+}: {
+  id: string;
+  label: string;
+  type: string;
+  value: string;
+  onChange: (value: string) => void;
+  placeholder?: string;
+  disabled?: boolean;
+  autoFocus?: boolean;
+}) {
+  return (
+    <div className="space-y-2">
+      <Label htmlFor={id} className="text-xs font-medium text-muted-foreground">
+        {label}
+      </Label>
+      <Input
+        id={id}
+        type={type}
+        placeholder={placeholder ?? '••••••••'}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        required
+        autoFocus={autoFocus}
+        disabled={disabled}
+        className="h-11"
+      />
+    </div>
+  );
+}
 
-              <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="you@example.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  required
-                  autoFocus
-                  disabled={forgotPassword.isPending}
-                />
-              </div>
+function Alert({ children }: { children: React.ReactNode }) {
+  return (
+    <div
+      role="alert"
+      className="rounded-xl border border-destructive/30 bg-destructive/10 p-3 text-sm text-destructive"
+    >
+      {children}
+    </div>
+  );
+}
 
-              <Button type="submit" className="w-full" disabled={forgotPassword.isPending}>
-                {forgotPassword.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                Send reset link
-              </Button>
-            </form>
-          )}
-        </CardContent>
+function SubmitButton({
+  pending,
+  children,
+}: {
+  pending: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <Button type="submit" className="h-11 w-full" disabled={pending}>
+      {pending && <Loader2 className="mr-2 size-4 animate-spin" />}
+      {children}
+    </Button>
+  );
+}
 
-        <CardFooter className="justify-center">
-          <Link
-            href="/login"
-            className="text-sm text-muted-foreground hover:text-primary inline-flex items-center gap-1"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Back to sign in
-          </Link>
-        </CardFooter>
-      </Card>
+// ════════════════════════════════════════════════════════════════════════════
+
+export default function ForgotPasswordPage() {
+  return (
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-background px-4 py-12">
+      {/* Ambient background wash */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_top,var(--color-muted)_0%,transparent_60%)]"
+      />
+
+      <Suspense
+        fallback={
+          <div className="flex items-center justify-center py-20">
+            <Loader2 className="size-5 animate-spin text-muted-foreground" />
+          </div>
+        }
+      >
+        <PasswordRecovery />
+      </Suspense>
     </div>
   );
 }

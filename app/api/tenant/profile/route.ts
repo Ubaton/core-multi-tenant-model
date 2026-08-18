@@ -61,14 +61,14 @@ function mapTenant(row: TenantRow): Tenant {
 const TENANT_SELECT_ALIASED = `
   SELECT
     id, name, slug, description, logo, website, email, phone, address, city, state,
-    "postalCode" AS postal_code,
+    postal_code,
     country, timezone,
-    "isActive" AS is_active,
-    "isHQ" AS is_hq,
-    "parentId" AS parent_id,
-    "createdAt" AS created_at,
-    "updatedAt" AS updated_at
-  FROM "Tenant"
+    is_active,
+    is_hq,
+    parent_id,
+    created_at,
+    updated_at
+  FROM tenant
 `;
 
 export const GET = withAuth(async (request, { user, tenantId }) => {

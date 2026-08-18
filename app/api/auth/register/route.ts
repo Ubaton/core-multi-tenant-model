@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
 
     // Check if email already exists
     const existingUserRows = await query<{ id: string }>(
-      `SELECT id FROM "User" WHERE email = $1`,
+      `SELECT id FROM "user" WHERE email = $1`,
       [data.email]
     );
 
@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
 
     // Check if slug already exists
     const existingTenantRows = await query<{ id: string }>(
-      `SELECT id FROM "Tenant" WHERE slug = $1`,
+      `SELECT id FROM tenant WHERE slug = $1`,
       [data.tenant.slug]
     );
 
@@ -76,7 +76,7 @@ export async function POST(request: NextRequest) {
       // Create tenant
       const tenantId = randomUUID();
       const tenantRows = await client.query(
-        `INSERT INTO "Tenant" (id, name, slug, "isActive", "isHQ")
+        `INSERT INTO tenant (id, name, slug, is_active, is_hq)
          VALUES ($1, $2, $3, TRUE, FALSE)
          RETURNING id, name, slug`,
         [tenantId, data.tenant.name, data.tenant.slug]
@@ -86,9 +86,9 @@ export async function POST(request: NextRequest) {
       // Create admin user
       const userId = randomUUID();
       const userRows = await client.query(
-        `INSERT INTO "User" (id, email, "passwordHash", "firstName", "lastName", role, "tenantId", "isActive")
+        `INSERT INTO "user" (id, email, password_hash, first_name, last_name, role, tenant_id, is_active)
          VALUES ($1, $2, $3, $4, $5, 'CHURCH_ADMIN', $6, TRUE)
-         RETURNING id, email, "firstName" AS first_name, "lastName" AS last_name`,
+         RETURNING id, email, first_name, last_name`,
         [userId, data.email, hashedPassword, data.firstName, data.lastName, tenantId]
       );
       const user = userRows.rows[0];

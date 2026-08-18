@@ -46,10 +46,10 @@ const createCommunicationSchema = z.object({
 });
 
 const SORT_COLUMN_MAP: Record<string, string> = {
-  createdAt: '"createdAt"',
-  updatedAt: '"updatedAt"',
-  sentAt: '"sentAt"',
-  deliveredAt: '"deliveredAt"',
+  createdAt: 'created_at',
+  updatedAt: 'updated_at',
+  sentAt: 'sent_at',
+  deliveredAt: 'delivered_at',
   type: 'type',
   status: 'status',
   subject: 'subject',
@@ -108,7 +108,7 @@ interface PersonBrief {
 async function fetchMembersById(ids: string[]) {
   if (ids.length === 0) return new Map<string, PersonBrief>();
   const rows = await query<PersonBrief>(
-    `SELECT id, "firstName" AS first_name, "lastName" AS last_name, phone, email FROM "Member" WHERE id = ANY($1::text[])`,
+    `SELECT id, first_name, last_name, phone, email FROM member WHERE id = ANY($1::text[])`,
     [ids]
   );
   return new Map(rows.map((r) => [r.id, r]));
@@ -117,7 +117,7 @@ async function fetchMembersById(ids: string[]) {
 async function fetchLeadsById(ids: string[]) {
   if (ids.length === 0) return new Map<string, PersonBrief>();
   const rows = await query<PersonBrief>(
-    `SELECT id, "firstName" AS first_name, "lastName" AS last_name, phone, email FROM "Lead" WHERE id = ANY($1::text[])`,
+    `SELECT id, first_name, last_name, phone, email FROM lead WHERE id = ANY($1::text[])`,
     [ids]
   );
   return new Map(rows.map((r) => [r.id, r]));
@@ -126,7 +126,7 @@ async function fetchLeadsById(ids: string[]) {
 async function fetchUsersById(ids: string[]) {
   if (ids.length === 0) return new Map<string, { id: string; first_name: string; last_name: string }>();
   const rows = await query<{ id: string; first_name: string; last_name: string }>(
-    `SELECT id, "firstName" AS first_name, "lastName" AS last_name FROM "User" WHERE id = ANY($1::text[])`,
+    `SELECT id, first_name, last_name FROM "user" WHERE id = ANY($1::text[])`,
     [ids]
   );
   return new Map(rows.map((r) => [r.id, r]));
@@ -151,14 +151,14 @@ export const GET = withPermission('list', 'communication', async (request, conte
   const filters = parseSearchParams(searchParams, communicationFilterSchema);
   const { page, pageSize, search, sortBy, sortOrder, type, status, memberId, leadId } = filters;
 
-  const conditions: string[] = ['"tenantId" = $1'];
+  const conditions: string[] = ['tenant_id = $1'];
   const params: unknown[] = [context.tenantId];
 
   if (search) {
     params.push(`%${search}%`);
     const idx = params.length;
     conditions.push(
-      `(subject ILIKE $${idx} OR message ILIKE $${idx} OR "recipientPhone" ILIKE $${idx} OR "recipientEmail" ILIKE $${idx})`
+      `(subject ILIKE $${idx} OR message ILIKE $${idx} OR recipient_phone ILIKE $${idx} OR recipient_email ILIKE $${idx})`
     );
   }
 
@@ -174,17 +174,17 @@ export const GET = withPermission('list', 'communication', async (request, conte
 
   if (memberId) {
     params.push(memberId);
-    conditions.push(`"memberId" = $${params.length}`);
+    conditions.push(`member_id = $${params.length}`);
   }
 
   if (leadId) {
     params.push(leadId);
-    conditions.push(`"leadId" = $${params.length}`);
+    conditions.push(`lead_id = $${params.length}`);
   }
 
   const whereClause = `WHERE ${conditions.join(' AND ')}`;
   const { skip, take } = calculatePagination(page, pageSize);
-  const sortColumn = SORT_COLUMN_MAP[sortBy || 'createdAt'] || '"createdAt"';
+  const sortColumn = SORT_COLUMN_MAP[sortBy || 'createdAt'] || 'created_at';
   const sortDirection = sortOrder === 'asc' ? 'ASC' : 'DESC';
 
   const dataParams = [...params, take, skip];
@@ -193,29 +193,29 @@ export const GET = withPermission('list', 'communication', async (request, conte
     query<CommunicationRow>(
       `SELECT
          id,
-         "tenantId" AS tenant_id,
+         tenant_id,
          type,
          subject,
          message,
-         "memberId" AS member_id,
-         "leadId" AS lead_id,
-         "recipientPhone" AS recipient_phone,
-         "recipientEmail" AS recipient_email,
-         "senderId" AS sender_id,
+         member_id,
+         lead_id,
+         recipient_phone,
+         recipient_email,
+         sender_id,
          status,
-         "sentAt" AS sent_at,
-         "deliveredAt" AS delivered_at,
-         "failureReason" AS failure_reason,
-         "externalId" AS external_id,
-         "createdAt" AS created_at,
-         "updatedAt" AS updated_at
-       FROM "Communication"
+         sent_at,
+         delivered_at,
+         failure_reason,
+         external_id,
+         created_at,
+         updated_at
+       FROM communication
        ${whereClause}
        ORDER BY ${sortColumn} ${sortDirection}
        LIMIT $${dataParams.length - 1} OFFSET $${dataParams.length}`,
       dataParams
     ),
-    query<{ count: string }>(`SELECT COUNT(*) AS count FROM "Communication" ${whereClause}`, params),
+    query<{ count: string }>(`SELECT COUNT(*) AS count FROM communication ${whereClause}`, params),
   ]);
 
   const totalCount = Number(countRows[0]?.count ?? 0);
