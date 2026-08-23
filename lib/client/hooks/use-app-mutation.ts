@@ -69,19 +69,22 @@ import {
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-interface OptimisticUpdate<TData, TVariables> {
+interface OptimisticUpdate<TCache, TVariables> {
   /** The exact query key whose cached data to update optimistically. */
   queryKey: QueryKey;
   /**
    * Pure function that merges the current cache value with the incoming
    * mutation variables.  Return `undefined` to remove the entry.
+   *
+   * `TCache` is the type of the cache being patched, which need not match the
+   * mutation result `TData` — e.g. a delete returns an id but patches a list.
    */
-  updater: (current: TData, variables: TVariables) => TData | undefined;
+  updater: (current: TCache, variables: TVariables) => TCache | undefined;
 }
 
-interface UseAppMutationOptions<TData, TError, TVariables>
+interface UseAppMutationOptions<TData, TError, TVariables, TCache = TData>
   extends Omit<
-    UseMutationOptions<TData, TError, TVariables, { snapshot: TData | undefined }>,
+    UseMutationOptions<TData, TError, TVariables, { snapshot: TCache | undefined }>,
     'onMutate' | 'onError' | 'onSuccess'
   > {
   /** Query keys to invalidate after a successful mutation. */
@@ -90,7 +93,7 @@ interface UseAppMutationOptions<TData, TError, TVariables>
    * Optional optimistic update.  The previous value is snapshotted
    * automatically for rollback on error.
    */
-  optimisticUpdate?: OptimisticUpdate<TData, TVariables>;
+  optimisticUpdate?: OptimisticUpdate<TCache, TVariables>;
   /** Called after the cache has been invalidated. */
   onSuccess?: (data: TData, variables: TVariables) => void | Promise<void>;
   /** Called after the rollback has been applied. */
@@ -99,16 +102,16 @@ interface UseAppMutationOptions<TData, TError, TVariables>
 
 // ─── Hook ─────────────────────────────────────────────────────────────────────
 
-export function useAppMutation<TData = unknown, TError = Error, TVariables = void>({
+export function useAppMutation<TData = unknown, TError = Error, TVariables = void, TCache = TData>({
   invalidateKeys = [],
   optimisticUpdate,
   onSuccess,
   onError,
   ...mutationOptions
-}: UseAppMutationOptions<TData, TError, TVariables>) {
+}: UseAppMutationOptions<TData, TError, TVariables, TCache>) {
   const queryClient = useQueryClient();
 
-  return useMutation<TData, TError, TVariables, { snapshot: TData | undefined }>({
+  return useMutation<TData, TError, TVariables, { snapshot: TCache | undefined }>({
     ...mutationOptions,
 
     // ── Step 1: optimistic update + snapshot ──────────────────────────────
@@ -122,7 +125,7 @@ export function useAppMutation<TData = unknown, TError = Error, TVariables = voi
       await queryClient.cancelQueries({ queryKey });
 
       // Take a snapshot of the current cache value for rollback.
-      const snapshot = queryClient.getQueryData<TData>(queryKey);
+      const snapshot = queryClient.getQueryData<TCache>(queryKey);
 
       // Apply the optimistic update.
       if (snapshot !== undefined) {

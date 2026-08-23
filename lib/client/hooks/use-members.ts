@@ -152,7 +152,20 @@ export function useUpdateMember(id: string) {
     },
     optimisticUpdate: {
       queryKey: memberKeys.detail(id),
-      updater: (current: Member, vars) => ({ ...current, ...vars }),
+      updater: (current: Member, vars) => {
+        // vars carries Date objects for the coerced date fields (see
+        // updateMemberSchema); Member stores them as ISO strings, so normalize
+        // before merging to keep the cache shape consistent.
+        const { dateOfBirth, joinDate, baptismDate, weddingDate, ...rest } = vars;
+        return {
+          ...current,
+          ...rest,
+          ...(dateOfBirth !== undefined && { dateOfBirth: dateOfBirth.toISOString() }),
+          ...(joinDate !== undefined && { joinDate: joinDate.toISOString() }),
+          ...(baptismDate !== undefined && { baptismDate: baptismDate.toISOString() }),
+          ...(weddingDate !== undefined && { weddingDate: weddingDate.toISOString() }),
+        };
+      },
     },
     invalidateKeys: [memberKeys.lists()],
   });
@@ -163,7 +176,7 @@ export function useUpdateMember(id: string) {
  * Optimistically removes the item from the list cache; rolls back on error.
  */
 export function useDeleteMember() {
-  return useAppMutation<string, Error, string>({
+  return useAppMutation<string, Error, string, MembersResponse>({
     mutationFn: async (id) => {
       await del(`/api/members/${id}`);
       return id;

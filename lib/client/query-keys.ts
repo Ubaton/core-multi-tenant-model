@@ -79,7 +79,10 @@ export interface CommunicationFilters extends PaginatedFilters {
   to?: string;
 }
 
-export interface MessageFilters extends PaginatedFilters {
+// Not exported: the canonical MessageFilters lives in hooks/use-messages.ts and
+// is re-exported through the client barrel. This local shape is used only by the
+// key factory below; exporting it would collide in lib/client/index.ts.
+interface MessageFilters extends PaginatedFilters {
   threadId?: string;
 }
 
