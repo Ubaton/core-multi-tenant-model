@@ -63,7 +63,7 @@ function sseHeaders(origin: string | null): HeadersInit {
 // ─── GET /api/events ──────────────────────────────────────────────────────────
 export async function GET(request: NextRequest) {
   // Auth check — only authenticated users receive events.
-  const user = await getCurrentUser(request);
+  const user = await getCurrentUser();
   if (!user) {
     return new Response('Unauthorized', { status: 401 });
   }

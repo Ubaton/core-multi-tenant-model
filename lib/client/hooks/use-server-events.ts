@@ -44,13 +44,13 @@ import type { AppChangeEvent } from '@/lib/sse/pg-listener';
 // Map table names from the DB to the query key invalidation targets.
 // Add rows here whenever you add a new table trigger.
 const TABLE_TO_QUERY_KEY: Record<string, () => readonly unknown[]> = {
-  Member:         () => queryKeys.members.all(),
-  Lead:           () => queryKeys.leads.all(),
-  Offering:       () => queryKeys.offerings.all(),
-  PrayerRequest:  () => queryKeys.prayerRequests.all(),
-  Service:        () => queryKeys.services.all(),
-  Communication:  () => queryKeys.communications.all(),
-  Message:        () => queryKeys.messages.all(),
+  member:            () => queryKeys.members.all(),
+  lead:              () => queryKeys.leads.all(),
+  offering:          () => queryKeys.offerings.all(),
+  prayer_request:    () => queryKeys.prayerRequests.all(),
+  service:           () => queryKeys.services.all(),
+  communication:     () => queryKeys.communications.all(),
+  internal_message:  () => queryKeys.messages.all(),
 };
 
 const SSE_URL =

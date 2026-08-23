@@ -21,10 +21,10 @@ BEGIN
   -- Resolve the affected row
   IF (TG_OP = 'DELETE') THEN
     row_id := OLD.id;
-    tenant := OLD."tenantId";
+    tenant := OLD.tenant_id;
   ELSE
     row_id := NEW.id;
-    tenant := NEW."tenantId";
+    tenant := NEW.tenant_id;
   END IF;
 
   payload := jsonb_build_object(
@@ -48,8 +48,8 @@ DO $$
 DECLARE
   tbl text;
   tables text[] := ARRAY[
-    'Member', 'Lead', 'Offering', 'PrayerRequest',
-    'Service', 'Communication', 'Message'
+    'member', 'lead', 'offering', 'prayer_request',
+    'service', 'communication', 'internal_message'
   ];
 BEGIN
   FOREACH tbl IN ARRAY tables LOOP
