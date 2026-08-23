@@ -110,13 +110,8 @@ function LoginForm() {
           </Button>
         </form>
 
-        <div className="mt-6 text-center text-sm">
-          <span className="text-muted-foreground">
-            Don&apos;t have an account?{' '}
-          </span>
-          <Link href="/register" className="text-primary hover:underline font-medium">
-            Sign up
-          </Link>
+        <div className="mt-6 text-center text-sm text-muted-foreground">
+          Accounts are created by your administrator. Contact them if you need access.
         </div>
 
         {!isSuperAdminMode && (

@@ -70,8 +70,8 @@ export default function HomePage() {
             <Link href="/login" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}>
               Sign in
             </Link>
-            <Link href="/register" className={cn(buttonVariants({ size: 'sm' }))}>
-              Get started
+            <Link href="/login" className={cn(buttonVariants({ size: 'sm' }))}>
+              Sign in
             </Link>
           </div>
         </div>
@@ -103,10 +103,10 @@ export default function HomePage() {
 
           <div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
             <Link
-              href="/register"
+              href="/login"
               className={cn(buttonVariants({ size: 'lg' }), 'h-11 w-full sm:w-auto')}
             >
-              Get started
+              Sign in
               <ArrowRight className="ml-2 size-4" />
             </Link>
             <Link
@@ -165,13 +165,13 @@ export default function HomePage() {
               Ready to transform your church management?
             </h2>
             <p className="mx-auto mt-4 max-w-lg text-balance text-muted-foreground">
-              Set up your congregation in minutes and invite your team.
+              Contact us to get your congregation onboarded by our team.
             </p>
             <Link
-              href="/register"
+              href="/learn-more"
               className={cn(buttonVariants({ size: 'lg' }), 'mt-8 h-11')}
             >
-              Get started today
+              Learn more
               <ArrowRight className="ml-2 size-4" />
             </Link>
           </div>

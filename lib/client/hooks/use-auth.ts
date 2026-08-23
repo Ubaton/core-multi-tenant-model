@@ -21,7 +21,6 @@ import {
 } from '../api-client';
 import type {
   LoginInput,
-  RegisterInput,
   ForgotPasswordInput,
   ResetPasswordInput,
 } from '@/lib/validations';
@@ -145,32 +144,6 @@ export function useLogout() {
       clearTokens();
       queryClient.clear();
       router.push('/login');
-    },
-  });
-}
-
-/**
- * Register mutation
- */
-export function useRegister() {
-  const queryClient = useQueryClient();
-  const router = useRouter();
-
-  return useMutation({
-    mutationFn: async (data: RegisterInput) => {
-      const response = await post<LoginResponse>('/api/auth/register', data, {
-        skipAuth: true,
-      });
-      return response.data!;
-    },
-    onSuccess: (data) => {
-      setAccessToken(data.accessToken);
-      setRefreshToken(data.refreshToken);
-      if (data.user.tenantId) {
-        setTenantId(data.user.tenantId);
-      }
-      queryClient.setQueryData(authKeys.me(), data.user);
-      router.push('/dashboard');
     },
   });
 }

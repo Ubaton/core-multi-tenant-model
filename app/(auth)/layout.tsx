@@ -1,5 +1,5 @@
 /**
- * Auth layout - minimal layout for login/register pages
+ * Auth layout - minimal layout for login pages
  */
 
 export default function AuthLayout({
