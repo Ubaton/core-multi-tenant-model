@@ -1,25 +1,34 @@
-import type { Metadata } from "next";
-import { Geist, Geist_Mono, Nunito_Sans } from "next/font/google";
+import type { Metadata, Viewport } from "next";
+import { Geist_Mono, Nunito_Sans } from "next/font/google";
 import { QueryProvider } from "@/lib/client";
 import { ThemeProvider } from "@/context";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
-const nunitoSans = Nunito_Sans({variable:'--font-sans'});
-
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Body/UI face. `display: swap` keeps text readable while the font loads.
+const nunitoSans = Nunito_Sans({
+  variable: "--font-sans",
   subsets: ["latin"],
+  display: "swap",
 });
 
+// Tabular/monospace face for IDs, amounts and timestamps.
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   title: "Church Management System",
   description: "A multi-tenant church management system",
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
+    { media: "(prefers-color-scheme: dark)", color: "#09090b" },
+  ],
 };
 
 export default function RootLayout({
@@ -28,10 +37,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={nunitoSans.variable} suppressHydrationWarning>
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
-      >
+    <html
+      lang="en"
+      className={`${nunitoSans.variable} ${geistMono.variable}`}
+      suppressHydrationWarning
+    >
+      <body className="antialiased">
         <ThemeProvider>
           <QueryProvider>
             {children}

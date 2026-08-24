@@ -17,6 +17,7 @@ import {
   Trash2, 
   Building2,
   ExternalLink,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +30,17 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useTenants, useDeleteTenant } from '@/lib/client';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -37,6 +49,7 @@ export default function TenantsPage() {
   const [search, setSearch] = useState('');
   const [status, setStatus] = useState<string>('');
   const [page, setPage] = useState(1);
+  const [tenantToDelete, setTenantToDelete] = useState<{ id: string; name: string } | null>(null);
 
   const { data, isLoading } = useTenants({
     search: search || undefined,
@@ -162,14 +175,7 @@ export default function TenantsPage() {
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
-                        onClick={() => {
-                          if (confirm(`Are you sure you want to delete ${tenant.name}? This action cannot be undone.`)) {
-                            deleteTenant.mutate(tenant.id, {
-                              onSuccess: () => toast.success('Tenant deleted successfully'),
-                              onError: (err) => toast.error(err instanceof Error ? err.message : 'Failed to delete tenant'),
-                            });
-                          }
-                        }}
+                        onClick={() => setTenantToDelete({ id: tenant.id, name: tenant.name })}
                         className="text-red-600 dark:text-red-400"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
@@ -247,6 +253,48 @@ export default function TenantsPage() {
           </div>
         </div>
       )}
+
+      {/* Delete confirmation */}
+      <AlertDialog
+        open={tenantToDelete !== null}
+        onOpenChange={(open) => {
+          if (!open) setTenantToDelete(null);
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogMedia>
+              <Trash2 className="text-destructive" />
+            </AlertDialogMedia>
+            <AlertDialogTitle>Delete {tenantToDelete?.name}?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This permanently removes the church and all of its data. This action cannot be
+              undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteTenant.isPending}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              variant="destructive"
+              disabled={deleteTenant.isPending}
+              onClick={() => {
+                if (!tenantToDelete) return;
+                deleteTenant.mutate(tenantToDelete.id, {
+                  onSuccess: () => {
+                    toast.success('Tenant deleted successfully');
+                    setTenantToDelete(null);
+                  },
+                  onError: (err) =>
+                    toast.error(err instanceof Error ? err.message : 'Failed to delete tenant'),
+                });
+              }}
+            >
+              {deleteTenant.isPending && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
