@@ -54,13 +54,13 @@ function StatCard({
         {change !== undefined && (
           <div className="flex items-center text-xs text-muted-foreground mt-1">
             {trend === 'up' ? (
-              <TrendingUp className="h-3 w-3 mr-1 text-green-500" />
+              <TrendingUp className="h-3 w-3 mr-1 text-success" />
             ) : trend === 'down' ? (
-              <TrendingDown className="h-3 w-3 mr-1 text-red-500" />
+              <TrendingDown className="h-3 w-3 mr-1 text-destructive" />
             ) : null}
             <span className={cn(
-              trend === 'up' && 'text-green-500',
-              trend === 'down' && 'text-red-500',
+              trend === 'up' && 'text-success',
+              trend === 'down' && 'text-destructive',
             )}>
               {change > 0 ? '+' : ''}{change}%
             </span>
@@ -85,17 +85,17 @@ export default function DashboardPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-          <p className="text-gray-500 dark:text-gray-400">Welcome back! Here&apos;s an overview of your church.</p>
+          <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+          <p className="text-muted-foreground">Welcome back! Here&apos;s an overview of your church.</p>
         </div>
         <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
           {[...Array(4)].map((_, i) => (
             <Card key={i}>
               <CardHeader className="pb-2">
-                <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="h-4 w-24 bg-muted rounded animate-pulse" />
               </CardHeader>
               <CardContent>
-                <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="h-8 w-16 bg-muted rounded animate-pulse" />
               </CardContent>
             </Card>
           ))}
@@ -107,8 +107,8 @@ export default function DashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Dashboard</h1>
-        <p className="text-gray-500 dark:text-gray-400">Welcome back! Here&apos;s an overview of your church.</p>
+        <h1 className="text-2xl font-bold text-foreground">Dashboard</h1>
+        <p className="text-muted-foreground">Welcome back! Here&apos;s an overview of your church.</p>
       </div>
 
       {/* Stats Grid */}

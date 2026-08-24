@@ -36,8 +36,8 @@ export default function SuperAdminDashboardPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Platform Overview</h1>
-        <p className="text-gray-500 dark:text-gray-400">
+        <h1 className="text-2xl font-bold text-foreground">Platform Overview</h1>
+        <p className="text-muted-foreground">
           Monitor and manage all tenants across the platform
         </p>
       </div>
@@ -53,7 +53,7 @@ export default function SuperAdminDashboardPage() {
           </CardHeader>
           <CardContent>
             {isLoadingStats ? (
-              <div className="h-8 w-16 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+              <div className="h-8 w-16 bg-muted rounded animate-pulse" />
             ) : (
               <>
                 <div className="text-2xl font-bold">{stats?.tenants.total ?? 0}</div>
@@ -72,7 +72,7 @@ export default function SuperAdminDashboardPage() {
           </CardHeader>
           <CardContent>
             {isLoadingStats ? (
-              <div className="h-8 w-12 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+              <div className="h-8 w-12 bg-muted rounded animate-pulse" />
             ) : (
               <>
                 <div className="text-2xl font-bold">{stats?.tenants.hq ?? 0}</div>
@@ -91,7 +91,7 @@ export default function SuperAdminDashboardPage() {
           </CardHeader>
           <CardContent>
             {isLoadingStats ? (
-              <div className="h-8 w-16 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+              <div className="h-8 w-16 bg-muted rounded animate-pulse" />
             ) : (
               <>
                 <div className="text-2xl font-bold">{stats?.users.total ?? 0}</div>
@@ -110,7 +110,7 @@ export default function SuperAdminDashboardPage() {
           </CardHeader>
           <CardContent>
             {isLoadingStats ? (
-              <div className="h-8 w-16 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+              <div className="h-8 w-16 bg-muted rounded animate-pulse" />
             ) : (
               <>
                 <div className="text-2xl font-bold">{stats?.members.total ?? 0}</div>
@@ -120,22 +120,22 @@ export default function SuperAdminDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800">
+        <Card className="bg-success/10 border-success/30">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-green-700 dark:text-green-300">
+            <CardTitle className="text-sm font-medium text-success">
               Total Offerings
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
+            <DollarSign className="h-4 w-4 text-success" />
           </CardHeader>
           <CardContent>
             {isLoadingStats ? (
-              <div className="h-8 w-24 bg-green-100 dark:bg-green-900/40 rounded animate-pulse" />
+              <div className="h-8 w-24 bg-success/10 rounded animate-pulse" />
             ) : (
               <>
-                <div className="text-2xl font-bold text-green-700 dark:text-green-300">
+                <div className="text-2xl font-bold text-success">
                   R {totalOfferings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
-                <p className="text-xs text-green-600 dark:text-green-400">across all tenants</p>
+                <p className="text-xs text-success">across all tenants</p>
               </>
             )}
           </CardContent>
@@ -154,22 +154,22 @@ export default function SuperAdminDashboardPage() {
           {isLoadingList ? (
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="flex items-center justify-between p-4 border dark:border-gray-800 rounded-lg">
+                <div key={i} className="flex items-center justify-between p-4 border rounded-lg">
                   <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-lg bg-gray-100 dark:bg-gray-800 animate-pulse" />
+                    <div className="h-10 w-10 rounded-lg bg-muted animate-pulse" />
                     <div className="space-y-2">
-                      <div className="h-4 w-32 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
-                      <div className="h-3 w-24 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+                      <div className="h-4 w-32 bg-muted rounded animate-pulse" />
+                      <div className="h-3 w-24 bg-muted rounded animate-pulse" />
                     </div>
                   </div>
                   <div className="flex items-center gap-4">
-                    <div className="h-8 w-20 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+                    <div className="h-8 w-20 bg-muted rounded animate-pulse" />
                   </div>
                 </div>
               ))}
             </div>
           ) : tenants.length === 0 ? (
-            <p className="text-gray-500 dark:text-gray-400 text-center py-8">
+            <p className="text-muted-foreground text-center py-8">
               No tenants registered yet
             </p>
           ) : (
@@ -178,17 +178,17 @@ export default function SuperAdminDashboardPage() {
                 <Link
                   key={tenant.id}
                   href={`/super-admin/tenants/${tenant.id}`}
-                  className="flex items-center justify-between p-4 border dark:border-gray-800 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted transition-colors"
                 >
                   <div className="flex items-center gap-4">
-                    <div className="h-10 w-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                      <Building2 className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                    <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
+                      <Building2 className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
-                      <p className="font-medium text-gray-900 dark:text-white">
+                      <p className="font-medium text-foreground">
                         {tenant.name}
                       </p>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-sm text-muted-foreground">
                         {tenant.slug}.yourdomain.com
                       </p>
                     </div>
@@ -196,17 +196,17 @@ export default function SuperAdminDashboardPage() {
                   <div className="flex items-center gap-4">
                     <div className="text-right">
                       <p className="text-sm font-medium">{tenant._count?.members ?? 0} members</p>
-                      <p className="text-xs text-gray-500">{tenant._count?.users ?? 0} users</p>
+                      <p className="text-xs text-muted-foreground">{tenant._count?.users ?? 0} users</p>
                     </div>
                     <div className="text-right min-w-20">
-                      <p className="text-sm font-medium text-green-600 dark:text-green-400">
+                      <p className="text-sm font-medium text-success">
                         R {parseFloat(tenant.totalOfferings ?? '0').toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       </p>
-                      <p className="text-xs text-gray-500">offerings</p>
+                      <p className="text-xs text-muted-foreground">offerings</p>
                     </div>
                     <div
                       className={`h-2 w-2 rounded-full ${
-                        tenant.isActive ? 'bg-green-500' : 'bg-gray-400'
+                        tenant.isActive ? 'bg-success' : 'bg-muted-foreground'
                       }`}
                     />
                   </div>
@@ -217,8 +217,8 @@ export default function SuperAdminDashboardPage() {
 
           {/* Pagination Controls */}
           {meta && meta.totalPages > 1 && (
-            <div className="flex items-center justify-between pt-4 mt-4 border-t dark:border-gray-800">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+            <div className="flex items-center justify-between pt-4 mt-4 border-t">
+              <p className="text-sm text-muted-foreground">
                 Page {meta.page} of {meta.totalPages} ({meta.total} tenants)
               </p>
               <div className="flex gap-2">

@@ -285,12 +285,12 @@ export default function EditTenantPage() {
     return (
       <div className="space-y-6">
         <div className="flex items-center gap-4">
-          <div className="h-10 w-10 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
-          <div className="h-8 w-48 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+          <div className="h-10 w-10 bg-muted rounded animate-pulse" />
+          <div className="h-8 w-48 bg-muted rounded animate-pulse" />
         </div>
         <Card>
           <CardContent className="py-12 flex items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+            <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
           </CardContent>
         </Card>
       </div>
@@ -300,17 +300,17 @@ export default function EditTenantPage() {
   if (!tenant) {
     return (
       <div className="space-y-6">
-        <Link href="/super-admin/tenants" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200">
+        <Link href="/super-admin/tenants" className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground">
           <ArrowLeft className="h-4 w-4 mr-2" />
           Back to Churches
         </Link>
         <Card>
           <CardContent className="py-12 text-center">
-            <Building2 className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <h2 className="text-xl font-semibold text-foreground mb-2">
               Tenant Not Found
             </h2>
-            <p className="text-gray-500 dark:text-gray-400">
+            <p className="text-muted-foreground">
               The tenant you're trying to edit doesn't exist.
             </p>
             <Link href="/super-admin/tenants" className="mt-4 inline-block">
@@ -327,15 +327,15 @@ export default function EditTenantPage() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link href={`/super-admin/tenants/${id}`}>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" aria-label="Go back">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-foreground">
             Edit Tenant
           </h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-muted-foreground">
             Update {tenant.name}
           </p>
         </div>
@@ -357,7 +357,7 @@ export default function EditTenantPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">
-                  Organization Name <span className="text-red-500">*</span>
+                  Organization Name <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="name"
@@ -367,12 +367,12 @@ export default function EditTenantPage() {
                   placeholder="e.g., Grace Community Church"
                 />
                 {errors.name && (
-                  <p className="text-sm text-red-500">{errors.name}</p>
+                  <p className="text-sm text-destructive">{errors.name}</p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="slug">
-                  Slug <span className="text-red-500">*</span>
+                  Slug <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="slug"
@@ -382,7 +382,7 @@ export default function EditTenantPage() {
                   placeholder="e.g., grace-community-church"
                 />
                 {errors.slug && (
-                  <p className="text-sm text-red-500">{errors.slug}</p>
+                  <p className="text-sm text-destructive">{errors.slug}</p>
                 )}
                 <p className="text-xs text-muted-foreground">
                   URL-friendly identifier
@@ -414,7 +414,7 @@ export default function EditTenantPage() {
                   placeholder="contact@church.com"
                 />
                 {errors.email && (
-                  <p className="text-sm text-red-500">{errors.email}</p>
+                  <p className="text-sm text-destructive">{errors.email}</p>
                 )}
               </div>
               <div className="space-y-2">
@@ -555,7 +555,7 @@ export default function EditTenantPage() {
                 name="isHQ"
                 checked={formData.isHQ}
                 onChange={handleChange}
-                className="h-4 w-4 rounded border-gray-300"
+                className="h-4 w-4 rounded border-border"
               />
               <Label htmlFor="isHQ" className="font-normal">
                 This is a Headquarters (HQ) organization
@@ -565,7 +565,7 @@ export default function EditTenantPage() {
             {!formData.isHQ && (
               <div className="space-y-2">
                 <Label htmlFor="parentId">
-                  Parent Organization <span className="text-red-500">*</span>
+                  Parent Organization <span className="text-destructive">*</span>
                 </Label>
                 <select
                   id="parentId"
@@ -582,7 +582,7 @@ export default function EditTenantPage() {
                   ))}
                 </select>
                 {errors.parentId && (
-                  <p className="text-sm text-red-500">{errors.parentId}</p>
+                  <p className="text-sm text-destructive">{errors.parentId}</p>
                 )}
               </div>
             )}
@@ -594,7 +594,7 @@ export default function EditTenantPage() {
                 name="isActive"
                 checked={formData.isActive}
                 onChange={handleChange}
-                className="h-4 w-4 rounded border-gray-300"
+                className="h-4 w-4 rounded border-border"
               />
               <Label htmlFor="isActive" className="font-normal">
                 Organization is active
@@ -621,12 +621,12 @@ export default function EditTenantPage() {
             {/* Show existing admins */}
             {isLoadingAdmins ? (
               <div className="flex items-center justify-center py-4">
-                <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
-                <span className="ml-2 text-sm text-gray-500">Loading admin users...</span>
+                <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                <span className="ml-2 text-sm text-muted-foreground">Loading admin users...</span>
               </div>
             ) : hasExistingAdmin ? (
               <div className="space-y-3">
-                <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                <div className="flex items-center gap-2 text-sm text-success">
                   <Check className="h-4 w-4" />
                   <span>This tenant has {adminData?.adminUsers.length} admin user(s)</span>
                 </div>
@@ -665,7 +665,7 @@ export default function EditTenantPage() {
               </div>
             ) : (
               <div className="text-center py-4">
-                <Users className="h-10 w-10 mx-auto text-gray-400 mb-2" />
+                <Users className="h-10 w-10 mx-auto text-muted-foreground mb-2" />
                 <p className="text-sm text-muted-foreground mb-4">
                   No admin account has been created for this tenant yet.
                 </p>
@@ -684,38 +684,36 @@ export default function EditTenantPage() {
 
             {/* Created credentials display */}
             {createdCredentials && (
-              <div className="rounded-lg border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 p-4 space-y-3">
-                <div className="flex items-center gap-2 text-green-800 dark:text-green-200">
+              <div className="rounded-lg border border-success/30 bg-success/10 p-4 space-y-3">
+                <div className="flex items-center gap-2 text-success">
                   <Check className="h-5 w-5" />
                   <span className="font-medium">Admin Account Created Successfully</span>
                 </div>
-                <p className="text-sm text-green-700 dark:text-green-300">
+                <p className="text-sm text-success">
                   Share these credentials with the tenant. They will be required to change their password on first login.
                 </p>
                 <div className="grid gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-green-800 dark:text-green-200">Email:</span>
-                    <code className="text-sm bg-white dark:bg-gray-800 px-2 py-1 rounded">{createdCredentials.email}</code>
+                    <span className="text-sm font-medium text-success">Email:</span>
+                    <code className="text-sm bg-white px-2 py-1 rounded">{createdCredentials.email}</code>
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7"
-                      onClick={() => navigator.clipboard.writeText(createdCredentials.email)}
-                    >
+                      onClick={() => navigator.clipboard.writeText(createdCredentials.email)} aria-label="Copy">
                       <Copy className="h-3 w-3" />
                     </Button>
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-sm font-medium text-green-800 dark:text-green-200">Password:</span>
-                    <code className="text-sm bg-white dark:bg-gray-800 px-2 py-1 rounded">{createdCredentials.password}</code>
+                    <span className="text-sm font-medium text-success">Password:</span>
+                    <code className="text-sm bg-white px-2 py-1 rounded">{createdCredentials.password}</code>
                     <Button
                       type="button"
                       variant="ghost"
                       size="icon"
                       className="h-7 w-7"
-                      onClick={() => navigator.clipboard.writeText(createdCredentials.password)}
-                    >
+                      onClick={() => navigator.clipboard.writeText(createdCredentials.password)} aria-label="Copy">
                       <Copy className="h-3 w-3" />
                     </Button>
                   </div>
@@ -737,7 +735,7 @@ export default function EditTenantPage() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="admin_firstName">
-                      First Name <span className="text-red-500">*</span>
+                      First Name <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="admin_firstName"
@@ -747,12 +745,12 @@ export default function EditTenantPage() {
                       placeholder="Enter first name"
                     />
                     {adminErrors.firstName && (
-                      <p className="text-sm text-red-500">{adminErrors.firstName}</p>
+                      <p className="text-sm text-destructive">{adminErrors.firstName}</p>
                     )}
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="admin_lastName">
-                      Last Name <span className="text-red-500">*</span>
+                      Last Name <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="admin_lastName"
@@ -762,7 +760,7 @@ export default function EditTenantPage() {
                       placeholder="Enter last name"
                     />
                     {adminErrors.lastName && (
-                      <p className="text-sm text-red-500">{adminErrors.lastName}</p>
+                      <p className="text-sm text-destructive">{adminErrors.lastName}</p>
                     )}
                   </div>
                 </div>
@@ -770,7 +768,7 @@ export default function EditTenantPage() {
                 <div className="grid gap-4 sm:grid-cols-2">
                   <div className="space-y-2">
                     <Label htmlFor="admin_email">
-                      Email (Login Identifier) <span className="text-red-500">*</span>
+                      Email (Login Identifier) <span className="text-destructive">*</span>
                     </Label>
                     <Input
                       id="admin_email"
@@ -781,7 +779,7 @@ export default function EditTenantPage() {
                       placeholder={`info@${DEFAULT_EMAIL_DOMAIN}`}
                     />
                     {adminErrors.email && (
-                      <p className="text-sm text-red-500">{adminErrors.email}</p>
+                      <p className="text-sm text-destructive">{adminErrors.email}</p>
                     )}
                     <p className="text-xs text-muted-foreground">
                       Default: info@{DEFAULT_EMAIL_DOMAIN}
@@ -802,7 +800,7 @@ export default function EditTenantPage() {
 
                 <div className="space-y-2">
                   <Label htmlFor="admin_password">
-                    Generated Password <span className="text-red-500">*</span>
+                    Generated Password <span className="text-destructive">*</span>
                   </Label>
                   <div className="flex items-center gap-2">
                     <div className="relative flex-1">
@@ -820,7 +818,8 @@ export default function EditTenantPage() {
                         size="icon"
                         className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
                         onClick={() => setShowPassword(!showPassword)}
-                      >
+                          aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        >
                         {showPassword ? (
                           <EyeOff className="h-4 w-4" />
                         ) : (
@@ -833,8 +832,7 @@ export default function EditTenantPage() {
                       variant="outline"
                       size="icon"
                       onClick={handleGeneratePassword}
-                      title="Generate new password"
-                    >
+                      title="Generate new password" aria-label="Generate new password">
                       <RefreshCw className="h-4 w-4" />
                     </Button>
                     <Button
@@ -842,19 +840,18 @@ export default function EditTenantPage() {
                       variant="outline"
                       size="icon"
                       onClick={handleCopyPassword}
-                      title="Copy password"
-                    >
+                      title="Copy password" aria-label="Copy password">
                       {passwordCopied ? (
-                        <Check className="h-4 w-4 text-green-500" />
+                        <Check className="h-4 w-4 text-success" />
                       ) : (
                         <Copy className="h-4 w-4" />
                       )}
                     </Button>
                   </div>
                   {adminErrors.password && (
-                    <p className="text-sm text-red-500">{adminErrors.password}</p>
+                    <p className="text-sm text-destructive">{adminErrors.password}</p>
                   )}
-                  <p className="text-xs text-amber-600 dark:text-amber-400">
+                  <p className="text-xs text-warning">
                     ⚠️ Save this password before creating. It will be shown once more after creation for you to share with the tenant.
                   </p>
                 </div>
@@ -890,7 +887,7 @@ export default function EditTenantPage() {
                 </div>
 
                 {createTenantAdmin.isError && (
-                  <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4 text-sm text-red-600 dark:text-red-400">
+                  <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">
                     {createTenantAdmin.error?.message || 'Failed to create admin account. Please try again.'}
                   </div>
                 )}
@@ -922,7 +919,7 @@ export default function EditTenantPage() {
         </div>
 
         {updateTenant.isError && (
-          <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4 text-sm text-red-600 dark:text-red-400">
+          <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">
             {updateTenant.error?.message || 'Failed to update tenant. Please try again.'}
           </div>
         )}

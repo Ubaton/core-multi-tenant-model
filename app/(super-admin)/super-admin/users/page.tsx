@@ -38,12 +38,12 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const roleColors: Record<string, string> = {
-  SUPER_ADMIN: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-  CHURCH_ADMIN: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-  STAFF: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+  SUPER_ADMIN: 'bg-destructive/10 text-destructive',
+  CHURCH_ADMIN: 'bg-primary/10 text-primary',
+  STAFF: 'bg-info/10 text-info',
   CALL_CENTER: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
   SUBSCRIBER: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400',
-  MEMBER: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
+  MEMBER: 'bg-muted text-muted-foreground',
 };
 
 const roleIcons: Record<string, React.ElementType> = {
@@ -86,8 +86,8 @@ export default function UsersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Users</h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <h1 className="text-2xl font-bold text-foreground">Users</h1>
+          <p className="text-muted-foreground">
             Manage all system users across all tenants
           </p>
         </div>
@@ -104,7 +104,7 @@ export default function UsersPage() {
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search users by name or email..."
                 value={search}
@@ -141,20 +141,20 @@ export default function UsersPage() {
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>
-                <tr className="border-b bg-gray-50 dark:bg-gray-800/50">
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                <tr className="border-b bg-muted">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     User
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Role
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Tenant
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Status
                   </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                  <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                     Last Login
                   </th>
                   <th className="relative px-6 py-3">
@@ -162,7 +162,7 @@ export default function UsersPage() {
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className="divide-y divide-border">
                 {isLoading ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center">
@@ -174,11 +174,11 @@ export default function UsersPage() {
                 ) : users.length === 0 ? (
                   <tr>
                     <td colSpan={6} className="px-6 py-12 text-center">
-                      <User className="mx-auto h-12 w-12 text-gray-400" />
-                      <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+                      <User className="mx-auto h-12 w-12 text-muted-foreground" />
+                      <h3 className="mt-2 text-sm font-medium text-foreground">
                         No users found
                       </h3>
-                      <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                      <p className="mt-1 text-sm text-muted-foreground">
                         {search || role ? 'Try adjusting your filters' : 'Get started by adding a new user'}
                       </p>
                     </td>
@@ -187,7 +187,7 @@ export default function UsersPage() {
                   users.map((user) => {
                     const RoleIcon = roleIcons[user.role] || User;
                     return (
-                      <tr key={user.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                      <tr key={user.id} className="hover:bg-muted">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="h-10 w-10 shrink-0">
@@ -198,16 +198,16 @@ export default function UsersPage() {
                                   alt=""
                                 />
                               ) : (
-                                <div className="h-10 w-10 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                                  <User className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                                <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+                                  <User className="h-5 w-5 text-muted-foreground" />
                                 </div>
                               )}
                             </div>
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900 dark:text-white">
+                              <div className="text-sm font-medium text-foreground">
                                 {user.firstName} {user.lastName}
                               </div>
-                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                              <div className="text-sm text-muted-foreground">
                                 {user.email}
                               </div>
                             </div>
@@ -221,11 +221,11 @@ export default function UsersPage() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {user.tenant ? (
-                            <span className="text-sm text-gray-900 dark:text-white">
+                            <span className="text-sm text-foreground">
                               {user.tenant.name}
                             </span>
                           ) : (
-                            <span className="text-sm text-gray-400 italic">
+                            <span className="text-sm text-muted-foreground italic">
                               No tenant (Global)
                             </span>
                           )}
@@ -234,21 +234,21 @@ export default function UsersPage() {
                           <Badge
                             className={cn(
                               user.isActive
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                                : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                                ? 'bg-success/10 text-success'
+                                : 'bg-destructive/10 text-destructive'
                             )}
                           >
                             {user.isActive ? 'Active' : 'Inactive'}
                           </Badge>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-muted-foreground">
                           {user.lastLoginAt
                             ? new Date(user.lastLoginAt).toLocaleDateString()
                             : 'Never'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                           <DropdownMenu>
-                            <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">
+                            <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-muted">
                               <MoreHorizontal className="h-5 w-5" />
                             </DropdownMenuTrigger>
                             <DropdownMenuContent align="end">
@@ -286,7 +286,7 @@ export default function UsersPage() {
                               <DropdownMenuSeparator />
                               <DropdownMenuItem
                                 onClick={() => handleDelete(user.id, user.email)}
-                                className="text-red-600 dark:text-red-400"
+                                className="text-destructive"
                               >
                                 <Trash2 className="mr-2 h-4 w-4" />
                                 Delete
@@ -304,8 +304,8 @@ export default function UsersPage() {
 
           {/* Pagination */}
           {meta && meta.totalPages > 1 && (
-            <div className="flex items-center justify-between border-t border-gray-200 dark:border-gray-700 px-6 py-3">
-              <div className="text-sm text-gray-500 dark:text-gray-400">
+            <div className="flex items-center justify-between border-t border-border px-6 py-3">
+              <div className="text-sm text-muted-foreground">
                 Showing {(page - 1) * (meta.pageSize || 20) + 1} to{' '}
                 {Math.min(page * (meta.pageSize || 20), meta.total)} of {meta.total} users
               </div>

@@ -19,10 +19,10 @@ import { RequireEdit, AccessDenied } from '@/components/permission-gate';
 import { cn } from '@/lib/utils';
 
 const statusColors: Record<string, string> = {
-  ACTIVE: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-  INACTIVE: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
-  TRANSFERRED: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-  DECEASED: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+  ACTIVE: 'bg-success/10 text-success',
+  INACTIVE: 'bg-muted text-muted-foreground',
+  TRANSFERRED: 'bg-info/10 text-info',
+  DECEASED: 'bg-muted text-muted-foreground',
 };
 
 interface PageProps {
@@ -44,17 +44,17 @@ export default function MemberDetailsPage({ params }: PageProps) {
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Link href="/members">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" aria-label="Go back">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
-          <div className="h-8 w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          <div className="h-8 w-48 bg-muted rounded animate-pulse" />
         </div>
         <div className="grid gap-6 md:grid-cols-2">
           {[1, 2, 3, 4].map((i) => (
             <Card key={i}>
               <CardContent className="pt-6">
-                <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="h-32 bg-muted rounded animate-pulse" />
               </CardContent>
             </Card>
           ))}
@@ -68,15 +68,15 @@ export default function MemberDetailsPage({ params }: PageProps) {
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Link href="/members">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" aria-label="Go back">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Member Not Found</h1>
+          <h1 className="text-2xl font-bold text-foreground">Member Not Found</h1>
         </div>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-gray-500 dark:text-gray-400">
+            <p className="text-muted-foreground">
               The member you are looking for does not exist or has been removed.
             </p>
             <Link href="/members" className="mt-4 inline-block">
@@ -103,20 +103,20 @@ export default function MemberDetailsPage({ params }: PageProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/members">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" aria-label="Go back">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+              <h1 className="text-2xl font-bold text-foreground">
                 {member.firstName} {member.middleName || ''} {member.lastName}
               </h1>
               <Badge className={cn(statusColors[member.status] || statusColors.INACTIVE)}>
                 {member.status}
               </Badge>
             </div>
-            <p className="text-gray-500 dark:text-gray-400">
+            <p className="text-muted-foreground">
               {member.membershipId ? `ID: ${member.membershipId}` : 'Member Profile'}
             </p>
           </div>
@@ -143,35 +143,35 @@ export default function MemberDetailsPage({ params }: PageProps) {
           <CardContent className="space-y-4">
             {member.email && (
               <div className="flex items-center gap-3">
-                <Mail className="h-4 w-4 text-gray-400" />
-                <a href={`mailto:${member.email}`} className="text-blue-600 dark:text-blue-400 hover:underline">
+                <Mail className="h-4 w-4 text-muted-foreground" />
+                <a href={`mailto:${member.email}`} className="text-info hover:underline">
                   {member.email}
                 </a>
               </div>
             )}
             <div className="flex items-center gap-3">
-              <Phone className="h-4 w-4 text-gray-400" />
-              <a href={`tel:${member.phone}`} className="text-blue-600 dark:text-blue-400 hover:underline">
+              <Phone className="h-4 w-4 text-muted-foreground" />
+              <a href={`tel:${member.phone}`} className="text-info hover:underline">
                 {member.phone}
               </a>
             </div>
             {member.alternatePhone && (
               <div className="flex items-center gap-3">
-                <Phone className="h-4 w-4 text-gray-400" />
-                <a href={`tel:${member.alternatePhone}`} className="text-blue-600 dark:text-blue-400 hover:underline">
+                <Phone className="h-4 w-4 text-muted-foreground" />
+                <a href={`tel:${member.alternatePhone}`} className="text-info hover:underline">
                   {member.alternatePhone} (Alt)
                 </a>
               </div>
             )}
             {member.gender && (
               <div className="flex items-center gap-3">
-                <User className="h-4 w-4 text-gray-400" />
+                <User className="h-4 w-4 text-muted-foreground" />
                 <span>{member.gender}</span>
               </div>
             )}
             {member.dateOfBirth && (
               <div className="flex items-center gap-3">
-                <Calendar className="h-4 w-4 text-gray-400" />
+                <Calendar className="h-4 w-4 text-muted-foreground" />
                 <span>Born: {formatDate(member.dateOfBirth)}</span>
               </div>
             )}
@@ -195,7 +195,7 @@ export default function MemberDetailsPage({ params }: PageProps) {
             )}
             {member.country && <p>{member.country}</p>}
             {!member.address && !member.city && !member.state && (
-              <p className="text-gray-500 dark:text-gray-400">No address on file</p>
+              <p className="text-muted-foreground">No address on file</p>
             )}
           </CardContent>
         </Card>
@@ -211,18 +211,18 @@ export default function MemberDetailsPage({ params }: PageProps) {
           <CardContent className="space-y-4">
             {member.occupation && (
               <div className="flex items-center gap-3">
-                <Briefcase className="h-4 w-4 text-gray-400" />
+                <Briefcase className="h-4 w-4 text-muted-foreground" />
                 <span>{member.occupation}</span>
               </div>
             )}
             {member.employer && (
               <div className="flex items-center gap-3">
-                <Building className="h-4 w-4 text-gray-400" />
+                <Building className="h-4 w-4 text-muted-foreground" />
                 <span>{member.employer}</span>
               </div>
             )}
             {!member.occupation && !member.employer && (
-              <p className="text-gray-500 dark:text-gray-400">No employment information on file</p>
+              <p className="text-muted-foreground">No employment information on file</p>
             )}
           </CardContent>
         </Card>
@@ -238,19 +238,19 @@ export default function MemberDetailsPage({ params }: PageProps) {
           <CardContent className="space-y-4">
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Join Date</p>
+                <p className="text-sm text-muted-foreground">Join Date</p>
                 <p className="font-medium">{formatDate(member.joinDate)}</p>
               </div>
               {member.baptismDate && (
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">Baptism Date</p>
+                  <p className="text-sm text-muted-foreground">Baptism Date</p>
                   <p className="font-medium">{formatDate(member.baptismDate)}</p>
                 </div>
               )}
             </div>
             {member.departments && member.departments.length > 0 && (
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Departments</p>
+                <p className="text-sm text-muted-foreground mb-2">Departments</p>
                 <div className="flex flex-wrap gap-2">
                   {member.departments.map((dept: { department: { id: string; name: string }; role?: string }) => (
                     <Badge key={dept.department.id} variant="outline">
@@ -277,7 +277,7 @@ export default function MemberDetailsPage({ params }: PageProps) {
                   <div key={offering.id} className="flex items-center justify-between py-2 border-b last:border-0">
                     <div>
                       <p className="font-medium">{offering.type}</p>
-                      <p className="text-sm text-gray-500">{formatDate(offering.givenAt)}</p>
+                      <p className="text-sm text-muted-foreground">{formatDate(offering.givenAt)}</p>
                     </div>
                     <p className="font-semibold">
                       {offering.currency} {offering.amount.toLocaleString()}
@@ -302,7 +302,7 @@ export default function MemberDetailsPage({ params }: PageProps) {
                   <div key={request.id} className="flex items-center justify-between py-2 border-b last:border-0">
                     <div>
                       <p className="font-medium">{request.title}</p>
-                      <p className="text-sm text-gray-500">{formatDate(request.createdAt)}</p>
+                      <p className="text-sm text-muted-foreground">{formatDate(request.createdAt)}</p>
                     </div>
                     <Badge variant="outline">{request.status}</Badge>
                   </div>

@@ -34,12 +34,12 @@ import { useUser, useUserPermissionsAdmin } from '@/lib/client';
 import { cn } from '@/lib/utils';
 
 const roleColors: Record<string, string> = {
-  SUPER_ADMIN: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-  CHURCH_ADMIN: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-  STAFF: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+  SUPER_ADMIN: 'bg-destructive/10 text-destructive',
+  CHURCH_ADMIN: 'bg-primary/10 text-primary',
+  STAFF: 'bg-info/10 text-info',
   CALL_CENTER: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
   SUBSCRIBER: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400',
-  MEMBER: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
+  MEMBER: 'bg-muted text-muted-foreground',
 };
 
 const roleIcons: Record<string, React.ElementType> = {
@@ -89,15 +89,15 @@ export default function UserDetailPage({ params }: PageProps) {
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Link href="/super-admin/users">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" aria-label="Go back">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">User Not Found</h1>
+          <h1 className="text-2xl font-bold text-foreground">User Not Found</h1>
         </div>
         <Card>
           <CardContent className="py-12 text-center">
-            <User className="mx-auto h-12 w-12 text-gray-400" />
+            <User className="mx-auto h-12 w-12 text-muted-foreground" />
             <h3 className="mt-4 text-lg font-medium">User not found</h3>
             <p className="mt-2 text-muted-foreground">
               The user you&apos;re looking for doesn&apos;t exist or has been deleted.
@@ -119,15 +119,15 @@ export default function UserDetailPage({ params }: PageProps) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
           <Link href="/super-admin/users">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" aria-label="Go back">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <h1 className="text-2xl font-bold text-foreground">
               {user.firstName} {user.lastName}
             </h1>
-            <p className="text-gray-500 dark:text-gray-400">{user.email}</p>
+            <p className="text-muted-foreground">{user.email}</p>
           </div>
         </div>
         <Link href={`/super-admin/users/${id}/edit`}>
@@ -154,8 +154,8 @@ export default function UserDetailPage({ params }: PageProps) {
                   className="h-24 w-24 rounded-full object-cover"
                 />
               ) : (
-                <div className="h-24 w-24 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-                  <User className="h-12 w-12 text-gray-500 dark:text-gray-400" />
+                <div className="h-24 w-24 rounded-full bg-muted flex items-center justify-center">
+                  <User className="h-12 w-12 text-muted-foreground" />
                 </div>
               )}
             </div>
@@ -169,14 +169,14 @@ export default function UserDetailPage({ params }: PageProps) {
               <Badge
                 className={cn(
                   user.isActive
-                    ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                    : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                    ? 'bg-success/10 text-success'
+                    : 'bg-destructive/10 text-destructive'
                 )}
               >
                 {user.isActive ? 'Active' : 'Inactive'}
               </Badge>
               {user.emailVerified && (
-                <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400">
+                <Badge className="bg-info/10 text-info">
                   Verified
                 </Badge>
               )}
@@ -242,8 +242,8 @@ export default function UserDetailPage({ params }: PageProps) {
                   <Badge
                     className={cn(
                       user.isActive
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                        : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                        ? 'bg-success/10 text-success'
+                        : 'bg-destructive/10 text-destructive'
                     )}
                   >
                     {user.isActive ? 'Active' : 'Inactive'}
@@ -364,7 +364,7 @@ export default function UserDetailPage({ params }: PageProps) {
                         className={cn(
                           'p-3 rounded-lg border',
                           hasAny
-                            ? 'bg-emerald-50 dark:bg-emerald-900/10 border-emerald-200 dark:border-emerald-800'
+                            ? 'bg-success/10 border-success/30'
                             : 'bg-muted/30 border-border'
                         )}
                       >
@@ -374,7 +374,7 @@ export default function UserDetailPage({ params }: PageProps) {
                           </p>
                           <span className={cn(
                             'text-xs font-semibold',
-                            hasAny ? 'text-emerald-600 dark:text-emerald-400' : 'text-muted-foreground'
+                            hasAny ? 'text-success' : 'text-muted-foreground'
                           )}>
                             {grantedCount}/4
                           </span>
@@ -383,7 +383,7 @@ export default function UserDetailPage({ params }: PageProps) {
                           {(['view', 'create', 'edit', 'delete'] as const).map((perm) => (
                             <div key={perm} title={perm} className="flex flex-col items-center gap-0.5">
                               {perms[perm] ? (
-                                <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                                <CheckCircle2 className="h-3.5 w-3.5 text-success" />
                               ) : (
                                 <Circle className="h-3.5 w-3.5 text-muted-foreground/30" />
                               )}

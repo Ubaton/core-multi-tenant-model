@@ -114,15 +114,15 @@ export default function NewUserPage() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link href="/super-admin/users">
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" aria-label="Go back">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-foreground">
             Create New User
           </h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-muted-foreground">
             Add a new user to the platform
           </p>
         </div>
@@ -144,7 +144,7 @@ export default function NewUserPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="firstName">
-                  First Name <span className="text-red-500">*</span>
+                  First Name <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="firstName"
@@ -154,12 +154,12 @@ export default function NewUserPage() {
                   placeholder="Enter first name"
                 />
                 {errors.firstName && (
-                  <p className="text-sm text-red-500">{errors.firstName}</p>
+                  <p className="text-sm text-destructive">{errors.firstName}</p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastName">
-                  Last Name <span className="text-red-500">*</span>
+                  Last Name <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="lastName"
@@ -169,7 +169,7 @@ export default function NewUserPage() {
                   placeholder="Enter last name"
                 />
                 {errors.lastName && (
-                  <p className="text-sm text-red-500">{errors.lastName}</p>
+                  <p className="text-sm text-destructive">{errors.lastName}</p>
                 )}
               </div>
             </div>
@@ -177,7 +177,7 @@ export default function NewUserPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="email">
-                  Email <span className="text-red-500">*</span>
+                  Email <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="email"
@@ -188,7 +188,7 @@ export default function NewUserPage() {
                   placeholder="Enter email address"
                 />
                 {errors.email && (
-                  <p className="text-sm text-red-500">{errors.email}</p>
+                  <p className="text-sm text-destructive">{errors.email}</p>
                 )}
               </div>
               <div className="space-y-2">
@@ -207,7 +207,7 @@ export default function NewUserPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="password">
-                  Password <span className="text-red-500">*</span>
+                  Password <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="password"
@@ -218,12 +218,12 @@ export default function NewUserPage() {
                   placeholder="Enter password"
                 />
                 {errors.password && (
-                  <p className="text-sm text-red-500">{errors.password}</p>
+                  <p className="text-sm text-destructive">{errors.password}</p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">
-                  Confirm Password <span className="text-red-500">*</span>
+                  Confirm Password <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="confirmPassword"
@@ -234,7 +234,7 @@ export default function NewUserPage() {
                   placeholder="Confirm password"
                 />
                 {errors.confirmPassword && (
-                  <p className="text-sm text-red-500">{errors.confirmPassword}</p>
+                  <p className="text-sm text-destructive">{errors.confirmPassword}</p>
                 )}
               </div>
             </div>
@@ -297,7 +297,7 @@ export default function NewUserPage() {
                 name="isActive"
                 checked={formData.isActive}
                 onChange={handleChange}
-                className="h-4 w-4 rounded border-gray-300"
+                className="h-4 w-4 rounded border-border"
               />
               <Label htmlFor="isActive" className="font-normal">
                 User is active
@@ -329,7 +329,7 @@ export default function NewUserPage() {
         </div>
 
         {createUser.isError && (
-          <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4 text-sm text-red-600 dark:text-red-400">
+          <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">
             {createUser.error?.message || 'Failed to create user. Please try again.'}
           </div>
         )}

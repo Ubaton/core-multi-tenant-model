@@ -27,10 +27,10 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 
 const statusColors: Record<string, string> = {
-  ACTIVE: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-  INACTIVE: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
-  TRANSFERRED: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-  DECEASED: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+  ACTIVE: 'bg-success/10 text-success',
+  INACTIVE: 'bg-muted text-muted-foreground',
+  TRANSFERRED: 'bg-info/10 text-info',
+  DECEASED: 'bg-muted text-muted-foreground',
 };
 
 export default function MembersPage() {
@@ -62,8 +62,8 @@ export default function MembersPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Members</h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <h1 className="text-2xl font-bold text-foreground">Members</h1>
+          <p className="text-muted-foreground">
             Manage your church members
           </p>
         </div>
@@ -82,7 +82,7 @@ export default function MembersPage() {
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search members..."
                 value={search}
@@ -122,12 +122,12 @@ export default function MembersPage() {
           {isLoading ? (
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-16 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+                <div key={i} className="h-16 bg-muted rounded animate-pulse" />
               ))}
             </div>
           ) : members.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500 dark:text-gray-400">No members found</p>
+              <p className="text-muted-foreground">No members found</p>
                    <RequireCreate module="members"><Link href="/members/new" className="mt-4 inline-block">
                 <Button variant="outline">
                   <Plus className="h-4 w-4 mr-2" />
@@ -140,30 +140,30 @@ export default function MembersPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b dark:border-gray-800">
-                    <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Name</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Contact</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Status</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Join Date</th>
-                    <th className="text-right py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Name</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Contact</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Status</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Join Date</th>
+                    <th className="text-right py-3 px-4 font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {members.map((member) => (
-                    <tr key={member.id} className="border-b dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                    <tr key={member.id} className="border-b hover:bg-muted">
                       <td className="py-3 px-4">
                         <div>
-                          <p className="font-medium text-gray-900 dark:text-white">
+                          <p className="font-medium text-foreground">
                             {member.firstName} {member.lastName}
                           </p>
                           {member.email && (
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                            <p className="text-sm text-muted-foreground">
                               {member.email}
                             </p>
                           )}
                         </div>
                       </td>
-                      <td className="py-3 px-4 text-gray-600 dark:text-gray-300">
+                      <td className="py-3 px-4 text-muted-foreground">
                         {member.phone}
                       </td>
                       <td className="py-3 px-4">
@@ -171,21 +171,21 @@ export default function MembersPage() {
                           {member.status}
                         </Badge>
                       </td>
-                      <td className="py-3 px-4 text-gray-600 dark:text-gray-300">
+                      <td className="py-3 px-4 text-muted-foreground">
                         {new Date(member.joinDate).toLocaleDateString()}
                       </td>
                       <td className="py-3 px-4 text-right">
                         <DropdownMenu>
-                          <DropdownMenuTrigger render={<Button variant="ghost" size="icon" />}>
+                          <DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label="More actions" />}>
                             <MoreHorizontal className="h-4 w-4" />
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
-                            <DropdownMenuItem onClick={() => window.location.href = `/members/${member.id}`}>
+                            <DropdownMenuItem render={<Link href={`/members/${member.id}`} />}>
                               <Eye className="h-4 w-4 mr-2" />
                               View
                             </DropdownMenuItem>
                             {canEdit('members') && (
-                              <DropdownMenuItem onClick={() => window.location.href = `/members/${member.id}/edit`}>
+                              <DropdownMenuItem render={<Link href={`/members/${member.id}/edit`} />}>
                                 <Pencil className="h-4 w-4 mr-2" />
                                 Edit
                               </DropdownMenuItem>
@@ -200,7 +200,7 @@ export default function MembersPage() {
                                     });
                                   }
                                 }}
-                                className="text-red-600 dark:text-red-400"
+                                className="text-destructive"
                               >
                                 <Trash2 className="h-4 w-4 mr-2" />
                                 Delete
@@ -219,7 +219,7 @@ export default function MembersPage() {
           {/* Pagination */}
           {meta && meta.totalPages > 1 && (
             <div className="flex items-center justify-between mt-6">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-muted-foreground">
                 Page {meta.page} of {meta.totalPages}
               </p>
               <div className="flex gap-2">

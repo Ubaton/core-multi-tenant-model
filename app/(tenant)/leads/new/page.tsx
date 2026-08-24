@@ -85,20 +85,20 @@ export default function NewLeadPage() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link href="/leads">
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" aria-label="Go back">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Add New Lead</h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <h1 className="text-2xl font-bold text-foreground">Add New Lead</h1>
+          <p className="text-muted-foreground">
             Register a new prospective member
           </p>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg">
+        <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded-lg">
           {error}
         </div>
       )}

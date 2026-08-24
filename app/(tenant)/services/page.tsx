@@ -239,8 +239,8 @@ export default function ServicesPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Services</h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <h1 className="text-2xl font-bold text-foreground">Services</h1>
+          <p className="text-muted-foreground">
             Manage church services and events
           </p>
         </div>
@@ -270,7 +270,7 @@ export default function ServicesPage() {
             <Clock className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">{summary?.upcomingCount ?? 0}</div>
+            <div className="text-2xl font-bold text-success">{summary?.upcomingCount ?? 0}</div>
             <p className="text-xs text-muted-foreground">Scheduled services</p>
           </CardContent>
         </Card>
@@ -301,7 +301,7 @@ export default function ServicesPage() {
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search services..."
                 value={search}
@@ -345,7 +345,7 @@ export default function ServicesPage() {
           {isLoading ? (
             <div className="space-y-4">
               {[...Array(3)].map((_, i) => (
-                <div key={i} className="h-24 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+                <div key={i} className="h-24 bg-muted rounded animate-pulse" />
               ))}
             </div>
           ) : services.length === 0 ? (
@@ -401,7 +401,7 @@ export default function ServicesPage() {
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem
                                   onClick={() => handleDelete(service.id)}
-                                  className="text-red-600 dark:text-red-400"
+                                  className="text-destructive"
                                 >
                                   <Trash2 className="h-4 w-4 mr-2" />
                                   Delete
@@ -440,7 +440,7 @@ export default function ServicesPage() {
           {/* Pagination */}
           {meta && meta.totalPages > 1 && (
             <div className="flex items-center justify-between mt-6">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-muted-foreground">
                 Page {meta.page} of {meta.totalPages}
               </p>
               <div className="flex gap-2">
@@ -472,7 +472,7 @@ export default function ServicesPage() {
           <AlertDialogHeader>
             <div className="flex items-center justify-between">
               <AlertDialogTitle>Add New Service</AlertDialogTitle>
-              <Button variant="ghost" size="icon" onClick={handleCloseDialogs} className="h-6 w-6">
+              <Button variant="ghost" size="icon" onClick={handleCloseDialogs} className="h-6 w-6" aria-label="Close">
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -483,7 +483,7 @@ export default function ServicesPage() {
 
           <form onSubmit={handleSubmitCreate} className="space-y-4">
             {formError && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-3 py-2 rounded-lg text-sm">
+              <div className="bg-destructive/10 border border-destructive/30 text-destructive px-3 py-2 rounded-lg text-sm">
                 {formError}
               </div>
             )}
@@ -583,7 +583,7 @@ export default function ServicesPage() {
           <AlertDialogHeader>
             <div className="flex items-center justify-between">
               <AlertDialogTitle>Service Details</AlertDialogTitle>
-              <Button variant="ghost" size="icon" onClick={handleCloseDialogs} className="h-6 w-6">
+              <Button variant="ghost" size="icon" onClick={handleCloseDialogs} className="h-6 w-6" aria-label="Close">
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -652,7 +652,7 @@ export default function ServicesPage() {
           <AlertDialogHeader>
             <div className="flex items-center justify-between">
               <AlertDialogTitle>Edit Service</AlertDialogTitle>
-              <Button variant="ghost" size="icon" onClick={handleCloseDialogs} className="h-6 w-6">
+              <Button variant="ghost" size="icon" onClick={handleCloseDialogs} className="h-6 w-6" aria-label="Close">
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -663,7 +663,7 @@ export default function ServicesPage() {
 
           <form onSubmit={handleSubmitEdit} className="space-y-4">
             {formError && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-3 py-2 rounded-lg text-sm">
+              <div className="bg-destructive/10 border border-destructive/30 text-destructive px-3 py-2 rounded-lg text-sm">
                 {formError}
               </div>
             )}

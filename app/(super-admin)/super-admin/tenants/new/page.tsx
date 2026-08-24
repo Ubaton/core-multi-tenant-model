@@ -53,13 +53,13 @@ const ROLE_CONFIG: Record<TenantRole, {
   CHURCH_ADMIN: {
     label: 'Church Admin',
     description: 'Full access within this tenant',
-    color: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+    color: 'bg-primary/10 text-primary',
     Icon: UserCog,
   },
   STAFF: {
     label: 'Staff',
     description: 'Limited tenant access',
-    color: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+    color: 'bg-info/10 text-info',
     Icon: User,
   },
   CALL_CENTER: {
@@ -77,7 +77,7 @@ const ROLE_CONFIG: Record<TenantRole, {
   MEMBER: {
     label: 'Member',
     description: 'Basic member access',
-    color: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
+    color: 'bg-muted text-muted-foreground',
     Icon: Users,
   },
 };
@@ -168,7 +168,7 @@ function UserRow({ entry, isFixed, errors, onUpdate, onRemove, index }: UserRowP
       className={cn(
         'rounded-xl border p-4 space-y-4 transition-colors',
         isFixed
-          ? 'border-purple-200 dark:border-purple-800 bg-purple-50/50 dark:bg-purple-900/10'
+          ? 'border-primary/30 bg-primary/10'
           : 'border-border bg-card'
       )}
     >
@@ -179,7 +179,7 @@ function UserRow({ entry, isFixed, errors, onUpdate, onRemove, index }: UserRowP
             className={cn(
               'p-1.5 rounded-md',
               isFixed
-                ? 'bg-purple-100 dark:bg-purple-900/30'
+                ? 'bg-primary/10'
                 : 'bg-muted'
             )}
           >
@@ -187,7 +187,7 @@ function UserRow({ entry, isFixed, errors, onUpdate, onRemove, index }: UserRowP
               className={cn(
                 'h-4 w-4',
                 isFixed
-                  ? 'text-purple-600 dark:text-purple-400'
+                  ? 'text-primary'
                   : 'text-muted-foreground'
               )}
             />
@@ -219,10 +219,9 @@ function UserRow({ entry, isFixed, errors, onUpdate, onRemove, index }: UserRowP
             type="button"
             variant="ghost"
             size="icon"
-            className="h-8 w-8 text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20"
+            className="h-8 w-8 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
             onClick={() => onRemove(entry.id)}
-            title="Remove this user"
-          >
+            title="Remove this user" aria-label="Remove this user">
             <Trash2 className="h-4 w-4" />
           </Button>
         )}
@@ -232,7 +231,7 @@ function UserRow({ entry, isFixed, errors, onUpdate, onRemove, index }: UserRowP
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor={`${prefix}_firstName`} className="text-xs">
-            First Name <span className="text-red-500">*</span>
+            First Name <span className="text-destructive">*</span>
           </Label>
           <Input
             id={`${prefix}_firstName`}
@@ -242,12 +241,12 @@ function UserRow({ entry, isFixed, errors, onUpdate, onRemove, index }: UserRowP
             className="h-9"
           />
           {errors[`${prefix}_firstName`] && (
-            <p className="text-xs text-red-500">{errors[`${prefix}_firstName`]}</p>
+            <p className="text-xs text-destructive">{errors[`${prefix}_firstName`]}</p>
           )}
         </div>
         <div className="space-y-1.5">
           <Label htmlFor={`${prefix}_lastName`} className="text-xs">
-            Last Name <span className="text-red-500">*</span>
+            Last Name <span className="text-destructive">*</span>
           </Label>
           <Input
             id={`${prefix}_lastName`}
@@ -257,7 +256,7 @@ function UserRow({ entry, isFixed, errors, onUpdate, onRemove, index }: UserRowP
             className="h-9"
           />
           {errors[`${prefix}_lastName`] && (
-            <p className="text-xs text-red-500">{errors[`${prefix}_lastName`]}</p>
+            <p className="text-xs text-destructive">{errors[`${prefix}_lastName`]}</p>
           )}
         </div>
       </div>
@@ -266,7 +265,7 @@ function UserRow({ entry, isFixed, errors, onUpdate, onRemove, index }: UserRowP
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
           <Label htmlFor={`${prefix}_email`} className="text-xs">
-            Email <span className="text-red-500">*</span>
+            Email <span className="text-destructive">*</span>
           </Label>
           <Input
             id={`${prefix}_email`}
@@ -277,7 +276,7 @@ function UserRow({ entry, isFixed, errors, onUpdate, onRemove, index }: UserRowP
             className="h-9"
           />
           {errors[`${prefix}_email`] && (
-            <p className="text-xs text-red-500">{errors[`${prefix}_email`]}</p>
+            <p className="text-xs text-destructive">{errors[`${prefix}_email`]}</p>
           )}
         </div>
         <div className="space-y-1.5">
@@ -298,7 +297,7 @@ function UserRow({ entry, isFixed, errors, onUpdate, onRemove, index }: UserRowP
       {/* Password Row */}
       <div className="space-y-1.5">
         <Label htmlFor={`${prefix}_password`} className="text-xs">
-          Password <span className="text-red-500">*</span>
+          Password <span className="text-destructive">*</span>
         </Label>
         <div className="flex items-center gap-2">
           <div className="relative flex-1">
@@ -315,6 +314,7 @@ function UserRow({ entry, isFixed, errors, onUpdate, onRemove, index }: UserRowP
               size="icon"
               className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7"
               onClick={() => onUpdate(entry.id, 'showPassword', !entry.showPassword)}
+              aria-label={entry.showPassword ? 'Hide password' : 'Show password'}
             >
               {entry.showPassword ? (
                 <EyeOff className="h-3.5 w-3.5" />
@@ -329,8 +329,7 @@ function UserRow({ entry, isFixed, errors, onUpdate, onRemove, index }: UserRowP
             size="icon"
             className="h-9 w-9 shrink-0"
             onClick={() => onUpdate(entry.id, 'password', generatePassword())}
-            title="Generate new password"
-          >
+            title="Generate new password" aria-label="Generate new password">
             <RefreshCw className="h-3.5 w-3.5" />
           </Button>
           <Button
@@ -339,17 +338,16 @@ function UserRow({ entry, isFixed, errors, onUpdate, onRemove, index }: UserRowP
             size="icon"
             className="h-9 w-9 shrink-0"
             onClick={handleCopyPassword}
-            title="Copy password"
-          >
+            title="Copy password" aria-label="Copy password">
             {entry.passwordCopied ? (
-              <Check className="h-3.5 w-3.5 text-green-500" />
+              <Check className="h-3.5 w-3.5 text-success" />
             ) : (
               <Copy className="h-3.5 w-3.5" />
             )}
           </Button>
         </div>
         {errors[`${prefix}_password`] && (
-          <p className="text-xs text-red-500">{errors[`${prefix}_password`]}</p>
+          <p className="text-xs text-destructive">{errors[`${prefix}_password`]}</p>
         )}
       </div>
     </div>
@@ -591,22 +589,22 @@ export default function NewTenantPage() {
     return (
       <div className="space-y-6 max-w-2xl">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-foreground">
             Tenant Created Successfully
           </h1>
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
+          <p className="text-muted-foreground mt-1">
             Share these credentials with each user. Passwords are shown only once.
           </p>
         </div>
 
-        <Card className="border-emerald-200 dark:border-emerald-800">
-          <CardHeader className="bg-emerald-50 dark:bg-emerald-900/20 pb-4">
-            <CardTitle className="text-emerald-800 dark:text-emerald-200 flex items-center gap-2">
+        <Card className="border-success/30">
+          <CardHeader className="bg-success/10 pb-4">
+            <CardTitle className="text-success flex items-center gap-2">
               <Check className="h-5 w-5" />
               {createdResults.tenantName} — {createdResults.users.length} user
               {createdResults.users.length !== 1 ? 's' : ''} created
             </CardTitle>
-            <CardDescription className="text-emerald-700 dark:text-emerald-300">
+            <CardDescription className="text-success">
               All users must change their password on first login.
             </CardDescription>
           </CardHeader>
@@ -642,8 +640,7 @@ export default function NewTenantPage() {
                         variant="outline"
                         size="icon"
                         className="h-9 w-9 shrink-0"
-                        onClick={() => navigator.clipboard.writeText(u.email)}
-                      >
+                        onClick={() => navigator.clipboard.writeText(u.email)} aria-label="Copy">
                         <Copy className="h-4 w-4" />
                       </Button>
                     </div>
@@ -665,8 +662,7 @@ export default function NewTenantPage() {
                         variant="outline"
                         size="icon"
                         className="h-9 w-9 shrink-0"
-                        onClick={() => navigator.clipboard.writeText(u.password)}
-                      >
+                        onClick={() => navigator.clipboard.writeText(u.password)} aria-label="Copy">
                         <Copy className="h-4 w-4" />
                       </Button>
                     </div>
@@ -675,9 +671,9 @@ export default function NewTenantPage() {
               );
             })}
 
-            <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-              <Info className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-              <p className="text-xs text-amber-700 dark:text-amber-300">
+            <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/30">
+              <Info className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+              <p className="text-xs text-warning">
                 These passwords will not be shown again. Share them securely with each user.
               </p>
             </div>
@@ -700,15 +696,15 @@ export default function NewTenantPage() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link href="/super-admin/tenants">
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" aria-label="Go back">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-foreground">
             Create New Tenant
           </h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-muted-foreground">
             Add a new church organization to the platform
           </p>
         </div>
@@ -730,7 +726,7 @@ export default function NewTenantPage() {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="name">
-                  Organization Name <span className="text-red-500">*</span>
+                  Organization Name <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="name"
@@ -740,12 +736,12 @@ export default function NewTenantPage() {
                   placeholder="e.g., Grace Community Church"
                 />
                 {errors.name && (
-                  <p className="text-sm text-red-500">{errors.name}</p>
+                  <p className="text-sm text-destructive">{errors.name}</p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="slug">
-                  Slug <span className="text-red-500">*</span>
+                  Slug <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="slug"
@@ -755,7 +751,7 @@ export default function NewTenantPage() {
                   placeholder="e.g., grace-community-church"
                 />
                 {errors.slug && (
-                  <p className="text-sm text-red-500">{errors.slug}</p>
+                  <p className="text-sm text-destructive">{errors.slug}</p>
                 )}
                 <p className="text-xs text-muted-foreground">
                   URL-friendly identifier (auto-generated from name)
@@ -787,7 +783,7 @@ export default function NewTenantPage() {
                   placeholder="contact@church.com"
                 />
                 {errors.email && (
-                  <p className="text-sm text-red-500">{errors.email}</p>
+                  <p className="text-sm text-destructive">{errors.email}</p>
                 )}
               </div>
               <div className="space-y-2">
@@ -925,7 +921,7 @@ export default function NewTenantPage() {
                 name="isHQ"
                 checked={formData.isHQ}
                 onChange={handleChange}
-                className="h-4 w-4 rounded border-gray-300"
+                className="h-4 w-4 rounded border-border"
               />
               <Label htmlFor="isHQ" className="font-normal">
                 This is a Headquarters (HQ) organization
@@ -935,7 +931,7 @@ export default function NewTenantPage() {
             {!formData.isHQ && (
               <div className="space-y-2">
                 <Label htmlFor="parentId">
-                  Parent Organization <span className="text-red-500">*</span>
+                  Parent Organization <span className="text-destructive">*</span>
                 </Label>
                 <select
                   id="parentId"
@@ -952,7 +948,7 @@ export default function NewTenantPage() {
                   ))}
                 </select>
                 {errors.parentId && (
-                  <p className="text-sm text-red-500">{errors.parentId}</p>
+                  <p className="text-sm text-destructive">{errors.parentId}</p>
                 )}
               </div>
             )}
@@ -964,7 +960,7 @@ export default function NewTenantPage() {
                 name="isActive"
                 checked={formData.isActive}
                 onChange={handleChange}
-                className="h-4 w-4 rounded border-gray-300"
+                className="h-4 w-4 rounded border-border"
               />
               <Label htmlFor="isActive" className="font-normal">
                 Organization is active
@@ -993,7 +989,7 @@ export default function NewTenantPage() {
                   id="createUsers"
                   checked={createUsers}
                   onChange={(e) => setCreateUsers(e.target.checked)}
-                  className="h-4 w-4 rounded border-gray-300"
+                  className="h-4 w-4 rounded border-border"
                 />
                 <Label htmlFor="createUsers" className="font-normal text-sm whitespace-nowrap">
                   Create users now
@@ -1069,9 +1065,9 @@ export default function NewTenantPage() {
                 </div>
               </div>
 
-              <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-                <Info className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                <p className="text-xs text-amber-700 dark:text-amber-300">
+              <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/30">
+                <Info className="h-4 w-4 text-warning shrink-0 mt-0.5" />
+                <p className="text-xs text-warning">
                   Save or copy all passwords before submitting — they will be shown once more
                   after creation but cannot be retrieved later.
                 </p>
@@ -1103,7 +1099,7 @@ export default function NewTenantPage() {
         </div>
 
         {createTenant.isError && (
-          <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4 text-sm text-red-600 dark:text-red-400">
+          <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">
             {createTenant.error?.message || 'Failed to create tenant. Please try again.'}
           </div>
         )}

@@ -5,18 +5,14 @@
  *
  * Single source of brand identity for the navbar, auth pages, and footer.
  *
- * ─ Swapping in a real logo file ──────────────────────────────────────────────
- * There is no logo asset in /public yet, so the mark is the Church glyph in a
- * rounded tile. To use an image instead, drop it in /public and replace the
- * contents of <LogoMark> with:
- *
- *   <Image src="/logo.svg" alt="" width={32} height={32} className={...} />
- *
- * Nothing else needs to change - every surface renders through this file.
+ * ─ Logo asset ────────────────────────────────────────────────────────────────
+ * The mark renders /public/UFC-Logo.png. To swap it, drop a new file in /public
+ * and update the `src` on the <Image> inside <LogoMark>. Nothing else needs to
+ * change - every surface renders through this file.
  */
 
 import Link from 'next/link';
-import { Church } from 'lucide-react';
+import Image from 'next/image';
 import { cn } from '@/lib/utils';
 
 /** Organisation name shown beside the mark. */
@@ -25,9 +21,16 @@ export const BRAND_NAME = 'Unity Fellowship Church';
 type LogoSize = 'sm' | 'md' | 'lg';
 
 const MARK_SIZES: Record<LogoSize, string> = {
-  sm: 'size-8 rounded-lg [&_svg]:size-4',
-  md: 'size-10 rounded-xl [&_svg]:size-5',
-  lg: 'size-12 rounded-xl [&_svg]:size-6',
+  sm: 'size-8 rounded-lg',
+  md: 'size-10 rounded-xl',
+  lg: 'size-12 rounded-xl',
+};
+
+/** Pixel dimensions for the logo image, keyed by size. */
+const MARK_PX: Record<LogoSize, number> = {
+  sm: 32,
+  md: 40,
+  lg: 48,
 };
 
 const WORDMARK_SIZES: Record<LogoSize, string> = {
@@ -51,12 +54,18 @@ export function LogoMark({
     <span
       aria-hidden
       className={cn(
-        'inline-flex items-center justify-center border border-primary/15 bg-primary/10 text-primary',
+        'inline-flex items-center justify-center overflow-hidden',
         MARK_SIZES[size],
         className
       )}
     >
-      <Church />
+      <Image
+        src="/UFC-Logo.png"
+        alt=""
+        width={MARK_PX[size]}
+        height={MARK_PX[size]}
+        className="size-full object-contain"
+      />
     </span>
   );
 }

@@ -98,20 +98,20 @@ export default function NewMemberPage() {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link href="/members">
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" aria-label="Go back">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Add New Member</h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <h1 className="text-2xl font-bold text-foreground">Add New Member</h1>
+          <p className="text-muted-foreground">
             Register a new church member
           </p>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg">
+        <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded-lg">
           {error}
         </div>
       )}
@@ -311,9 +311,9 @@ export default function NewMemberPage() {
                 name="membershipId"
                 value="Auto-generated"
                 disabled
-                className="bg-gray-50 dark:bg-gray-800 text-gray-500"
+                className="bg-muted text-muted-foreground"
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400">Will be assigned automatically</p>
+              <p className="text-xs text-muted-foreground">Will be assigned automatically</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>

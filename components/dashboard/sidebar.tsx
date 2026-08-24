@@ -328,7 +328,7 @@ function SidebarContent({
               onClick={() => logout.mutate()}
               className={cn(
                 'shrink-0 flex h-7 w-7 items-center justify-center rounded-md',
-                'text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20',
+                'text-muted-foreground hover:text-destructive hover:bg-destructive/10',
                 'transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60'
               )}
               title="Sign out"

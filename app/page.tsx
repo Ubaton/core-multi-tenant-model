@@ -67,9 +67,6 @@ export default function HomePage() {
           <Logo size="sm" />
 
           <div className="flex items-center gap-2">
-            <Link href="/login" className={cn(buttonVariants({ variant: 'ghost', size: 'sm' }))}>
-              Sign in
-            </Link>
             <Link href="/login" className={cn(buttonVariants({ size: 'sm' }))}>
               Sign in
             </Link>
@@ -87,7 +84,7 @@ export default function HomePage() {
 
         <div className="relative mx-auto max-w-3xl px-6 py-28 text-center">
           <span className="inline-flex items-center gap-2 rounded-full border bg-card/60 px-3 py-1 text-xs text-muted-foreground backdrop-blur-sm">
-            <span className="size-1.5 rounded-full bg-emerald-500" />
+            <span className="size-1.5 rounded-full bg-success" />
             Multi-tenant church platform
           </span>
 

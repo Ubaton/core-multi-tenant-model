@@ -67,23 +67,23 @@ const typeIcons = {
 };
 
 const typeColors: Record<string, string> = {
-  SMS: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-  EMAIL: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
-  WHATSAPP: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
+  SMS: 'bg-info/10 text-info',
+  EMAIL: 'bg-primary/10 text-primary',
+  WHATSAPP: 'bg-success/10 text-success',
 };
 
 const statusConfig: Record<string, { color: string; icon: typeof Clock }> = {
-  PENDING: { color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300', icon: Clock },
-  SENT: { color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300', icon: Send },
-  DELIVERED: { color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300', icon: CheckCircle },
-  FAILED: { color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300', icon: XCircle },
+  PENDING: { color: 'bg-warning/10 text-warning', icon: Clock },
+  SENT: { color: 'bg-info/10 text-info', icon: Send },
+  DELIVERED: { color: 'bg-success/10 text-success', icon: CheckCircle },
+  FAILED: { color: 'bg-destructive/10 text-destructive', icon: XCircle },
 };
 
 const priorityColors: Record<MessagePriority, string> = {
-  LOW: 'bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300',
-  NORMAL: 'bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300',
+  LOW: 'bg-muted text-muted-foreground',
+  NORMAL: 'bg-info/10 text-info',
   HIGH: 'bg-orange-100 text-orange-700 dark:bg-orange-900 dark:text-orange-300',
-  URGENT: 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300',
+  URGENT: 'bg-destructive/10 text-destructive',
 };
 
 type TabType = 'messages' | 'support';
@@ -227,21 +227,21 @@ export default function CommunicationsPage() {
       {/* Header with Tabs */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Communications</h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <h1 className="text-2xl font-bold text-foreground">Communications</h1>
+          <p className="text-muted-foreground">
             Manage messages and contact support
           </p>
         </div>
         <div className="flex items-center gap-3">
           {/* Tab Switcher */}
-          <div className="flex bg-gray-100 dark:bg-gray-800 rounded-lg p-1">
+          <div className="flex bg-muted rounded-lg p-1">
             <button
               onClick={() => setActiveTab('messages')}
               className={cn(
                 "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors",
                 activeTab === 'messages'
-                  ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  ? "bg-white text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground dark:hover:text-white"
               )}
             >
               <MessageSquare className="h-4 w-4" />
@@ -252,14 +252,14 @@ export default function CommunicationsPage() {
               className={cn(
                 "flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md transition-colors relative",
                 activeTab === 'support'
-                  ? "bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm"
-                  : "text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white"
+                  ? "bg-white text-foreground shadow-sm"
+                  : "text-muted-foreground hover:text-foreground dark:hover:text-white"
               )}
             >
               <Headphones className="h-4 w-4" />
               Support
               {typeof unreadCount === 'number' && unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
+                <span className="absolute -top-1 -right-1 bg-destructive text-white text-xs w-5 h-5 rounded-full flex items-center justify-center">
                   {unreadCount}
                 </span>
               )}
@@ -287,8 +287,8 @@ export default function CommunicationsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                <MessageSquare className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+              <div className="p-2 bg-info/10 rounded-lg">
+                <MessageSquare className="h-5 w-5 text-info" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">SMS Sent</p>
@@ -300,8 +300,8 @@ export default function CommunicationsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                <Mail className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+              <div className="p-2 bg-primary/10 rounded-lg">
+                <Mail className="h-5 w-5 text-primary" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Emails Sent</p>
@@ -313,8 +313,8 @@ export default function CommunicationsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
+              <div className="p-2 bg-success/10 rounded-lg">
+                <CheckCircle className="h-5 w-5 text-success" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Delivered</p>
@@ -326,8 +326,8 @@ export default function CommunicationsPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-yellow-100 dark:bg-yellow-900 rounded-lg">
-                <Clock className="h-5 w-5 text-yellow-600 dark:text-yellow-400" />
+              <div className="p-2 bg-warning/10 rounded-lg">
+                <Clock className="h-5 w-5 text-warning" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Pending</p>
@@ -343,7 +343,7 @@ export default function CommunicationsPage() {
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search messages..."
                 value={search}
@@ -396,14 +396,14 @@ export default function CommunicationsPage() {
           {isLoading ? (
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-16 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+                <div key={i} className="h-16 bg-muted rounded animate-pulse" />
               ))}
             </div>
           ) : communications.length === 0 ? (
             <div className="text-center py-12">
-              <Mail className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-              <p className="text-gray-500 dark:text-gray-400">No communications found</p>
-              <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">
+              <Mail className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">No communications found</p>
+              <p className="text-sm text-muted-foreground mt-1">
                 Start by sending your first message
               </p>
               <Button className="mt-4" variant="outline">
@@ -415,13 +415,13 @@ export default function CommunicationsPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b dark:border-gray-800">
-                    <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Type</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Recipient</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Message</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Status</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Sent</th>
-                    <th className="text-right py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Type</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Recipient</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Message</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Status</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Sent</th>
+                    <th className="text-right py-3 px-4 font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -431,7 +431,7 @@ export default function CommunicationsPage() {
                     const StatusIcon = statusInfo.icon;
                     
                     return (
-                      <tr key={comm.id} className="border-b dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                      <tr key={comm.id} className="border-b hover:bg-muted">
                         <td className="py-3 px-4">
                           <Badge className={cn("gap-1", typeColors[comm.type])}>
                             <TypeIcon className="h-3 w-3" />
@@ -440,10 +440,10 @@ export default function CommunicationsPage() {
                         </td>
                         <td className="py-3 px-4">
                           <div>
-                            <p className="font-medium text-gray-900 dark:text-white">
+                            <p className="font-medium text-foreground">
                               {getRecipientName(comm)}
                             </p>
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                            <p className="text-sm text-muted-foreground">
                               {comm.recipientEmail || comm.recipientPhone}
                             </p>
                           </div>
@@ -451,11 +451,11 @@ export default function CommunicationsPage() {
                         <td className="py-3 px-4 max-w-xs">
                           <div>
                             {comm.subject && (
-                              <p className="font-medium text-gray-900 dark:text-white text-sm">
+                              <p className="font-medium text-foreground text-sm">
                                 {comm.subject}
                               </p>
                             )}
-                            <p className="text-sm text-gray-500 dark:text-gray-400 truncate">
+                            <p className="text-sm text-muted-foreground truncate">
                               {comm.message}
                             </p>
                           </div>
@@ -466,13 +466,13 @@ export default function CommunicationsPage() {
                             {comm.status}
                           </Badge>
                         </td>
-                        <td className="py-3 px-4 text-sm text-gray-500 dark:text-gray-400">
+                        <td className="py-3 px-4 text-sm text-muted-foreground">
                           {formatDate(comm.createdAt)}
                         </td>
                         <td className="py-3 px-4">
                           <div className="flex justify-end">
                             <DropdownMenu>
-                              <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-800">
+                              <DropdownMenuTrigger className="inline-flex items-center justify-center rounded-md p-2 text-muted-foreground hover:text-foreground hover:bg-muted">
                                 <MoreHorizontal className="h-4 w-4" />
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
@@ -481,7 +481,7 @@ export default function CommunicationsPage() {
                                   View Details
                                 </DropdownMenuItem>
                                 <DropdownMenuItem 
-                                  className="text-red-600 dark:text-red-400"
+                                  className="text-destructive"
                                   onClick={() => {
                                     if (confirm('Are you sure you want to delete this communication?')) {
                                       deleteCommunication.mutate(comm.id);
@@ -505,8 +505,8 @@ export default function CommunicationsPage() {
 
           {/* Pagination */}
           {meta && meta.totalPages > 1 && (
-            <div className="flex items-center justify-between mt-4 pt-4 border-t dark:border-gray-800">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+            <div className="flex items-center justify-between mt-4 pt-4 border-t">
+              <p className="text-sm text-muted-foreground">
                 Showing {((page - 1) * 20) + 1} to {Math.min(page * 20, meta.total)} of {meta.total} results
               </p>
               <div className="flex gap-2">
@@ -556,17 +556,17 @@ export default function CommunicationsPage() {
             </CardHeader>
             <CardContent className="flex-1 overflow-y-auto p-0">
               {isLoadingMessages ? (
-                <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                <div className="p-4 text-center text-muted-foreground">
                   Loading messages...
                 </div>
               ) : supportMessages.length === 0 ? (
-                <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+                <div className="p-8 text-center text-muted-foreground">
                   <Inbox className="h-10 w-10 mx-auto mb-2 opacity-50" />
                   <p>No messages yet</p>
                   <p className="text-sm mt-1">Start a conversation with support</p>
                 </div>
               ) : (
-                <div className="divide-y divide-gray-100 dark:divide-gray-800">
+                <div className="divide-y divide-border">
                   {supportMessages.map((msg) => (
                     <button
                       key={msg.id}
@@ -575,33 +575,33 @@ export default function CommunicationsPage() {
                         setReplyText('');
                       }}
                       className={cn(
-                        "w-full p-4 text-left hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors",
-                        selectedMessageId === msg.id && "bg-blue-50 dark:bg-blue-900/20",
-                        msg.status === 'UNREAD' && "bg-blue-50/50 dark:bg-blue-900/10"
+                        "w-full p-4 text-left hover:bg-muted transition-colors",
+                        selectedMessageId === msg.id && "bg-info/10",
+                        msg.status === 'UNREAD' && "bg-info/10"
                       )}
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             {msg.status === 'UNREAD' && (
-                              <span className="w-2 h-2 bg-blue-500 rounded-full shrink-0" />
+                              <span className="w-2 h-2 bg-info rounded-full shrink-0" />
                             )}
-                            <span className="font-medium text-gray-900 dark:text-white truncate text-sm">
+                            <span className="font-medium text-foreground truncate text-sm">
                               {getSenderName(msg)}
                             </span>
                             {msg.sender.role === 'SUPER_ADMIN' && (
                               <Badge variant="outline" className="text-xs">Admin</Badge>
                             )}
                           </div>
-                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 truncate mt-0.5">
+                          <p className="text-sm font-medium text-foreground truncate mt-0.5">
                             {msg.subject}
                           </p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                          <p className="text-xs text-muted-foreground truncate">
                             {msg.message.substring(0, 50)}...
                           </p>
                         </div>
                         <div className="flex flex-col items-end gap-1 shrink-0">
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                          <span className="text-xs text-muted-foreground">
                             {formatMessageDate(msg.createdAt)}
                           </span>
                           {msg.priority !== 'NORMAL' && (
@@ -622,7 +622,7 @@ export default function CommunicationsPage() {
           <Card className="lg:col-span-2 flex flex-col">
             {selectedMessageId && selectedMessage ? (
               <>
-                <CardHeader className="pb-3 border-b dark:border-gray-800">
+                <CardHeader className="pb-3 border-b">
                   <div className="flex items-start justify-between">
                     <div>
                       <CardTitle className="text-lg flex items-center gap-2">
@@ -648,7 +648,7 @@ export default function CommunicationsPage() {
                 </CardHeader>
                 <CardContent className="flex-1 overflow-y-auto p-4 space-y-4">
                   {isLoadingMessage ? (
-                    <div className="text-center text-gray-500 dark:text-gray-400 py-8">
+                    <div className="text-center text-muted-foreground py-8">
                       Loading conversation...
                     </div>
                   ) : (
@@ -657,21 +657,21 @@ export default function CommunicationsPage() {
                       <div className={cn(
                         "p-4 rounded-lg",
                         selectedMessage.sender.role === 'SUPER_ADMIN'
-                          ? "bg-blue-50 dark:bg-blue-900/20 ml-8"
-                          : "bg-gray-50 dark:bg-gray-800"
+                          ? "bg-info/10 ml-8"
+                          : "bg-muted"
                       )}>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="font-medium text-sm text-gray-900 dark:text-white">
+                          <span className="font-medium text-sm text-foreground">
                             {getSenderName(selectedMessage)}
                             {selectedMessage.sender.role === 'SUPER_ADMIN' && (
                               <Badge variant="outline" className="ml-2 text-xs">Admin</Badge>
                             )}
                           </span>
-                          <span className="text-xs text-gray-500 dark:text-gray-400">
+                          <span className="text-xs text-muted-foreground">
                             {new Date(selectedMessage.createdAt).toLocaleString()}
                           </span>
                         </div>
-                        <p className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 text-sm">
+                        <p className="whitespace-pre-wrap text-foreground text-sm">
                           {selectedMessage.message}
                         </p>
                       </div>
@@ -683,22 +683,22 @@ export default function CommunicationsPage() {
                           className={cn(
                             "p-4 rounded-lg",
                             reply.sender.role === 'SUPER_ADMIN'
-                              ? "bg-blue-50 dark:bg-blue-900/20 ml-8"
-                              : "bg-gray-50 dark:bg-gray-800"
+                              ? "bg-info/10 ml-8"
+                              : "bg-muted"
                           )}
                         >
                           <div className="flex items-center justify-between mb-2">
-                            <span className="font-medium text-sm text-gray-900 dark:text-white">
+                            <span className="font-medium text-sm text-foreground">
                               {getSenderName(reply)}
                               {reply.sender.role === 'SUPER_ADMIN' && (
                                 <Badge variant="outline" className="ml-2 text-xs">Admin</Badge>
                               )}
                             </span>
-                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                            <span className="text-xs text-muted-foreground">
                               {new Date(reply.createdAt).toLocaleString()}
                             </span>
                           </div>
-                          <p className="whitespace-pre-wrap text-gray-700 dark:text-gray-300 text-sm">
+                          <p className="whitespace-pre-wrap text-foreground text-sm">
                             {reply.message}
                           </p>
                         </div>
@@ -707,7 +707,7 @@ export default function CommunicationsPage() {
                   )}
                 </CardContent>
                 {/* Reply Input */}
-                <div className="p-4 border-t dark:border-gray-800">
+                <div className="p-4 border-t">
                   <div className="flex gap-2">
                     <Textarea
                       value={replyText}
@@ -728,7 +728,7 @@ export default function CommunicationsPage() {
                 </div>
               </>
             ) : (
-              <div className="flex-1 flex items-center justify-center text-gray-500 dark:text-gray-400">
+              <div className="flex-1 flex items-center justify-center text-muted-foreground">
                 <div className="text-center">
                   <Inbox className="h-12 w-12 mx-auto mb-3 opacity-50" />
                   <p className="font-medium">Select a conversation</p>
@@ -751,7 +751,7 @@ export default function CommunicationsPage() {
           </AlertDialogHeader>
           <div className="space-y-4 py-4">
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="text-sm font-medium text-foreground">
                 Subject
               </label>
               <Input
@@ -762,13 +762,13 @@ export default function CommunicationsPage() {
               />
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="text-sm font-medium text-foreground">
                 Priority
               </label>
               <select
                 value={composePriority}
                 onChange={(e) => setComposePriority(e.target.value as MessagePriority)}
-                className="mt-1 w-full rounded-md border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 text-sm"
+                className="mt-1 w-full rounded-md border border-border bg-white px-3 py-2 text-sm"
               >
                 <option value="LOW">Low</option>
                 <option value="NORMAL">Normal</option>
@@ -777,7 +777,7 @@ export default function CommunicationsPage() {
               </select>
             </div>
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className="text-sm font-medium text-foreground">
                 Message
               </label>
               <Textarea

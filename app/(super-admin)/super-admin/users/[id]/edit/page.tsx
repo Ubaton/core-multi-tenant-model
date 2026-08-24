@@ -142,7 +142,7 @@ export default function EditUserPage({ params }: PageProps) {
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Link href="/super-admin/users">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" aria-label="Go back">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
@@ -157,15 +157,15 @@ export default function EditUserPage({ params }: PageProps) {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link href={`/super-admin/users/${id}`}>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" aria-label="Go back">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-foreground">
             Edit User
           </h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-muted-foreground">
             Update user information for {user.firstName} {user.lastName}
           </p>
         </div>
@@ -187,7 +187,7 @@ export default function EditUserPage({ params }: PageProps) {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="firstName">
-                  First Name <span className="text-red-500">*</span>
+                  First Name <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="firstName"
@@ -197,12 +197,12 @@ export default function EditUserPage({ params }: PageProps) {
                   placeholder="Enter first name"
                 />
                 {errors.firstName && (
-                  <p className="text-sm text-red-500">{errors.firstName}</p>
+                  <p className="text-sm text-destructive">{errors.firstName}</p>
                 )}
               </div>
               <div className="space-y-2">
                 <Label htmlFor="lastName">
-                  Last Name <span className="text-red-500">*</span>
+                  Last Name <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="lastName"
@@ -212,7 +212,7 @@ export default function EditUserPage({ params }: PageProps) {
                   placeholder="Enter last name"
                 />
                 {errors.lastName && (
-                  <p className="text-sm text-red-500">{errors.lastName}</p>
+                  <p className="text-sm text-destructive">{errors.lastName}</p>
                 )}
               </div>
             </div>
@@ -220,7 +220,7 @@ export default function EditUserPage({ params }: PageProps) {
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label htmlFor="email">
-                  Email <span className="text-red-500">*</span>
+                  Email <span className="text-destructive">*</span>
                 </Label>
                 <Input
                   id="email"
@@ -231,7 +231,7 @@ export default function EditUserPage({ params }: PageProps) {
                   placeholder="Enter email"
                 />
                 {errors.email && (
-                  <p className="text-sm text-red-500">{errors.email}</p>
+                  <p className="text-sm text-destructive">{errors.email}</p>
                 )}
               </div>
               <div className="space-y-2">
@@ -260,7 +260,7 @@ export default function EditUserPage({ params }: PageProps) {
                 placeholder="Leave blank to keep current password"
               />
               {errors.password && (
-                <p className="text-sm text-red-500">{errors.password}</p>
+                <p className="text-sm text-destructive">{errors.password}</p>
               )}
               <p className="text-xs text-muted-foreground">
                 Leave blank to keep the current password
@@ -322,7 +322,7 @@ export default function EditUserPage({ params }: PageProps) {
                 name="isActive"
                 checked={formData.isActive}
                 onChange={handleChange}
-                className="h-4 w-4 rounded border-gray-300"
+                className="h-4 w-4 rounded border-border"
               />
               <Label htmlFor="isActive" className="font-normal">
                 User is active
@@ -354,7 +354,7 @@ export default function EditUserPage({ params }: PageProps) {
         </div>
 
         {updateUser.isError && (
-          <div className="rounded-md bg-red-50 dark:bg-red-900/20 p-4 text-sm text-red-600 dark:text-red-400">
+          <div className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">
             {updateUser.error?.message || 'Failed to update user. Please try again.'}
           </div>
         )}

@@ -46,21 +46,21 @@ const reportTypes = [
     name: 'Membership Report',
     description: 'Overview of member statistics, growth, and demographics',
     icon: Users,
-    color: 'bg-blue-100 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400',
+    color: 'bg-info/10 text-info',
   },
   {
     id: 'financial' as const,
     name: 'Financial Report',
     description: 'Offerings, donations, and financial summaries',
     icon: DollarSign,
-    color: 'bg-green-100 text-green-600 dark:bg-green-900/30 dark:text-green-400',
+    color: 'bg-success/10 text-success',
   },
   {
     id: 'attendance' as const,
     name: 'Attendance Report',
     description: 'Service attendance and participation trends',
     icon: Calendar,
-    color: 'bg-purple-100 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400',
+    color: 'bg-primary/10 text-primary',
   },
   {
     id: 'engagement' as const,
@@ -246,8 +246,8 @@ export default function ReportsPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Reports</h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <h1 className="text-2xl font-bold text-foreground">Reports</h1>
+          <p className="text-muted-foreground">
             View and export reports and analytics
             {stats?.generatedAt && (
               <span className="ml-2 text-xs">
@@ -290,7 +290,7 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             {statsLoading ? (
-              <div className="h-8 w-20 bg-gray-200 dark:bg-gray-700 animate-pulse rounded" />
+              <div className="h-8 w-20 bg-muted animate-pulse rounded" />
             ) : (
               <>
                 <div className="text-2xl font-bold">{stats?.members.total ?? 0}</div>
@@ -298,12 +298,12 @@ export default function ReportsPage() {
                   {stats?.members.growth !== undefined && stats.members.growth !== 0 && (
                     <>
                       {stats.members.growth >= 0 ? (
-                        <TrendingUp className="h-3 w-3 text-green-500" />
+                        <TrendingUp className="h-3 w-3 text-success" />
                       ) : (
-                        <TrendingDown className="h-3 w-3 text-red-500" />
+                        <TrendingDown className="h-3 w-3 text-destructive" />
                       )}
                       <span className={cn(
-                        stats.members.growth >= 0 ? 'text-green-600' : 'text-red-600'
+                        stats.members.growth >= 0 ? 'text-success' : 'text-destructive'
                       )}>
                         {formatGrowth(stats.members.growth).text}
                       </span>
@@ -324,7 +324,7 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             {statsLoading ? (
-              <div className="h-8 w-24 bg-gray-200 dark:bg-gray-700 animate-pulse rounded" />
+              <div className="h-8 w-24 bg-muted animate-pulse rounded" />
             ) : (
               <>
                 <div className="text-2xl font-bold">
@@ -334,12 +334,12 @@ export default function ReportsPage() {
                   {stats?.offerings.growth !== undefined && stats.offerings.growth !== 0 && (
                     <>
                       {stats.offerings.growth >= 0 ? (
-                        <TrendingUp className="h-3 w-3 text-green-500" />
+                        <TrendingUp className="h-3 w-3 text-success" />
                       ) : (
-                        <TrendingDown className="h-3 w-3 text-red-500" />
+                        <TrendingDown className="h-3 w-3 text-destructive" />
                       )}
                       <span className={cn(
-                        stats.offerings.growth >= 0 ? 'text-green-600' : 'text-red-600'
+                        stats.offerings.growth >= 0 ? 'text-success' : 'text-destructive'
                       )}>
                         {formatGrowth(stats.offerings.growth).text}
                       </span>
@@ -360,7 +360,7 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             {statsLoading ? (
-              <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 animate-pulse rounded" />
+              <div className="h-8 w-16 bg-muted animate-pulse rounded" />
             ) : (
               <>
                 <div className="text-2xl font-bold">{stats?.prayerRequests.total ?? 0}</div>
@@ -378,7 +378,7 @@ export default function ReportsPage() {
           </CardHeader>
           <CardContent>
             {statsLoading ? (
-              <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 animate-pulse rounded" />
+              <div className="h-8 w-16 bg-muted animate-pulse rounded" />
             ) : (
               <>
                 <div className="text-2xl font-bold">{stats?.leads.conversionRate ?? 0}%</div>
@@ -508,15 +508,15 @@ export default function ReportsPage() {
             {selectedReport === 'membership' && (
               <>
                 <div className="grid gap-4 md:grid-cols-4">
-                  <div className="p-4 rounded-lg border bg-blue-50 dark:bg-blue-900/20">
-                    <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-2">
+                  <div className="p-4 rounded-lg border bg-info/10">
+                    <div className="flex items-center gap-2 text-info mb-2">
                       <Users className="h-4 w-4" />
                       <span className="text-sm font-medium">Total Members</span>
                     </div>
                     <p className="text-3xl font-bold">{stats.members.total}</p>
                   </div>
-                  <div className="p-4 rounded-lg border bg-green-50 dark:bg-green-900/20">
-                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-2">
+                  <div className="p-4 rounded-lg border bg-success/10">
+                    <div className="flex items-center gap-2 text-success mb-2">
                       <UserCheck className="h-4 w-4" />
                       <span className="text-sm font-medium">Active Members</span>
                     </div>
@@ -528,8 +528,8 @@ export default function ReportsPage() {
                       }
                     </p>
                   </div>
-                  <div className="p-4 rounded-lg border bg-purple-50 dark:bg-purple-900/20">
-                    <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 mb-2">
+                  <div className="p-4 rounded-lg border bg-primary/10">
+                    <div className="flex items-center gap-2 text-primary mb-2">
                       <UserPlus className="h-4 w-4" />
                       <span className="text-sm font-medium">New This Month</span>
                     </div>
@@ -546,7 +546,7 @@ export default function ReportsPage() {
                     </div>
                     <p className={cn(
                       "text-3xl font-bold",
-                      stats.members.growth >= 0 ? 'text-green-600' : 'text-red-600'
+                      stats.members.growth >= 0 ? 'text-success' : 'text-destructive'
                     )}>
                       {formatGrowth(stats.members.growth).text}
                     </p>
@@ -561,9 +561,9 @@ export default function ReportsPage() {
                       <span className="text-sm">Active</span>
                       <span className="font-medium">{stats.members.active}</span>
                     </div>
-                    <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                    <div className="h-3 bg-muted rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-green-500 rounded-full"
+                        className="h-full bg-success rounded-full"
                         style={{ width: `${stats.members.total > 0 ? (stats.members.active / stats.members.total) * 100 : 0}%` }}
                       />
                     </div>
@@ -571,9 +571,9 @@ export default function ReportsPage() {
                       <span className="text-sm">Inactive</span>
                       <span className="font-medium">{stats.members.total - stats.members.active}</span>
                     </div>
-                    <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                    <div className="h-3 bg-muted rounded-full overflow-hidden">
                       <div 
-                        className="h-full bg-gray-400 rounded-full"
+                        className="h-full bg-muted-foreground rounded-full"
                         style={{ width: `${stats.members.total > 0 ? ((stats.members.total - stats.members.active) / stats.members.total) * 100 : 0}%` }}
                       />
                     </div>
@@ -586,24 +586,24 @@ export default function ReportsPage() {
             {selectedReport === 'financial' && (
               <>
                 <div className="grid gap-4 md:grid-cols-3">
-                  <div className="p-4 rounded-lg border bg-green-50 dark:bg-green-900/20">
-                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-2">
+                  <div className="p-4 rounded-lg border bg-success/10">
+                    <div className="flex items-center gap-2 text-success mb-2">
                       <DollarSign className="h-4 w-4" />
                       <span className="text-sm font-medium">This Month</span>
                     </div>
                     <p className="text-2xl font-bold">{formatCurrency(stats.offerings.thisMonth.total)}</p>
                     <p className="text-xs text-muted-foreground mt-1">{stats.offerings.thisMonth.count} offerings</p>
                   </div>
-                  <div className="p-4 rounded-lg border bg-gray-50 dark:bg-gray-800/50">
-                    <div className="flex items-center gap-2 text-gray-600 dark:text-gray-400 mb-2">
+                  <div className="p-4 rounded-lg border bg-muted">
+                    <div className="flex items-center gap-2 text-muted-foreground mb-2">
                       <DollarSign className="h-4 w-4" />
                       <span className="text-sm font-medium">Last Month</span>
                     </div>
                     <p className="text-2xl font-bold">{formatCurrency(stats.offerings.lastMonth.total)}</p>
                     <p className="text-xs text-muted-foreground mt-1">{stats.offerings.lastMonth.count} offerings</p>
                   </div>
-                  <div className="p-4 rounded-lg border bg-blue-50 dark:bg-blue-900/20">
-                    <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-2">
+                  <div className="p-4 rounded-lg border bg-info/10">
+                    <div className="flex items-center gap-2 text-info mb-2">
                       {stats.offerings.growth >= 0 ? (
                         <TrendingUp className="h-4 w-4" />
                       ) : (
@@ -613,7 +613,7 @@ export default function ReportsPage() {
                     </div>
                     <p className={cn(
                       "text-2xl font-bold",
-                      stats.offerings.growth >= 0 ? 'text-green-600' : 'text-red-600'
+                      stats.offerings.growth >= 0 ? 'text-success' : 'text-destructive'
                     )}>
                       {formatGrowth(stats.offerings.growth).text}
                     </p>
@@ -641,9 +641,9 @@ export default function ReportsPage() {
                               </div>
                               <span className="font-medium">{formatCurrency(item.total)}</span>
                             </div>
-                            <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                            <div className="h-3 bg-muted rounded-full overflow-hidden">
                               <div 
-                                className="h-full bg-green-500 rounded-full transition-all duration-500"
+                                className="h-full bg-success rounded-full transition-all duration-500"
                                 style={{ width: `${Math.min(percentage, 100)}%` }}
                               />
                             </div>
@@ -663,22 +663,22 @@ export default function ReportsPage() {
             {selectedReport === 'attendance' && (
               <>
                 <div className="grid gap-4 md:grid-cols-3">
-                  <div className="p-4 rounded-lg border bg-purple-50 dark:bg-purple-900/20">
-                    <div className="flex items-center gap-2 text-purple-600 dark:text-purple-400 mb-2">
+                  <div className="p-4 rounded-lg border bg-primary/10">
+                    <div className="flex items-center gap-2 text-primary mb-2">
                       <Activity className="h-4 w-4" />
                       <span className="text-sm font-medium">Total Requests</span>
                     </div>
                     <p className="text-3xl font-bold">{stats.prayerRequests.total}</p>
                   </div>
-                  <div className="p-4 rounded-lg border bg-yellow-50 dark:bg-yellow-900/20">
-                    <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 mb-2">
+                  <div className="p-4 rounded-lg border bg-warning/10">
+                    <div className="flex items-center gap-2 text-warning mb-2">
                       <Calendar className="h-4 w-4" />
                       <span className="text-sm font-medium">Pending</span>
                     </div>
                     <p className="text-3xl font-bold">{stats.prayerRequests.pending}</p>
                   </div>
-                  <div className="p-4 rounded-lg border bg-green-50 dark:bg-green-900/20">
-                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-2">
+                  <div className="p-4 rounded-lg border bg-success/10">
+                    <div className="flex items-center gap-2 text-success mb-2">
                       <UserCheck className="h-4 w-4" />
                       <span className="text-sm font-medium">Answered</span>
                     </div>
@@ -694,9 +694,9 @@ export default function ReportsPage() {
                         <span className="text-sm">Pending</span>
                         <span className="font-medium">{stats.prayerRequests.pending}</span>
                       </div>
-                      <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                      <div className="h-3 bg-muted rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-yellow-500 rounded-full"
+                          className="h-full bg-warning rounded-full"
                           style={{ width: `${stats.prayerRequests.total > 0 ? (stats.prayerRequests.pending / stats.prayerRequests.total) * 100 : 0}%` }}
                         />
                       </div>
@@ -706,9 +706,9 @@ export default function ReportsPage() {
                         <span className="text-sm">Answered</span>
                         <span className="font-medium">{stats.prayerRequests.answered}</span>
                       </div>
-                      <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                      <div className="h-3 bg-muted rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-green-500 rounded-full"
+                          className="h-full bg-success rounded-full"
                           style={{ width: `${stats.prayerRequests.total > 0 ? (stats.prayerRequests.answered / stats.prayerRequests.total) * 100 : 0}%` }}
                         />
                       </div>
@@ -718,9 +718,9 @@ export default function ReportsPage() {
                         <span className="text-sm">Other</span>
                         <span className="font-medium">{stats.prayerRequests.total - stats.prayerRequests.pending - stats.prayerRequests.answered}</span>
                       </div>
-                      <div className="h-3 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                      <div className="h-3 bg-muted rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-gray-400 rounded-full"
+                          className="h-full bg-muted-foreground rounded-full"
                           style={{ width: `${stats.prayerRequests.total > 0 ? ((stats.prayerRequests.total - stats.prayerRequests.pending - stats.prayerRequests.answered) / stats.prayerRequests.total) * 100 : 0}%` }}
                         />
                       </div>
@@ -734,22 +734,22 @@ export default function ReportsPage() {
             {selectedReport === 'engagement' && (
               <>
                 <div className="grid gap-4 md:grid-cols-4">
-                  <div className="p-4 rounded-lg border bg-blue-50 dark:bg-blue-900/20">
-                    <div className="flex items-center gap-2 text-blue-600 dark:text-blue-400 mb-2">
+                  <div className="p-4 rounded-lg border bg-info/10">
+                    <div className="flex items-center gap-2 text-info mb-2">
                       <Users className="h-4 w-4" />
                       <span className="text-sm font-medium">Total Leads</span>
                     </div>
                     <p className="text-3xl font-bold">{stats.leads.total}</p>
                   </div>
-                  <div className="p-4 rounded-lg border bg-yellow-50 dark:bg-yellow-900/20">
-                    <div className="flex items-center gap-2 text-yellow-600 dark:text-yellow-400 mb-2">
+                  <div className="p-4 rounded-lg border bg-warning/10">
+                    <div className="flex items-center gap-2 text-warning mb-2">
                       <UserPlus className="h-4 w-4" />
                       <span className="text-sm font-medium">New Leads</span>
                     </div>
                     <p className="text-3xl font-bold">{stats.leads.new}</p>
                   </div>
-                  <div className="p-4 rounded-lg border bg-green-50 dark:bg-green-900/20">
-                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400 mb-2">
+                  <div className="p-4 rounded-lg border bg-success/10">
+                    <div className="flex items-center gap-2 text-success mb-2">
                       <UserCheck className="h-4 w-4" />
                       <span className="text-sm font-medium">Converted</span>
                     </div>
@@ -760,7 +760,7 @@ export default function ReportsPage() {
                       <PieChart className="h-4 w-4" />
                       <span className="text-sm font-medium">Conversion Rate</span>
                     </div>
-                    <p className="text-3xl font-bold text-green-600">{stats.leads.conversionRate}%</p>
+                    <p className="text-3xl font-bold text-success">{stats.leads.conversionRate}%</p>
                   </div>
                 </div>
                 <Separator />
@@ -781,9 +781,9 @@ export default function ReportsPage() {
                                 </Badge>
                                 <span className="font-medium">{item.count}</span>
                               </div>
-                              <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                              <div className="h-2 bg-muted rounded-full overflow-hidden">
                                 <div 
-                                  className="h-full bg-blue-500 rounded-full"
+                                  className="h-full bg-info rounded-full"
                                   style={{ width: `${percentage}%` }}
                                 />
                               </div>
@@ -800,14 +800,14 @@ export default function ReportsPage() {
                     <div className="space-y-4">
                       <div className="p-4 rounded-lg border">
                         <div className="flex items-center gap-2 mb-2">
-                          <Phone className="h-4 w-4 text-purple-500" />
+                          <Phone className="h-4 w-4 text-primary" />
                           <span className="text-sm font-medium">Calls This Month</span>
                         </div>
                         <p className="text-2xl font-bold">{stats.callCenter.callsThisMonth}</p>
                       </div>
                       <div className="p-4 rounded-lg border">
                         <div className="flex items-center gap-2 mb-2">
-                          <Phone className="h-4 w-4 text-gray-400" />
+                          <Phone className="h-4 w-4 text-muted-foreground" />
                           <span className="text-sm font-medium">Calls Last Month</span>
                         </div>
                         <p className="text-2xl font-bold">{stats.callCenter.callsLastMonth}</p>
@@ -815,15 +815,15 @@ export default function ReportsPage() {
                       <div className="p-4 rounded-lg border">
                         <div className="flex items-center gap-2 mb-2">
                           {stats.callCenter.growth >= 0 ? (
-                            <TrendingUp className="h-4 w-4 text-green-500" />
+                            <TrendingUp className="h-4 w-4 text-success" />
                           ) : (
-                            <TrendingDown className="h-4 w-4 text-red-500" />
+                            <TrendingDown className="h-4 w-4 text-destructive" />
                           )}
                           <span className="text-sm font-medium">Growth</span>
                         </div>
                         <p className={cn(
                           "text-2xl font-bold",
-                          stats.callCenter.growth >= 0 ? 'text-green-600' : 'text-red-600'
+                          stats.callCenter.growth >= 0 ? 'text-success' : 'text-destructive'
                         )}>
                           {formatGrowth(stats.callCenter.growth).text}
                         </p>
@@ -843,7 +843,7 @@ export default function ReportsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5 text-green-500" />
+              <DollarSign className="h-5 w-5 text-success" />
               Offerings by Type
             </CardTitle>
             <CardDescription>
@@ -855,8 +855,8 @@ export default function ReportsPage() {
               <div className="space-y-3">
                 {[...Array(3)].map((_, i) => (
                   <div key={i} className="flex items-center justify-between p-3 rounded-lg border animate-pulse">
-                    <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
-                    <div className="h-4 w-16 bg-gray-200 dark:bg-gray-700 rounded" />
+                    <div className="h-4 w-24 bg-muted rounded" />
+                    <div className="h-4 w-16 bg-muted rounded" />
                   </div>
                 ))}
               </div>
@@ -879,9 +879,9 @@ export default function ReportsPage() {
                         </div>
                         <span className="font-medium">{formatCurrency(item.total)}</span>
                       </div>
-                      <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-green-500 rounded-full transition-all duration-500"
+                          className="h-full bg-success rounded-full transition-all duration-500"
                           style={{ width: `${Math.min(percentage, 100)}%` }}
                         />
                       </div>
@@ -908,7 +908,7 @@ export default function ReportsPage() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Users className="h-5 w-5 text-blue-500" />
+              <Users className="h-5 w-5 text-info" />
               Leads by Source
             </CardTitle>
             <CardDescription>
@@ -920,8 +920,8 @@ export default function ReportsPage() {
               <div className="space-y-3">
                 {[...Array(3)].map((_, i) => (
                   <div key={i} className="flex items-center justify-between p-3 rounded-lg border animate-pulse">
-                    <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
-                    <div className="h-4 w-8 bg-gray-200 dark:bg-gray-700 rounded" />
+                    <div className="h-4 w-24 bg-muted rounded" />
+                    <div className="h-4 w-8 bg-muted rounded" />
                   </div>
                 ))}
               </div>
@@ -939,9 +939,9 @@ export default function ReportsPage() {
                         </Badge>
                         <span className="font-medium">{item.count} lead{item.count !== 1 ? 's' : ''}</span>
                       </div>
-                      <div className="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+                      <div className="h-2 bg-muted rounded-full overflow-hidden">
                         <div 
-                          className="h-full bg-blue-500 rounded-full transition-all duration-500"
+                          className="h-full bg-info rounded-full transition-all duration-500"
                           style={{ width: `${Math.min(percentage, 100)}%` }}
                         />
                       </div>
@@ -955,7 +955,7 @@ export default function ReportsPage() {
                   </div>
                   <div className="flex items-center justify-between text-sm text-muted-foreground mt-1">
                     <span>Conversion Rate</span>
-                    <span className="text-green-600 font-medium">{stats.leads.conversionRate}%</span>
+                    <span className="text-success font-medium">{stats.leads.conversionRate}%</span>
                   </div>
                 </div>
               </div>
@@ -973,7 +973,7 @@ export default function ReportsPage() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-purple-500" />
+            <Calendar className="h-5 w-5 text-primary" />
             Call Center Activity
           </CardTitle>
           <CardDescription>
@@ -985,8 +985,8 @@ export default function ReportsPage() {
             <div className="grid gap-4 md:grid-cols-3">
               {[...Array(3)].map((_, i) => (
                 <div key={i} className="p-4 rounded-lg border animate-pulse">
-                  <div className="h-4 w-24 bg-gray-200 dark:bg-gray-700 rounded mb-2" />
-                  <div className="h-8 w-16 bg-gray-200 dark:bg-gray-700 rounded" />
+                  <div className="h-4 w-24 bg-muted rounded mb-2" />
+                  <div className="h-8 w-16 bg-muted rounded" />
                 </div>
               ))}
             </div>
@@ -1005,14 +1005,14 @@ export default function ReportsPage() {
                 <div className="flex items-center gap-2 mt-1">
                   <p className={cn(
                     "text-2xl font-bold",
-                    (stats?.callCenter.growth ?? 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                    (stats?.callCenter.growth ?? 0) >= 0 ? 'text-success' : 'text-destructive'
                   )}>
                     {formatGrowth(stats?.callCenter.growth ?? 0).text}
                   </p>
                   {(stats?.callCenter.growth ?? 0) >= 0 ? (
-                    <TrendingUp className="h-5 w-5 text-green-500" />
+                    <TrendingUp className="h-5 w-5 text-success" />
                   ) : (
-                    <TrendingDown className="h-5 w-5 text-red-500" />
+                    <TrendingDown className="h-5 w-5 text-destructive" />
                   )}
                 </div>
               </div>

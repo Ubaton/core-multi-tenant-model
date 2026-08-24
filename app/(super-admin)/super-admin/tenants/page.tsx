@@ -68,8 +68,8 @@ export default function TenantsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Churches</h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <h1 className="text-2xl font-bold text-foreground">Churches</h1>
+          <p className="text-muted-foreground">
             Manage all church organizations on the platform
           </p>
         </div>
@@ -86,7 +86,7 @@ export default function TenantsPage() {
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search tenants..."
                 value={search}
@@ -119,7 +119,7 @@ export default function TenantsPage() {
           {[...Array(6)].map((_, i) => (
             <Card key={i}>
               <CardContent className="pt-6">
-                <div className="h-32 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+                <div className="h-32 bg-muted rounded animate-pulse" />
               </CardContent>
             </Card>
           ))}
@@ -127,8 +127,8 @@ export default function TenantsPage() {
       ) : tenants.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center">
-            <Building2 className="h-12 w-12 mx-auto text-gray-400 mb-4" />
-            <p className="text-gray-500 dark:text-gray-400">No tenants found</p>
+            <Building2 className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
+            <p className="text-muted-foreground">No tenants found</p>
             <Link href="/super-admin/tenants/new" className="mt-4 inline-block">
               <Button variant="outline">
                 <Plus className="h-4 w-4 mr-2" />
@@ -144,28 +144,28 @@ export default function TenantsPage() {
               <CardHeader className="pb-3">
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                      <Building2 className="h-5 w-5 text-gray-500 dark:text-gray-400" />
+                    <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
+                      <Building2 className="h-5 w-5 text-muted-foreground" />
                     </div>
                     <div>
                       <CardTitle className="text-lg">{tenant.name}</CardTitle>
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-sm text-muted-foreground">
                         {tenant.slug}
                       </p>
                     </div>
                   </div>
                   <DropdownMenu>
-                    <DropdownMenuTrigger>
-                      <Button variant="ghost" size="icon">
-                        <MoreHorizontal className="h-4 w-4" />
-                      </Button>
+                    <DropdownMenuTrigger
+                      render={<Button variant="ghost" size="icon" aria-label="More actions" />}
+                    >
+                      <MoreHorizontal className="h-4 w-4" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem onClick={() => window.location.href = `/super-admin/tenants/${tenant.id}`}>
+                      <DropdownMenuItem render={<Link href={`/super-admin/tenants/${tenant.id}`} />}>
                         <Eye className="h-4 w-4 mr-2" />
                         View Detail
                       </DropdownMenuItem>
-                      <DropdownMenuItem onClick={() => window.location.href = `/super-admin/tenants/${tenant.id}/edit`}>
+                      <DropdownMenuItem render={<Link href={`/super-admin/tenants/${tenant.id}/edit`} />}>
                         <Pencil className="h-4 w-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
@@ -176,7 +176,7 @@ export default function TenantsPage() {
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={() => setTenantToDelete({ id: tenant.id, name: tenant.name })}
-                        className="text-red-600 dark:text-red-400"
+                        className="text-destructive"
                       >
                         <Trash2 className="h-4 w-4 mr-2" />
                         Delete
@@ -190,8 +190,8 @@ export default function TenantsPage() {
                   <div className="flex items-center gap-2">
                     <Badge className={cn(
                       tenant.isActive 
-                        ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                        : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300'
+                        ? 'bg-success/10 text-success'
+                        : 'bg-muted text-muted-foreground'
                     )}>
                       {tenant.isActive ? 'Active' : 'Inactive'}
                     </Badge>
@@ -200,24 +200,24 @@ export default function TenantsPage() {
                     )}
                   </div>
                   
-                  <div className="grid grid-cols-4 gap-4 pt-3 border-t dark:border-gray-800">
+                  <div className="grid grid-cols-4 gap-4 pt-3 border-t">
                     <div className="text-center">
                       <p className="text-lg font-semibold">{tenant._count?.members ?? 0}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Members</p>
+                      <p className="text-xs text-muted-foreground">Members</p>
                     </div>
                     <div className="text-center">
                       <p className="text-lg font-semibold">{tenant._count?.users ?? 0}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Users</p>
+                      <p className="text-xs text-muted-foreground">Users</p>
                     </div>
                     <div className="text-center">
                       <p className="text-lg font-semibold">{tenant._count?.branches ?? 0}</p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Branches</p>
+                      <p className="text-xs text-muted-foreground">Branches</p>
                     </div>
                     <div className="text-center">
-                      <p className="text-lg font-semibold text-green-600 dark:text-green-400">
+                      <p className="text-lg font-semibold text-success">
                         R {parseFloat(tenant.totalOfferings ?? '0').toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       </p>
-                      <p className="text-xs text-gray-500 dark:text-gray-400">Offerings</p>
+                      <p className="text-xs text-muted-foreground">Offerings</p>
                     </div>
                   </div>
                 </div>
@@ -230,7 +230,7 @@ export default function TenantsPage() {
       {/* Pagination */}
       {meta && meta.totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-muted-foreground">
             Page {meta.page} of {meta.totalPages}
           </p>
           <div className="flex gap-2">

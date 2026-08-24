@@ -125,8 +125,8 @@ export default function SuperAdminSettingsPage() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-center">
-          <AlertCircle className="h-12 w-12 text-red-500 mx-auto mb-4" />
-          <p className="text-red-500">Failed to load settings</p>
+          <AlertCircle className="h-12 w-12 text-destructive mx-auto mb-4" />
+          <p className="text-destructive">Failed to load settings</p>
         </div>
       </div>
     );
@@ -136,8 +136,8 @@ export default function SuperAdminSettingsPage() {
     <div className="space-y-6">
       {/* Page Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Platform Settings</h1>
-        <p className="text-gray-500 dark:text-gray-400">
+        <h1 className="text-2xl font-bold text-foreground">Platform Settings</h1>
+        <p className="text-muted-foreground">
           Configure global platform settings and preferences
         </p>
       </div>
@@ -233,7 +233,7 @@ export default function SuperAdminSettingsPage() {
                 </div>
                 <div className="flex justify-end items-center gap-3">
                   {saveSuccess === 'general' && (
-                    <span className="flex items-center text-sm text-green-600">
+                    <span className="flex items-center text-sm text-success">
                       <CheckCircle className="h-4 w-4 mr-1" />
                       Saved successfully
                     </span>
@@ -283,8 +283,8 @@ export default function SuperAdminSettingsPage() {
                           : "border-border hover:bg-muted/50"
                       )}
                     >
-                      <div className="h-16 w-16 rounded-full bg-amber-100 flex items-center justify-center">
-                        <Sun className="h-8 w-8 text-amber-500" />
+                      <div className="h-16 w-16 rounded-full bg-warning/10 flex items-center justify-center">
+                        <Sun className="h-8 w-8 text-warning" />
                       </div>
                       <div className="text-center">
                         <p className="font-medium">Light</p>
@@ -308,7 +308,7 @@ export default function SuperAdminSettingsPage() {
                       )}
                     >
                       <div className="h-16 w-16 rounded-full bg-slate-800 flex items-center justify-center">
-                        <Moon className="h-8 w-8 text-slate-300" />
+                        <Moon className="h-8 w-8 text-muted-foreground" />
                       </div>
                       <div className="text-center">
                         <p className="font-medium">Dark</p>
@@ -332,7 +332,7 @@ export default function SuperAdminSettingsPage() {
                       )}
                     >
                       <div className="h-16 w-16 rounded-full bg-linear-to-br from-amber-100 to-slate-800 flex items-center justify-center">
-                        <Monitor className="h-8 w-8 text-gray-600" />
+                        <Monitor className="h-8 w-8 text-muted-foreground" />
                       </div>
                       <div className="text-center">
                         <p className="font-medium">System</p>
@@ -368,10 +368,10 @@ export default function SuperAdminSettingsPage() {
                         </div>
                       </div>
                       <div className="flex gap-2">
-                        <span className="px-2 py-1 text-xs rounded-full bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
+                        <span className="px-2 py-1 text-xs rounded-full bg-success/10 text-success">
                           Active
                         </span>
-                        <span className="px-2 py-1 text-xs rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300">
+                        <span className="px-2 py-1 text-xs rounded-full bg-info/10 text-info">
                           Info
                         </span>
                       </div>
@@ -386,15 +386,15 @@ export default function SuperAdminSettingsPage() {
                         </div>
                         <div className="flex justify-between">
                           <span className="text-foreground">Active</span>
-                          <span className="font-semibold text-green-600 dark:text-green-400">98%</span>
+                          <span className="font-semibold text-success">98%</span>
                         </div>
                       </div>
                     </div>
                   </div>
                 </div>
 
-                <div className="rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 p-4">
-                  <p className="text-sm text-blue-800 dark:text-blue-200">
+                <div className="rounded-lg bg-info/10 border border-info/30 p-4">
+                  <p className="text-sm text-info">
                     <strong>Note:</strong> Theme preferences are saved locally in your browser and will persist across sessions.
                   </p>
                 </div>
@@ -481,7 +481,7 @@ export default function SuperAdminSettingsPage() {
                     id="smtpSecure"
                     checked={formData.smtpSecure ?? true}
                     onChange={(e) => handleInputChange('smtpSecure', e.target.checked)}
-                    className="h-4 w-4 rounded border-gray-300"
+                    className="h-4 w-4 rounded border-border"
                   />
                   <Label htmlFor="smtpSecure" className="font-normal">
                     Use TLS/SSL
@@ -489,7 +489,7 @@ export default function SuperAdminSettingsPage() {
                 </div>
                 <div className="flex justify-end items-center gap-3">
                   {saveSuccess === 'email' && (
-                    <span className="flex items-center text-sm text-green-600">
+                    <span className="flex items-center text-sm text-success">
                       <CheckCircle className="h-4 w-4 mr-1" />
                       Saved successfully
                     </span>
@@ -582,7 +582,7 @@ export default function SuperAdminSettingsPage() {
                 </div>
                 <div className="flex justify-end items-center gap-3">
                   {saveSuccess === 'notifications' && (
-                    <span className="flex items-center text-sm text-green-600">
+                    <span className="flex items-center text-sm text-success">
                       <CheckCircle className="h-4 w-4 mr-1" />
                       Saved successfully
                     </span>
@@ -659,7 +659,7 @@ export default function SuperAdminSettingsPage() {
                       id="requireUppercase"
                       checked={formData.requireUppercase ?? true}
                       onChange={(e) => handleInputChange('requireUppercase', e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300"
+                      className="h-4 w-4 rounded border-border"
                     />
                     <Label htmlFor="requireUppercase" className="font-normal">
                       Require uppercase letter in password
@@ -671,7 +671,7 @@ export default function SuperAdminSettingsPage() {
                       id="requireNumber"
                       checked={formData.requireNumber ?? true}
                       onChange={(e) => handleInputChange('requireNumber', e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300"
+                      className="h-4 w-4 rounded border-border"
                     />
                     <Label htmlFor="requireNumber" className="font-normal">
                       Require number in password
@@ -683,7 +683,7 @@ export default function SuperAdminSettingsPage() {
                       id="requireSpecial"
                       checked={formData.requireSpecialChar ?? true}
                       onChange={(e) => handleInputChange('requireSpecialChar', e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300"
+                      className="h-4 w-4 rounded border-border"
                     />
                     <Label htmlFor="requireSpecial" className="font-normal">
                       Require special character in password
@@ -695,7 +695,7 @@ export default function SuperAdminSettingsPage() {
                       id="enable2FA"
                       checked={formData.require2FA ?? false}
                       onChange={(e) => handleInputChange('require2FA', e.target.checked)}
-                      className="h-4 w-4 rounded border-gray-300"
+                      className="h-4 w-4 rounded border-border"
                     />
                     <Label htmlFor="enable2FA" className="font-normal">
                       Require two-factor authentication for admins
@@ -704,7 +704,7 @@ export default function SuperAdminSettingsPage() {
                 </div>
                 <div className="flex justify-end items-center gap-3">
                   {saveSuccess === 'security' && (
-                    <span className="flex items-center text-sm text-green-600">
+                    <span className="flex items-center text-sm text-success">
                       <CheckCircle className="h-4 w-4 mr-1" />
                       Saved successfully
                     </span>
@@ -767,8 +767,8 @@ export default function SuperAdminSettingsPage() {
                   </div>
                 </div>
 
-                <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4">
-                  <p className="text-sm text-amber-800 dark:text-amber-200">
+                <div className="rounded-lg bg-warning/10 border border-warning/30 p-4">
+                  <p className="text-sm text-warning">
                     <strong>Note:</strong> System settings are read-only in this interface. 
                     For environment configuration changes, please update the environment variables directly.
                   </p>

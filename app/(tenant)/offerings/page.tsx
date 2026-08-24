@@ -37,13 +37,13 @@ import { RequireCreate, AccessDenied } from '@/components/permission-gate';
 import { toast } from 'sonner';
 
 const typeColors: Record<string, string> = {
-  TITHE: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
-  OFFERING: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-  FIRST_FRUIT: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-  SPECIAL_SEED: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
+  TITHE: 'bg-primary/10 text-primary',
+  OFFERING: 'bg-info/10 text-info',
+  FIRST_FRUIT: 'bg-success/10 text-success',
+  SPECIAL_SEED: 'bg-warning/10 text-warning',
   BUILDING_PROJECT: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300',
   MISSIONS: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-300',
-  OTHER: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+  OTHER: 'bg-muted text-muted-foreground',
 };
 
 function formatCurrency(amount: string | number) {
@@ -212,8 +212,8 @@ export default function OfferingsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Offerings</h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <h1 className="text-2xl font-bold text-foreground">Offerings</h1>
+          <p className="text-muted-foreground">
             Track and manage church offerings
           </p>
         </div>
@@ -231,7 +231,7 @@ export default function OfferingsPage() {
           <AlertDialogHeader>
             <div className="flex items-center justify-between">
               <AlertDialogTitle>Record New Offering</AlertDialogTitle>
-              <Button variant="ghost" size="icon" onClick={handleCloseDialog} className="h-6 w-6">
+              <Button variant="ghost" size="icon" onClick={handleCloseDialog} className="h-6 w-6" aria-label="Close">
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -242,7 +242,7 @@ export default function OfferingsPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {formError && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-3 py-2 rounded-lg text-sm">
+              <div className="bg-destructive/10 border border-destructive/30 text-destructive px-3 py-2 rounded-lg text-sm">
                 {formError}
               </div>
             )}
@@ -363,7 +363,7 @@ export default function OfferingsPage() {
               <div className="space-y-2">
                 <Label htmlFor="amount">Amount (ZAR) *</Label>
                 <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">R</span>
+                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">R</span>
                   <Input
                     id="amount"
                     name="amount"
@@ -506,7 +506,7 @@ export default function OfferingsPage() {
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search by name or reference..."
                 value={search}
@@ -547,12 +547,12 @@ export default function OfferingsPage() {
           {isLoading ? (
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-16 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+                <div key={i} className="h-16 bg-muted rounded animate-pulse" />
               ))}
             </div>
           ) : offerings.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500 dark:text-gray-400">No offerings found</p>
+              <p className="text-muted-foreground">No offerings found</p>
               <Button variant="outline" className="mt-4" onClick={handleOpenDialog}>
                 <Plus className="h-4 w-4 mr-2" />
                 Record your first offering
@@ -562,27 +562,27 @@ export default function OfferingsPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b dark:border-gray-800">
-                    <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Giver</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Type</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Amount</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Date</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Reference</th>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Giver</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Type</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Amount</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Date</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Reference</th>
                   </tr>
                 </thead>
                 <tbody>
                   {offerings.map((offering) => (
-                    <tr key={offering.id} className="border-b dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                    <tr key={offering.id} className="border-b hover:bg-muted">
                       <td className="py-3 px-4">
                         <div>
-                          <p className="font-medium text-gray-900 dark:text-white">
+                          <p className="font-medium text-foreground">
                             {offering.member 
                               ? `${offering.member.firstName} ${offering.member.lastName}`
                               : offering.giverName || 'Anonymous'
                             }
                           </p>
                           {offering.giverPhone && (
-                            <p className="text-sm text-gray-500 dark:text-gray-400">
+                            <p className="text-sm text-muted-foreground">
                               {offering.giverPhone}
                             </p>
                           )}
@@ -593,13 +593,13 @@ export default function OfferingsPage() {
                           {offering.type.replace('_', ' ')}
                         </Badge>
                       </td>
-                      <td className="py-3 px-4 font-medium text-gray-900 dark:text-white">
+                      <td className="py-3 px-4 font-medium text-foreground">
                         {formatCurrency(offering.amount)}
                       </td>
-                      <td className="py-3 px-4 text-gray-600 dark:text-gray-300">
+                      <td className="py-3 px-4 text-muted-foreground">
                         {new Date(offering.givenAt).toLocaleDateString()}
                       </td>
-                      <td className="py-3 px-4 text-gray-500 dark:text-gray-400">
+                      <td className="py-3 px-4 text-muted-foreground">
                         {offering.reference || '-'}
                       </td>
                     </tr>
@@ -612,7 +612,7 @@ export default function OfferingsPage() {
           {/* Pagination */}
           {meta && meta.totalPages > 1 && (
             <div className="flex items-center justify-between mt-6">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-muted-foreground">
                 Showing {(meta.page - 1) * meta.limit + 1} to {Math.min(meta.page * meta.limit, meta.total)} of {meta.total}
               </p>
               <div className="flex gap-2">

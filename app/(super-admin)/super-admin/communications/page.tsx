@@ -84,17 +84,17 @@ import { toast } from 'sonner';
 type TabType = 'inbox' | 'sent' | 'all';
 
 const priorityColors: Record<MessagePriority, string> = {
-  LOW: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200',
-  NORMAL: 'bg-zinc-50 text-zinc-700 dark:bg-zinc-900/20 dark:text-zinc-300 border-zinc-200',
+  LOW: 'bg-muted text-muted-foreground border-border',
+  NORMAL: 'bg-muted text-muted-foreground border-border',
   HIGH: 'bg-orange-50 text-orange-700 dark:bg-orange-900/20 dark:text-orange-300 border-orange-200',
-  URGENT: 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300 border-red-200',
+  URGENT: 'bg-destructive/10 text-destructive border-destructive/30',
 };
 
 const statusColors: Record<MessageStatus, string> = {
-  UNREAD: 'bg-zinc-500 text-white border-transparent',
-  READ: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300 border-zinc-200',
-  REPLIED: 'bg-green-100 text-green-700 dark:bg-green-900/20 dark:text-green-300 border-green-200',
-  ARCHIVED: 'bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300 border-purple-200',
+  UNREAD: 'bg-muted-foreground text-white border-transparent',
+  READ: 'bg-muted text-muted-foreground border-border',
+  REPLIED: 'bg-success/10 text-success border-success/30',
+  ARCHIVED: 'bg-primary/10 text-primary border-primary/30',
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -258,7 +258,7 @@ export default function SuperAdminCommunicationsPage() {
               </p>
             </div>
             <div className="flex items-center gap-1.5">
-              <Button variant="ghost" size="icon" onClick={() => refetch()} title="Refresh">
+              <Button variant="ghost" size="icon" onClick={() => refetch()} title="Refresh" aria-label="Refresh">
                 <RefreshCcw className="h-4 w-4" />
               </Button>
               <Sheet open={isComposeOpen} onOpenChange={setIsComposeOpen}>
@@ -458,8 +458,7 @@ export default function SuperAdminCommunicationsPage() {
                   variant="ghost"
                   size="icon"
                   className="md:hidden -ml-2 shrink-0"
-                  onClick={() => setSelectedMessageId(null)}
-                >
+                  onClick={() => setSelectedMessageId(null)} aria-label="Close">
                   <X className="h-5 w-5" />
                 </Button>
 
@@ -498,7 +497,7 @@ export default function SuperAdminCommunicationsPage() {
               </div>
 
               <div className="flex items-center gap-1 pl-4">
-                <Button variant="ghost" size="icon" onClick={() => setDeleteConfirmId(selectedMessage.id)} className="text-destructive hover:bg-destructive/10 hover:text-destructive">
+                <Button variant="ghost" size="icon" onClick={() => setDeleteConfirmId(selectedMessage.id)} className="text-destructive hover:bg-destructive/10 hover:text-destructive" aria-label="Remove">
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -512,7 +511,7 @@ export default function SuperAdminCommunicationsPage() {
                 <>
                   {/* Original Message */}
                   <div className="flex gap-4 max-w-4xl mx-auto w-full">
-                    <div className="w-10 h-10 rounded-full bg-zinc-100 dark:bg-zinc-900/40 border border-zinc-200 dark:border-zinc-800 flex items-center justify-center text-zinc-700 dark:text-zinc-300 font-bold text-sm shrink-0">
+                    <div className="w-10 h-10 rounded-full bg-muted border border-border flex items-center justify-center text-foreground font-bold text-sm shrink-0">
                       {getSenderName(selectedMessage).charAt(0).toUpperCase()}
                     </div>
                     <div className="flex-1 space-y-2">
@@ -542,7 +541,7 @@ export default function SuperAdminCommunicationsPage() {
                     return (
                       <div key={reply.id} className={cn("flex gap-4 max-w-4xl mx-auto w-full", isAdmin ? "justify-end" : "") }>
                         {!isAdmin && (
-                          <div className="w-8 h-8 rounded-full flex items-center justify-center font-semibold text-xs shrink-0 border bg-zinc-100 text-zinc-600 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700">
+                          <div className="w-8 h-8 rounded-full flex items-center justify-center font-semibold text-xs shrink-0 border bg-muted text-muted-foreground border-border">
                             {getSenderName(reply).charAt(0).toUpperCase()}
                           </div>
                         )}
@@ -589,8 +588,7 @@ export default function SuperAdminCommunicationsPage() {
                   onClick={handleSendReply}
                   disabled={!replyText.trim() || replyMutation.isPending}
                   size="icon"
-                  className="h-10 w-10"
-                >
+                  className="h-10 w-10" aria-label="Send">
                   <Send className="w-4 h-4 ml-0.5" />
                 </Button>
               </div>

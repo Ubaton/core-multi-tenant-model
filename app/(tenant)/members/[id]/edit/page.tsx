@@ -97,17 +97,17 @@ export default function EditMemberPage({ params }: PageProps) {
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Link href={`/members/${id}`}>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" aria-label="Go back">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
-          <div className="h-8 w-48 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          <div className="h-8 w-48 bg-muted rounded animate-pulse" />
         </div>
         <div className="space-y-6">
           {[1, 2, 3].map((i) => (
             <Card key={i}>
               <CardContent className="pt-6">
-                <div className="h-32 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="h-32 bg-muted rounded animate-pulse" />
               </CardContent>
             </Card>
           ))}
@@ -121,15 +121,15 @@ export default function EditMemberPage({ params }: PageProps) {
       <div className="space-y-6">
         <div className="flex items-center gap-4">
           <Link href="/members">
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" aria-label="Go back">
               <ArrowLeft className="h-4 w-4" />
             </Button>
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Member Not Found</h1>
+          <h1 className="text-2xl font-bold text-foreground">Member Not Found</h1>
         </div>
         <Card>
           <CardContent className="pt-6">
-            <p className="text-gray-500 dark:text-gray-400">
+            <p className="text-muted-foreground">
               The member you are trying to edit does not exist or has been removed.
             </p>
             <Link href="/members" className="mt-4 inline-block">
@@ -191,22 +191,22 @@ export default function EditMemberPage({ params }: PageProps) {
       {/* Header */}
       <div className="flex items-center gap-4">
         <Link href={`/members/${id}`}>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" aria-label="Go back">
             <ArrowLeft className="h-4 w-4" />
           </Button>
         </Link>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          <h1 className="text-2xl font-bold text-foreground">
             Edit Member
           </h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <p className="text-muted-foreground">
             Update {member.firstName} {member.lastName}&apos;s profile
           </p>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-3 rounded-lg">
+        <div className="bg-destructive/10 border border-destructive/30 text-destructive px-4 py-3 rounded-lg">
           {error}
         </div>
       )}
@@ -406,9 +406,9 @@ export default function EditMemberPage({ params }: PageProps) {
                 name="membershipId"
                 value={formData.membershipId || 'Not assigned'}
                 disabled
-                className="bg-gray-50 dark:bg-gray-800 text-gray-500"
+                className="bg-muted text-muted-foreground"
               />
-              <p className="text-xs text-gray-500 dark:text-gray-400">Auto-generated, cannot be changed</p>
+              <p className="text-xs text-muted-foreground">Auto-generated, cannot be changed</p>
             </div>
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>

@@ -51,10 +51,10 @@ import { RequireCreate, AccessDenied } from '@/components/permission-gate';
 import { toast } from 'sonner';
 
 const statusColors: Record<string, string> = {
-  PENDING: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-  IN_PROGRESS: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-  ANSWERED: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-  CLOSED: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
+  PENDING: 'bg-warning/10 text-warning',
+  IN_PROGRESS: 'bg-info/10 text-info',
+  ANSWERED: 'bg-success/10 text-success',
+  CLOSED: 'bg-muted text-muted-foreground',
 };
 
 interface PrayerRequestFormData {
@@ -197,8 +197,8 @@ export default function PrayerRequestsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Prayer Requests</h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <h1 className="text-2xl font-bold text-foreground">Prayer Requests</h1>
+          <p className="text-muted-foreground">
             Manage prayer requests from members and visitors
           </p>
         </div>
@@ -216,7 +216,7 @@ export default function PrayerRequestsPage() {
           <AlertDialogHeader>
             <div className="flex items-center justify-between">
               <AlertDialogTitle>Submit Prayer Request</AlertDialogTitle>
-              <Button variant="ghost" size="icon" onClick={handleCloseDialog} className="h-6 w-6">
+              <Button variant="ghost" size="icon" onClick={handleCloseDialog} className="h-6 w-6" aria-label="Close">
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -227,7 +227,7 @@ export default function PrayerRequestsPage() {
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {formError && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-3 py-2 rounded-lg text-sm">
+              <div className="bg-destructive/10 border border-destructive/30 text-destructive px-3 py-2 rounded-lg text-sm">
                 {formError}
               </div>
             )}
@@ -415,7 +415,7 @@ export default function PrayerRequestsPage() {
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search prayer requests..."
                 value={search}
@@ -450,14 +450,14 @@ export default function PrayerRequestsPage() {
           [...Array(5)].map((_, i) => (
             <Card key={i}>
               <CardContent className="py-6">
-                <div className="h-20 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+                <div className="h-20 bg-muted rounded animate-pulse" />
               </CardContent>
             </Card>
           ))
         ) : prayerRequests.length === 0 ? (
           <Card>
             <CardContent className="py-12 text-center">
-              <p className="text-gray-500 dark:text-gray-400">No prayer requests found</p>
+              <p className="text-muted-foreground">No prayer requests found</p>
             </CardContent>
           </Card>
         ) : (
@@ -476,7 +476,7 @@ export default function PrayerRequestsPage() {
       {/* Pagination */}
       {meta && meta.totalPages > 1 && (
         <div className="flex items-center justify-between">
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p className="text-sm text-muted-foreground">
             Page {meta.page} of {meta.totalPages}
           </p>
           <div className="flex gap-2">
@@ -613,7 +613,7 @@ function PrayerRequestCard({ request, onDelete, canEdit, canDelete }: PrayerRequ
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 space-y-2">
               <div className="flex items-center gap-3">
-                <h3 className="font-semibold text-gray-900 dark:text-white">
+                <h3 className="font-semibold text-foreground">
                   {request.title}
                 </h3>
                 <Badge className={cn('font-medium', statusColors[request.status])}>
@@ -623,10 +623,10 @@ function PrayerRequestCard({ request, onDelete, canEdit, canDelete }: PrayerRequ
                   <Badge variant="destructive">Urgent</Badge>
                 )}
               </div>
-              <p className="text-gray-600 dark:text-gray-300 line-clamp-2">
+              <p className="text-muted-foreground line-clamp-2">
                 {request.description}
               </p>
-              <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400">
+              <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 <span>{getRequestorDisplay()}</span>
                 <span>•</span>
                 <span>{new Date(request.createdAt).toLocaleDateString()}</span>
@@ -652,7 +652,7 @@ function PrayerRequestCard({ request, onDelete, canEdit, canDelete }: PrayerRequ
                     <DropdownMenuSeparator />
                     <DropdownMenuItem
                       onClick={handleMarkAnswered}
-                      className="text-green-600 dark:text-green-400"
+                      className="text-success"
                     >
                       <Check className="h-4 w-4 mr-2" />
                       Mark as Answered
@@ -668,7 +668,7 @@ function PrayerRequestCard({ request, onDelete, canEdit, canDelete }: PrayerRequ
                           onDelete();
                         }
                       }}
-                      className="text-red-600 dark:text-red-400"
+                      className="text-destructive"
                     >
                       <Trash2 className="h-4 w-4 mr-2" />
                       Delete
@@ -692,7 +692,7 @@ function PrayerRequestCard({ request, onDelete, canEdit, canDelete }: PrayerRequ
                   <Badge variant="destructive" className="ml-2">Urgent</Badge>
                 )}
               </AlertDialogTitle>
-              <Button variant="ghost" size="icon" onClick={() => setIsViewDialogOpen(false)} className="h-6 w-6">
+              <Button variant="ghost" size="icon" onClick={() => setIsViewDialogOpen(false)} className="h-6 w-6" aria-label="Close">
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -709,7 +709,7 @@ function PrayerRequestCard({ request, onDelete, canEdit, canDelete }: PrayerRequ
 
             {/* Title */}
             <div>
-              <h3 className="font-semibold text-lg text-gray-900 dark:text-white">
+              <h3 className="font-semibold text-lg text-foreground">
                 {request.title}
               </h3>
             </div>
@@ -717,16 +717,16 @@ function PrayerRequestCard({ request, onDelete, canEdit, canDelete }: PrayerRequ
             {/* Description */}
             <div className="space-y-1">
               <Label className="text-muted-foreground">Prayer Request</Label>
-              <p className="text-gray-700 dark:text-gray-300 whitespace-pre-wrap">
+              <p className="text-foreground whitespace-pre-wrap">
                 {request.description}
               </p>
             </div>
 
             {/* Prayer Response (if answered) */}
             {request.prayerResponse && (
-              <div className="space-y-1 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
-                <Label className="text-green-700 dark:text-green-400">Prayer Response / Testimony</Label>
-                <p className="text-green-800 dark:text-green-300 whitespace-pre-wrap">
+              <div className="space-y-1 p-3 bg-success/10 rounded-lg border border-success/30">
+                <Label className="text-success">Prayer Response / Testimony</Label>
+                <p className="text-success whitespace-pre-wrap">
                   {request.prayerResponse}
                 </p>
               </div>
@@ -763,7 +763,7 @@ function PrayerRequestCard({ request, onDelete, canEdit, canDelete }: PrayerRequ
               {request.answeredAt && (
                 <div className="text-sm">
                   <span className="text-muted-foreground">Answered on:</span>
-                  <p className="font-medium text-green-600 dark:text-green-400">
+                  <p className="font-medium text-success">
                     {new Date(request.answeredAt).toLocaleDateString()}
                   </p>
                 </div>
@@ -794,7 +794,7 @@ function PrayerRequestCard({ request, onDelete, canEdit, canDelete }: PrayerRequ
           <AlertDialogHeader>
             <div className="flex items-center justify-between">
               <AlertDialogTitle>Edit Prayer Request</AlertDialogTitle>
-              <Button variant="ghost" size="icon" onClick={() => setIsEditDialogOpen(false)} className="h-6 w-6">
+              <Button variant="ghost" size="icon" onClick={() => setIsEditDialogOpen(false)} className="h-6 w-6" aria-label="Close">
                 <X className="h-4 w-4" />
               </Button>
             </div>
@@ -805,7 +805,7 @@ function PrayerRequestCard({ request, onDelete, canEdit, canDelete }: PrayerRequ
 
           <form onSubmit={handleEditSubmit} className="space-y-4">
             {editError && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-3 py-2 rounded-lg text-sm">
+              <div className="bg-destructive/10 border border-destructive/30 text-destructive px-3 py-2 rounded-lg text-sm">
                 {editError}
               </div>
             )}

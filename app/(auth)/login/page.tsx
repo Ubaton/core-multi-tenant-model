@@ -79,7 +79,7 @@ function LoginForm() {
           </div>
 
           {login.isError && (
-            <div className="p-3 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 rounded-md">
+            <div className="p-3 text-sm text-destructive bg-destructive/10 dark:text-destructive rounded-md">
               {login.error instanceof Error ? login.error.message : 'Login failed. Please try again.'}
             </div>
           )}
@@ -110,20 +110,20 @@ function LoginFormSkeleton() {
   return (
     <Card className="w-full max-w-md">
       <CardHeader className="space-y-1 text-center">
-        <div className="mx-auto mb-4 h-12 w-12 rounded-lg bg-gray-200 dark:bg-gray-800 animate-pulse" />
-        <div className="h-8 w-48 mx-auto bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
-        <div className="h-4 w-64 mx-auto bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+        <div className="mx-auto mb-4 h-12 w-12 rounded-lg bg-muted animate-pulse" />
+        <div className="h-8 w-48 mx-auto bg-muted rounded animate-pulse" />
+        <div className="h-4 w-64 mx-auto bg-muted rounded animate-pulse" />
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-2">
-          <div className="h-4 w-12 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
-          <div className="h-10 w-full bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+          <div className="h-4 w-12 bg-muted rounded animate-pulse" />
+          <div className="h-10 w-full bg-muted rounded animate-pulse" />
         </div>
         <div className="space-y-2">
-          <div className="h-4 w-16 bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
-          <div className="h-10 w-full bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+          <div className="h-4 w-16 bg-muted rounded animate-pulse" />
+          <div className="h-10 w-full bg-muted rounded animate-pulse" />
         </div>
-        <div className="h-10 w-full bg-gray-200 dark:bg-gray-800 rounded animate-pulse" />
+        <div className="h-10 w-full bg-muted rounded animate-pulse" />
       </CardContent>
     </Card>
   );

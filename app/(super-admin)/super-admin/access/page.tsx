@@ -91,12 +91,12 @@ const modules = [
 ];
 
 const roleColors: Record<string, string> = {
-  SUPER_ADMIN: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
-  CHURCH_ADMIN: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
-  STAFF: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+  SUPER_ADMIN: 'bg-destructive/10 text-destructive',
+  CHURCH_ADMIN: 'bg-primary/10 text-primary',
+  STAFF: 'bg-info/10 text-info',
   CALL_CENTER: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
   SUBSCRIBER: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400',
-  MEMBER: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
+  MEMBER: 'bg-muted text-muted-foreground',
 };
 
 // Fallback default permissions
@@ -202,7 +202,7 @@ function PermissionToggle({ granted, onClick, isLoading, disabled }: PermissionT
   if (disabled) {
     return (
       <div className="flex items-center justify-center w-9 h-9">
-        <CheckCircle2 className="h-5 w-5 text-emerald-500/50 dark:text-emerald-400/50" />
+        <CheckCircle2 className="h-5 w-5 text-success" />
       </div>
     );
   }
@@ -213,20 +213,20 @@ function PermissionToggle({ granted, onClick, isLoading, disabled }: PermissionT
       className={cn(
         'group relative flex items-center justify-center w-9 h-9 rounded-lg transition-all focus:outline-none focus:ring-2 focus:ring-offset-1',
         granted
-          ? 'text-emerald-600 dark:text-emerald-400 hover:bg-red-50 dark:hover:bg-red-900/20 focus:ring-red-300'
-          : 'text-gray-300 dark:text-gray-600 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 focus:ring-emerald-300'
+          ? 'text-success hover:bg-destructive/10 focus:ring-destructive/30'
+          : 'text-muted-foreground hover:bg-success/10 focus:ring-success/30'
       )}
       title={granted ? 'Click to revoke' : 'Click to grant'}
     >
       {granted ? (
         <>
           <CheckCircle2 className="h-5 w-5 group-hover:hidden" />
-          <MinusCircle className="h-5 w-5 hidden group-hover:block text-red-500 dark:text-red-400" />
+          <MinusCircle className="h-5 w-5 hidden group-hover:block text-destructive" />
         </>
       ) : (
         <>
           <Circle className="h-5 w-5 group-hover:hidden" />
-          <CheckCircle2 className="h-5 w-5 hidden group-hover:block text-emerald-500 dark:text-emerald-400" />
+          <CheckCircle2 className="h-5 w-5 hidden group-hover:block text-success" />
         </>
       )}
     </button>
@@ -399,8 +399,8 @@ export default function AccessControlPage() {
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Access Control</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <h1 className="text-2xl font-bold text-foreground">Access Control</h1>
+          <p className="text-sm text-muted-foreground">
             Configure role-based permissions across the platform
           </p>
         </div>
@@ -449,8 +449,8 @@ export default function AccessControlPage() {
                     : 'border border-transparent hover:bg-muted/60 text-muted-foreground hover:text-foreground'
                 )}
               >
-                <div className="p-1 rounded-md bg-blue-100 dark:bg-blue-900/30 shrink-0">
-                  <Globe className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400" />
+                <div className="p-1 rounded-md bg-info/10 shrink-0">
+                  <Globe className="h-3.5 w-3.5 text-info" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-medium text-sm leading-none">Global Defaults</p>
@@ -479,8 +479,8 @@ export default function AccessControlPage() {
                           : 'border border-transparent hover:bg-muted/60 text-muted-foreground hover:text-foreground'
                       )}
                     >
-                      <div className="p-1 rounded-md bg-purple-100 dark:bg-purple-900/30 shrink-0">
-                        <Building2 className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                      <div className="p-1 rounded-md bg-primary/10 shrink-0">
+                        <Building2 className="h-3.5 w-3.5 text-primary" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium text-sm leading-none truncate">
@@ -550,9 +550,9 @@ export default function AccessControlPage() {
                   </p>
 
                   {selectedTenantId === null ? (
-                    <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800">
-                      <AlertCircle className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-                      <p className="text-xs text-amber-700 dark:text-amber-300">
+                    <div className="flex items-start gap-2 p-3 rounded-lg bg-warning/10 border border-warning/30">
+                      <AlertCircle className="h-3.5 w-3.5 text-warning shrink-0 mt-0.5" />
+                      <p className="text-xs text-warning">
                         Select a specific tenant above to list Church Admin users.
                       </p>
                     </div>
@@ -577,8 +577,8 @@ export default function AccessControlPage() {
                               : 'border border-transparent hover:bg-muted/60 text-muted-foreground hover:text-foreground'
                           )}
                         >
-                          <div className="h-7 w-7 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center shrink-0">
-                            <User className="h-3.5 w-3.5 text-purple-600 dark:text-purple-400" />
+                          <div className="h-7 w-7 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                            <User className="h-3.5 w-3.5 text-primary" />
                           </div>
                           <div className="flex-1 min-w-0">
                             <p className="font-medium text-sm leading-none truncate">
@@ -638,7 +638,7 @@ export default function AccessControlPage() {
 
                   {/* Summary / Warning */}
                   {isSuperAdminRole ? (
-                    <div className="flex items-center gap-2 text-xs text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg px-3 py-2">
+                    <div className="flex items-center gap-2 text-xs text-warning bg-warning/10 border border-warning/30 rounded-lg px-3 py-2">
                       <Lock className="h-3.5 w-3.5 shrink-0" />
                       Super Admin always has full platform access — permissions are fixed and cannot be modified.
                     </div>
@@ -650,7 +650,7 @@ export default function AccessControlPage() {
                       </span>
                       <div className="flex-1 max-w-32 h-1.5 bg-muted rounded-full overflow-hidden">
                         <div
-                          className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                          className="h-full bg-success rounded-full transition-all duration-300"
                           style={{ width: `${(grantedCount / totalPermissions) * 100}%` }}
                         />
                       </div>
@@ -723,7 +723,7 @@ export default function AccessControlPage() {
                                     className={cn(
                                       'p-1.5 rounded-md transition-colors',
                                       perms.view
-                                        ? 'bg-emerald-100 dark:bg-emerald-900/30'
+                                        ? 'bg-success/10'
                                         : 'bg-muted'
                                     )}
                                   >
@@ -731,7 +731,7 @@ export default function AccessControlPage() {
                                       className={cn(
                                         'h-3.5 w-3.5',
                                         perms.view
-                                          ? 'text-emerald-600 dark:text-emerald-400'
+                                          ? 'text-success'
                                           : 'text-muted-foreground/50'
                                       )}
                                     />
@@ -767,7 +767,7 @@ export default function AccessControlPage() {
                                           'flex items-center justify-center w-6 h-6 rounded transition-colors text-xs font-bold',
                                           allGranted
                                             ? 'text-muted-foreground/25 cursor-not-allowed'
-                                            : 'text-emerald-600 hover:bg-emerald-100 dark:hover:bg-emerald-900/30'
+                                            : 'text-success hover:bg-success/10'
                                         )}
                                       >
                                         ✓
@@ -780,7 +780,7 @@ export default function AccessControlPage() {
                                           'flex items-center justify-center w-6 h-6 rounded transition-colors text-xs font-bold',
                                           noneGranted
                                             ? 'text-muted-foreground/25 cursor-not-allowed'
-                                            : 'text-red-500 hover:bg-red-100 dark:hover:bg-red-900/30'
+                                            : 'text-destructive hover:bg-destructive/10'
                                         )}
                                       >
                                         ✕
@@ -801,7 +801,7 @@ export default function AccessControlPage() {
                 {!isSuperAdminRole && (
                   <div className="flex flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3 border-t bg-muted/20">
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                      <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500" />
+                      <CheckCircle2 className="h-3.5 w-3.5 text-success" />
                       Granted — hover to revoke
                     </div>
                     <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -841,19 +841,19 @@ export default function AccessControlPage() {
                     </p>
                     <div className="space-y-1.5 text-xs text-muted-foreground">
                       <div className="flex items-center gap-2">
-                        <span className="w-4 h-4 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-[8px] font-bold text-blue-600 dark:text-blue-400">1</span>
+                        <span className="w-4 h-4 rounded-full bg-info/10 flex items-center justify-center text-[8px] font-bold text-info">1</span>
                         <span>Hardcoded role defaults (baseline)</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="w-4 h-4 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center text-[8px] font-bold text-blue-600 dark:text-blue-400">2</span>
+                        <span className="w-4 h-4 rounded-full bg-info/10 flex items-center justify-center text-[8px] font-bold text-info">2</span>
                         <span>Global role overrides (apply to all tenants)</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="w-4 h-4 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center text-[8px] font-bold text-purple-600 dark:text-purple-400">3</span>
+                        <span className="w-4 h-4 rounded-full bg-primary/10 flex items-center justify-center text-[8px] font-bold text-primary">3</span>
                         <span>Tenant-specific overrides (higher priority)</span>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className="w-4 h-4 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-[8px] font-bold text-emerald-600 dark:text-emerald-400">4</span>
+                        <span className="w-4 h-4 rounded-full bg-success/10 flex items-center justify-center text-[8px] font-bold text-success">4</span>
                         <span>User-specific overrides (highest priority)</span>
                       </div>
                     </div>

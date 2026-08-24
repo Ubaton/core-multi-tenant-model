@@ -26,20 +26,20 @@ import { RequireCreate, AccessDenied } from '@/components/permission-gate';
 import { toast } from 'sonner';
 
 const statusColors: Record<string, string> = {
-  NEW: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300',
-  CONTACTED: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300',
-  INTERESTED: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300',
-  NOT_INTERESTED: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300',
-  CONVERTED: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300',
+  NEW: 'bg-info/10 text-info',
+  CONTACTED: 'bg-warning/10 text-warning',
+  INTERESTED: 'bg-success/10 text-success',
+  NOT_INTERESTED: 'bg-muted text-muted-foreground',
+  CONVERTED: 'bg-primary/10 text-primary',
 };
 
 const sourceColors: Record<string, string> = {
-  FACEBOOK: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
-  TV_PROGRAM: 'bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300',
-  REFERRAL: 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300',
+  FACEBOOK: 'bg-info/10 text-info',
+  TV_PROGRAM: 'bg-info/10 text-info',
+  REFERRAL: 'bg-success/10 text-success',
   WALK_IN: 'bg-orange-50 text-orange-700 dark:bg-orange-950 dark:text-orange-300',
   WEBSITE: 'bg-cyan-50 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300',
-  OTHER: 'bg-gray-50 text-gray-700 dark:bg-gray-800 dark:text-gray-300',
+  OTHER: 'bg-muted text-muted-foreground',
 };
 
 export default function LeadsPage() {
@@ -72,8 +72,8 @@ export default function LeadsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Leads</h1>
-          <p className="text-gray-500 dark:text-gray-400">
+          <h1 className="text-2xl font-bold text-foreground">Leads</h1>
+          <p className="text-muted-foreground">
             Track and convert potential members
           </p>
         </div>
@@ -92,7 +92,7 @@ export default function LeadsPage() {
         <CardContent className="pt-6">
           <div className="flex flex-col sm:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search leads..."
                 value={search}
@@ -149,12 +149,12 @@ export default function LeadsPage() {
           {isLoading ? (
             <div className="space-y-4">
               {[...Array(5)].map((_, i) => (
-                <div key={i} className="h-16 bg-gray-100 dark:bg-gray-800 rounded animate-pulse" />
+                <div key={i} className="h-16 bg-muted rounded animate-pulse" />
               ))}
             </div>
           ) : leads.length === 0 ? (
             <div className="text-center py-12">
-              <p className="text-gray-500 dark:text-gray-400">No leads found</p>
+              <p className="text-muted-foreground">No leads found</p>
               <Link href="/leads/new" className="mt-4 inline-block">
                 <Button variant="outline">
                   <Plus className="h-4 w-4 mr-2" />
@@ -166,13 +166,13 @@ export default function LeadsPage() {
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b dark:border-gray-800">
-                    <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Name</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Contact</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Source</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Status</th>
-                    <th className="text-left py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Created</th>
-                    <th className="text-right py-3 px-4 font-medium text-gray-500 dark:text-gray-400">Actions</th>
+                  <tr className="border-b">
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Name</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Contact</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Source</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Status</th>
+                    <th className="text-left py-3 px-4 font-medium text-muted-foreground">Created</th>
+                    <th className="text-right py-3 px-4 font-medium text-muted-foreground">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -196,7 +196,7 @@ export default function LeadsPage() {
           {/* Pagination */}
           {meta && meta.totalPages > 1 && (
             <div className="flex items-center justify-between mt-6">
-              <p className="text-sm text-gray-500 dark:text-gray-400">
+              <p className="text-sm text-muted-foreground">
                 Page {meta.page} of {meta.totalPages}
               </p>
               <div className="flex gap-2">
@@ -229,20 +229,20 @@ function LeadRow({ lead, onDelete, canEdit, canDelete }: { lead: any; onDelete: 
   const convertLead = useConvertLead(lead.id);
 
   return (
-    <tr className="border-b dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/50">
+    <tr className="border-b hover:bg-muted">
       <td className="py-3 px-4">
         <div>
-          <p className="font-medium text-gray-900 dark:text-white">
+          <p className="font-medium text-foreground">
             {lead.firstName} {lead.lastName}
           </p>
           {lead.email && (
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-muted-foreground">
               {lead.email}
             </p>
           )}
         </div>
       </td>
-      <td className="py-3 px-4 text-gray-600 dark:text-gray-300">
+      <td className="py-3 px-4 text-muted-foreground">
         {lead.phone}
       </td>
       <td className="py-3 px-4">
@@ -255,23 +255,23 @@ function LeadRow({ lead, onDelete, canEdit, canDelete }: { lead: any; onDelete: 
           {lead.status.replace('_', ' ')}
         </Badge>
       </td>
-      <td className="py-3 px-4 text-gray-600 dark:text-gray-300">
+      <td className="py-3 px-4 text-muted-foreground">
         {new Date(lead.createdAt).toLocaleDateString()}
       </td>
       <td className="py-3 px-4 text-right">
         <DropdownMenu>
           <DropdownMenuTrigger>
-            <Button variant="ghost" size="icon">
+            <Button variant="ghost" size="icon" aria-label="More actions">
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={() => window.location.href = `/leads/${lead.id}`}>
+            <DropdownMenuItem render={<Link href={`/leads/${lead.id}`} />}>
               <Eye className="h-4 w-4 mr-2" />
               View
             </DropdownMenuItem>
             {canEdit && (
-              <DropdownMenuItem onClick={() => window.location.href = `/leads/${lead.id}/edit`}>
+              <DropdownMenuItem render={<Link href={`/leads/${lead.id}/edit`} />}>
                 <Pencil className="h-4 w-4 mr-2" />
                 Edit
               </DropdownMenuItem>
@@ -288,7 +288,7 @@ function LeadRow({ lead, onDelete, canEdit, canDelete }: { lead: any; onDelete: 
                       });
                     }
                   }}
-                  className="text-green-600 dark:text-green-400"
+                  className="text-success"
                 >
                   <UserCheck className="h-4 w-4 mr-2" />
                   Convert to Member
@@ -304,7 +304,7 @@ function LeadRow({ lead, onDelete, canEdit, canDelete }: { lead: any; onDelete: 
                       onDelete();
                     }
                   }}
-                  className="text-red-600 dark:text-red-400"
+                  className="text-destructive"
                 >
                   <Trash2 className="h-4 w-4 mr-2" />
                   Delete

@@ -115,9 +115,9 @@ export function PermissionGate({
  */
 function LockedContent({ message }: { message: string }) {
   return (
-    <div className="flex flex-col items-center justify-center p-8 bg-gray-50 dark:bg-gray-900/50 rounded-lg border border-gray-200 dark:border-gray-800">
-      <Lock className="h-12 w-12 text-gray-400 dark:text-gray-600 mb-4" />
-      <p className="text-sm text-gray-500 dark:text-gray-400 text-center max-w-sm">
+    <div className="flex flex-col items-center justify-center p-8 bg-muted rounded-lg border border-border">
+      <Lock className="h-12 w-12 text-muted-foreground mb-4" />
+      <p className="text-sm text-muted-foreground text-center max-w-sm">
         {message}
       </p>
     </div>
@@ -180,11 +180,11 @@ export function AccessDenied({
 }) {
   return (
     <div className="flex flex-col items-center justify-center min-h-100 p-8">
-      <div className="flex items-center justify-center h-16 w-16 rounded-full bg-red-100 dark:bg-red-900/30 mb-6">
-        <AlertTriangle className="h-8 w-8 text-red-600 dark:text-red-400" />
+      <div className="flex items-center justify-center h-16 w-16 rounded-full bg-destructive/10 mb-6">
+        <AlertTriangle className="h-8 w-8 text-destructive" />
       </div>
-      <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">{title}</h1>
-      <p className="text-gray-500 dark:text-gray-400 text-center max-w-md">{message}</p>
+      <h1 className="text-2xl font-bold text-foreground mb-2">{title}</h1>
+      <p className="text-muted-foreground text-center max-w-md">{message}</p>
     </div>
   );
 }

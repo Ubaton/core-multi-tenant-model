@@ -147,7 +147,7 @@ function PasswordRecovery() {
                   className={cn(
                     'inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs transition-colors',
                     met
-                      ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                      ? 'border-success/30 bg-success/10 text-success'
                       : 'border-border bg-muted/40 text-muted-foreground'
                   )}
                 >
@@ -179,7 +179,7 @@ function PasswordRecovery() {
 
           {/* Development fallback: only sent when no mail provider is configured */}
           {sent.resetUrl && (
-            <div className="space-y-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-300">
+            <div className="space-y-2 rounded-xl border border-warning/30 bg-warning/10 p-3 text-sm text-warning">
               <p className="font-medium">No email provider configured</p>
               <Link
                 href={sent.resetUrl}

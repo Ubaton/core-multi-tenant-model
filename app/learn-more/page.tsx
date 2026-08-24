@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { Church, Users, Phone, Heart, DollarSign, BarChart3, Shield, ArrowRight, ArrowLeft, CheckCircle } from 'lucide-react';
+import Image from 'next/image';
+import { Users, Phone, Heart, DollarSign, BarChart3, Shield, ArrowRight, ArrowLeft, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -114,22 +115,22 @@ const useCases = [
 ];
 
 const colorClasses: Record<string, { bg: string; text: string }> = {
-  blue: { bg: 'bg-blue-100 dark:bg-blue-900', text: 'text-blue-600 dark:text-blue-400' },
-  green: { bg: 'bg-green-100 dark:bg-green-900', text: 'text-green-600 dark:text-green-400' },
-  purple: { bg: 'bg-purple-100 dark:bg-purple-900', text: 'text-purple-600 dark:text-purple-400' },
-  yellow: { bg: 'bg-yellow-100 dark:bg-yellow-900', text: 'text-yellow-600 dark:text-yellow-400' },
+  blue: { bg: 'bg-info/10', text: 'text-info' },
+  green: { bg: 'bg-success/10', text: 'text-success' },
+  purple: { bg: 'bg-primary/10', text: 'text-primary' },
+  yellow: { bg: 'bg-warning/10', text: 'text-warning' },
   orange: { bg: 'bg-orange-100 dark:bg-orange-900', text: 'text-orange-600 dark:text-orange-400' },
-  red: { bg: 'bg-red-100 dark:bg-red-900', text: 'text-red-600 dark:text-red-400' },
+  red: { bg: 'bg-destructive/10', text: 'text-destructive' },
 };
 
 export default function LearnMorePage() {
   return (
     <div className="min-h-screen bg-linear-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900">
       {/* Header */}
-      <header className="border-b bg-white/80 dark:bg-gray-950/80 backdrop-blur-sm sticky top-0 z-50">
+      <header className="border-b bg-background/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="container mx-auto px-4 py-4 flex items-center justify-between">
           <Link href="/" className="flex items-center gap-2">
-            <Church className="h-8 w-8 text-primary" />
+            <Image src="/UFC-Logo.png" alt="" width={32} height={32} className="h-8 w-8 object-contain" />
             <span className="text-xl font-bold">Unity Fellowship Church</span>
           </Link>
           <div className="flex items-center gap-4">
@@ -149,10 +150,10 @@ export default function LearnMorePage() {
           <ArrowLeft className="h-4 w-4" />
           Back to Home
         </Link>
-        <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-gray-900 dark:text-white mb-6">
+        <h1 className="text-4xl md:text-5xl font-bold tracking-tight text-foreground mb-6">
           Discover What Makes Us Different
         </h1>
-        <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl">
+        <p className="text-xl text-muted-foreground max-w-3xl">
           Unity Fellowship Church Management System is built specifically for churches, 
           by people who understand ministry. Explore our features and see how we can help 
           your church grow and thrive.
@@ -162,17 +163,17 @@ export default function LearnMorePage() {
       {/* Features Section */}
       <section className="container mx-auto px-4 py-16">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-3xl font-bold text-foreground mb-4">
             Powerful Features
           </h2>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
+          <p className="text-lg text-muted-foreground">
             Everything you need to manage your church effectively
           </p>
         </div>
         
         <div className="space-y-8">
           {features.map((feature, index) => (
-            <Card key={feature.title} className="border-gray-200 dark:border-gray-800 overflow-hidden">
+            <Card key={feature.title} className="border-border overflow-hidden">
               <div className={`grid md:grid-cols-2 gap-6 ${index % 2 === 1 ? 'md:flex-row-reverse' : ''}`}>
                 <CardHeader className="pb-0 md:pb-6">
                   <div className="h-14 w-14 rounded-xl bg-primary/10 flex items-center justify-center mb-4">
@@ -181,15 +182,15 @@ export default function LearnMorePage() {
                   <CardTitle className="text-2xl mb-2">{feature.title}</CardTitle>
                   <CardDescription className="text-base">{feature.description}</CardDescription>
                 </CardHeader>
-                <CardContent className="pt-0 md:pt-6 md:border-l md:border-gray-100 md:dark:border-gray-800">
+                <CardContent className="pt-0 md:pt-6 md:border-l md:border-border md:dark:border-border">
                   <h4 className="font-medium text-sm text-muted-foreground uppercase tracking-wide mb-4">
                     Key Highlights
                   </h4>
                   <ul className="space-y-3">
                     {feature.highlights.map((highlight, i) => (
                       <li key={i} className="flex items-start gap-3">
-                        <CheckCircle className="h-5 w-5 text-green-500 mt-0.5 shrink-0" />
-                        <span className="text-gray-700 dark:text-gray-300">{highlight}</span>
+                        <CheckCircle className="h-5 w-5 text-success mt-0.5 shrink-0" />
+                        <span className="text-foreground">{highlight}</span>
                       </li>
                     ))}
                   </ul>
@@ -201,20 +202,20 @@ export default function LearnMorePage() {
       </section>
 
       {/* Use Cases Section */}
-      <section className="bg-gray-100 dark:bg-gray-900 py-20">
+      <section className="bg-muted py-20">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+            <h2 className="text-3xl font-bold text-foreground mb-4">
               Real-World Use Cases
             </h2>
-            <p className="text-lg text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
+            <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
               See how churches are using Unity Fellowship Church to streamline their operations and grow their ministry
             </p>
           </div>
           
           <div className="grid gap-8 md:grid-cols-2">
             {useCases.map((useCase) => (
-              <Card key={useCase.title} className="border-gray-200 dark:border-gray-800">
+              <Card key={useCase.title} className="border-border">
                 <CardHeader>
                   <div className="flex items-center gap-3 mb-2">
                     <div className={`h-10 w-10 rounded-full ${colorClasses[useCase.color].bg} flex items-center justify-center`}>
@@ -235,13 +236,13 @@ export default function LearnMorePage() {
       {/* Why Choose Us Section */}
       <section className="container mx-auto px-4 py-20">
         <div className="text-center mb-12">
-          <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-3xl font-bold text-foreground mb-4">
             Why Choose Unity Fellowship Church?
           </h2>
         </div>
         
         <div className="grid gap-6 md:grid-cols-3">
-          <Card className="text-center border-gray-200 dark:border-gray-800">
+          <Card className="text-center border-border">
             <CardHeader>
               <CardTitle className="text-5xl font-bold text-primary mb-2">100%</CardTitle>
               <CardDescription className="text-base">
@@ -249,13 +250,13 @@ export default function LearnMorePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-muted-foreground">
                 Every feature is designed with church ministry in mind. No generic business tools adapted for churches.
               </p>
             </CardContent>
           </Card>
           
-          <Card className="text-center border-gray-200 dark:border-gray-800">
+          <Card className="text-center border-border">
             <CardHeader>
               <CardTitle className="text-5xl font-bold text-primary mb-2">24/7</CardTitle>
               <CardDescription className="text-base">
@@ -263,13 +264,13 @@ export default function LearnMorePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-muted-foreground">
                 Access your church data anytime, anywhere. Cloud-based system means no server maintenance for you.
               </p>
             </CardContent>
           </Card>
           
-          <Card className="text-center border-gray-200 dark:border-gray-800">
+          <Card className="text-center border-border">
             <CardHeader>
               <CardTitle className="text-5xl font-bold text-primary mb-2">∞</CardTitle>
               <CardDescription className="text-base">
@@ -277,7 +278,7 @@ export default function LearnMorePage() {
               </CardDescription>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-600 dark:text-gray-400">
+              <p className="text-muted-foreground">
                 From small congregations to mega churches, our system scales with your ministry.
               </p>
             </CardContent>
@@ -306,14 +307,14 @@ export default function LearnMorePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t bg-gray-50 dark:bg-gray-950">
+      <footer className="border-t bg-muted">
         <div className="container mx-auto px-4 py-8">
           <div className="flex flex-col md:flex-row items-center justify-between gap-4">
             <Link href="/" className="flex items-center gap-2">
-              <Church className="h-6 w-6 text-primary" />
+              <Image src="/UFC-Logo.png" alt="" width={24} height={24} className="h-6 w-6 object-contain" />
               <span className="font-semibold">Unity Fellowship Church</span>
             </Link>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
+            <p className="text-sm text-muted-foreground">
               © {new Date().getFullYear()} Unity Fellowship Church. All rights reserved.
             </p>
           </div>
