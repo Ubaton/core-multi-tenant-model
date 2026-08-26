@@ -28,6 +28,7 @@ import {
   Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { VersionBadge } from '@/components/dashboard/version-badge';
 import { useModulePermissions } from '@/lib/client/hooks/use-user-permissions';
 import { useSidebar } from '@/context/sidebar-context';
 import { useCurrentUser, useLogout, useTenantProfile } from '@/lib/client';
@@ -337,6 +338,8 @@ function SidebarContent({
             </button>
           </div>
         )}
+
+        <VersionBadge collapsed={collapsed} />
       </div>
     </div>
   );

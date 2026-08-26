@@ -1,0 +1,31 @@
+#!/bin/sh
+#
+# Bumps the system version from the commits being pushed (Conventional
+# Commits → major / minor / patch), then commits + tags the new version.
+#
+# Because the bump creates a new commit after the push range was computed,
+# the push is stopped once so you can re-run it and include the release
+# commit. Skip with:  SKIP_VERSION_BUMP=1 git push
+#
+set -e
+
+[ -n "$SKIP_VERSION_BUMP" ] && exit 0
+
+# Nothing to do if the working tree is dirty — don't fold unrelated changes in.
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "[version] Working tree not clean — skipping automatic version bump."
+  exit 0
+fi
+
+before=$(node -p "require('./package.json').version")
+node scripts/bump-version.mjs
+after=$(node -p "require('./package.json').version")
+
+if [ "$before" != "$after" ]; then
+  echo ""
+  echo "[version] Version bumped to v$after and tagged."
+  echo "[version] Push again to include it:  git push --follow-tags"
+  exit 1
+fi
+
+exit 0

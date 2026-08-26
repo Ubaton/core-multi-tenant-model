@@ -22,6 +22,7 @@ import {
   LogOut,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { VersionBadge } from '@/components/dashboard/version-badge';
 import { useSidebar } from '@/context/sidebar-context';
 import { useCurrentUser, useLogout } from '@/lib/client';
 import Image from 'next/image';
@@ -306,6 +307,8 @@ function SidebarContent({
             </button>
           </div>
         )}
+
+        <VersionBadge collapsed={collapsed} />
       </div>
     </div>
   );
