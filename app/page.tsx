@@ -14,6 +14,7 @@ import {
   DollarSign,
   Heart,
   Phone,
+  Power,
   Shield,
   Users,
 } from 'lucide-react';
@@ -21,6 +22,7 @@ import { buttonVariants } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { NoiseTexture } from '@/components/ui/noise-texture';
 import { Logo, BRAND_NAME } from '@/components/logo';
+import PowerdByCMG from '@/utils/PowerdByCMG';
 
 const features = [
   {
@@ -187,8 +189,8 @@ export default function HomePage() {
               Sign in
             </Link>
           </div>
-          <p className="text-sm text-muted-foreground">
-            © {new Date().getFullYear()} {BRAND_NAME}
+          <p className="flex items-center gap-1 text-sm text-muted-foreground">
+            © {new Date().getFullYear()} {BRAND_NAME} | <PowerdByCMG />
           </p>
         </div>
       </footer>
