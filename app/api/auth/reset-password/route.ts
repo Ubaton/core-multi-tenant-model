@@ -39,7 +39,7 @@ async function findToken(token: string): Promise<TokenRow | undefined> {
             u.is_active
      FROM password_reset_token t
      JOIN "user" u ON u.id = t.user_id
-     WHERE t.token_hash = $1`,
+     WHERE t.token_hash = $1 AND u.deleted_at IS NULL`,
     [hashToken(token)]
   );
   return rows[0];

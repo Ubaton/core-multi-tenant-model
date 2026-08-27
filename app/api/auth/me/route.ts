@@ -87,7 +87,7 @@ const FULL_USER_SELECT = `
     t.logo AS tenant_logo
   FROM "user" u
   LEFT JOIN tenant t ON t.id = u.tenant_id
-  WHERE u.id = $1
+  WHERE u.id = $1 AND u.deleted_at IS NULL
 `;
 
 export async function GET(request: NextRequest) {

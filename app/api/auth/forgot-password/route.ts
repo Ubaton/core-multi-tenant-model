@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     const rows = await query<UserRow>(
       `SELECT id, email, first_name, is_active
        FROM "user"
-       WHERE email = $1`,
+       WHERE email = $1 AND deleted_at IS NULL`,
       [normalizedEmail]
     );
     const user = rows[0];

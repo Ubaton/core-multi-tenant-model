@@ -78,7 +78,8 @@ export const GET = withSuperAdmin(async (request, { user }) => {
 
   const { skip, take } = calculatePagination(page, pageSize);
 
-  const conditions: string[] = [];
+  // Soft-deleted tenants are retained for the audit trail, never listed.
+  const conditions: string[] = ['deleted_at IS NULL'];
   const params: unknown[] = [];
 
   if (search) {
@@ -117,7 +118,8 @@ export const GET = withSuperAdmin(async (request, { user }) => {
   const [userCounts, memberCounts, branchCounts, offeringCounts, offeringSums, parents] = tenantIds.length
     ? await Promise.all([
         query<{ tenant_id: string; count: string }>(
-          `SELECT tenant_id, COUNT(*) as count FROM "user" WHERE tenant_id = ANY($1) GROUP BY tenant_id`,
+          `SELECT tenant_id, COUNT(*) as count FROM "user"
+           WHERE tenant_id = ANY($1) AND deleted_at IS NULL GROUP BY tenant_id`,
           [tenantIds]
         ),
         query<{ tenant_id: string; count: string }>(
@@ -125,7 +127,8 @@ export const GET = withSuperAdmin(async (request, { user }) => {
           [tenantIds]
         ),
         query<{ parent_id: string; count: string }>(
-          `SELECT parent_id, COUNT(*) as count FROM tenant WHERE parent_id = ANY($1) GROUP BY parent_id`,
+          `SELECT parent_id, COUNT(*) as count FROM tenant
+           WHERE parent_id = ANY($1) AND deleted_at IS NULL GROUP BY parent_id`,
           [tenantIds]
         ),
         query<{ tenant_id: string; count: string }>(
@@ -137,7 +140,7 @@ export const GET = withSuperAdmin(async (request, { user }) => {
           [tenantIds]
         ),
         query<{ id: string; name: string; slug: string }>(
-          `SELECT id, name, slug FROM tenant WHERE id = ANY($1)`,
+          `SELECT id, name, slug FROM tenant WHERE id = ANY($1) AND deleted_at IS NULL`,
           [tenants.map((t) => t.parentId).filter((id): id is string => !!id)]
         ),
       ])
@@ -253,7 +256,7 @@ export const POST = withSuperAdmin(async (request, { user }) => {
     let parent: { id: string; name: string; slug: string } | null = null;
     if (tenantRow.parent_id) {
       const parentRes = await client.query<{ id: string; name: string; slug: string }>(
-        `SELECT id, name, slug FROM tenant WHERE id = $1`,
+        `SELECT id, name, slug FROM tenant WHERE id = $1 AND deleted_at IS NULL`,
         [tenantRow.parent_id]
       );
       parent = parentRes.rows[0] ?? null;

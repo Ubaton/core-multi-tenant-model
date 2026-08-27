@@ -40,7 +40,7 @@ export const GET = withSuperAdmin<RouteParams>(async (request, { user }, params)
 
   // Check if tenant exists
   const tenantRows = await query<{ id: string; name: string }>(
-    `SELECT id, name FROM tenant WHERE id = $1`,
+    `SELECT id, name FROM tenant WHERE id = $1 AND deleted_at IS NULL`,
     [id]
   );
   const tenant = tenantRows[0];
@@ -55,7 +55,7 @@ export const GET = withSuperAdmin<RouteParams>(async (request, { user }, params)
     phone: string | null; is_active: boolean; last_login_at: Date | null; created_at: Date;
   }>(
     `SELECT id, email, first_name, last_name, phone, is_active, last_login_at, created_at
-     FROM "user" WHERE tenant_id = $1 AND role = 'CHURCH_ADMIN'
+     FROM "user" WHERE tenant_id = $1 AND role = 'CHURCH_ADMIN' AND deleted_at IS NULL
      ORDER BY created_at DESC`,
     [id]
   );
@@ -88,7 +88,7 @@ export const POST = withSuperAdmin<RouteParams>(async (request, { user }, params
 
   // Check if tenant exists
   const tenantRows = await query<{ id: string; name: string }>(
-    `SELECT id, name FROM tenant WHERE id = $1`,
+    `SELECT id, name FROM tenant WHERE id = $1 AND deleted_at IS NULL`,
     [id]
   );
   const tenant = tenantRows[0];

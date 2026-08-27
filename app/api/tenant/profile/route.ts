@@ -72,7 +72,10 @@ const TENANT_SELECT_ALIASED = `
 `;
 
 export const GET = withAuth(async (request, { user, tenantId }) => {
-  const tenantRows = await query<TenantRow>(`${TENANT_SELECT_ALIASED} WHERE id = $1`, [tenantId]);
+  const tenantRows = await query<TenantRow>(
+    `${TENANT_SELECT_ALIASED} WHERE id = $1 AND deleted_at IS NULL`,
+    [tenantId]
+  );
   const tenantRow = tenantRows[0];
 
   if (!tenantRow) {
@@ -85,15 +88,15 @@ export const GET = withAuth(async (request, { user, tenantId }) => {
   const [parentRows, branchRows, userCount, memberCount, leadCount, offeringCount, prayerRequestCount, offeringTotalRows, thisMonthTotalRows, thisMonthCountRows] = await Promise.all([
     tenantRow.parent_id
       ? query<{ id: string; name: string; slug: string }>(
-          `SELECT id, name, slug FROM tenant WHERE id = $1`,
+          `SELECT id, name, slug FROM tenant WHERE id = $1 AND deleted_at IS NULL`,
           [tenantRow.parent_id]
         )
       : Promise.resolve([]),
     query<{ id: string; name: string; slug: string; is_active: boolean }>(
-      `SELECT id, name, slug, is_active FROM tenant WHERE parent_id = $1`,
+      `SELECT id, name, slug, is_active FROM tenant WHERE parent_id = $1 AND deleted_at IS NULL`,
       [tenantId]
     ),
-    query<{ count: string }>(`SELECT COUNT(*) as count FROM "user" WHERE tenant_id = $1`, [tenantId]),
+    query<{ count: string }>(`SELECT COUNT(*) as count FROM "user" WHERE tenant_id = $1 AND deleted_at IS NULL`, [tenantId]),
     query<{ count: string }>(`SELECT COUNT(*) as count FROM member WHERE tenant_id = $1`, [tenantId]),
     query<{ count: string }>(`SELECT COUNT(*) as count FROM lead WHERE tenant_id = $1`, [tenantId]),
     query<{ count: string }>(`SELECT COUNT(*) as count FROM offering WHERE tenant_id = $1`, [tenantId]),
@@ -147,7 +150,10 @@ export const PATCH = withAuth(async (request, { user, tenantId }) => {
   const data = await parseBody(request, updateTenantSchema);
 
   // Get current tenant for audit
-  const currentRows = await query<TenantRow>(`SELECT * FROM tenant WHERE id = $1`, [tenantId]);
+  const currentRows = await query<TenantRow>(
+    `SELECT * FROM tenant WHERE id = $1 AND deleted_at IS NULL`,
+    [tenantId]
+  );
   const currentRow = currentRows[0];
 
   if (!currentRow) {
@@ -237,15 +243,15 @@ export const PATCH = withAuth(async (request, { user, tenantId }) => {
   const [parentRows, branchRows, userCount, memberCount, leadCount, offeringCount, prayerRequestCount] = await Promise.all([
     tenantRow.parent_id
       ? query<{ id: string; name: string; slug: string }>(
-          `SELECT id, name, slug FROM tenant WHERE id = $1`,
+          `SELECT id, name, slug FROM tenant WHERE id = $1 AND deleted_at IS NULL`,
           [tenantRow.parent_id]
         )
       : Promise.resolve([]),
     query<{ id: string; name: string; slug: string; is_active: boolean }>(
-      `SELECT id, name, slug, is_active FROM tenant WHERE parent_id = $1`,
+      `SELECT id, name, slug, is_active FROM tenant WHERE parent_id = $1 AND deleted_at IS NULL`,
       [tenantId]
     ),
-    query<{ count: string }>(`SELECT COUNT(*) as count FROM "user" WHERE tenant_id = $1`, [tenantId]),
+    query<{ count: string }>(`SELECT COUNT(*) as count FROM "user" WHERE tenant_id = $1 AND deleted_at IS NULL`, [tenantId]),
     query<{ count: string }>(`SELECT COUNT(*) as count FROM member WHERE tenant_id = $1`, [tenantId]),
     query<{ count: string }>(`SELECT COUNT(*) as count FROM lead WHERE tenant_id = $1`, [tenantId]),
     query<{ count: string }>(`SELECT COUNT(*) as count FROM offering WHERE tenant_id = $1`, [tenantId]),

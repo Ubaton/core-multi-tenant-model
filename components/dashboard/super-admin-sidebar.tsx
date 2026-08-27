@@ -17,6 +17,7 @@ import {
   BarChart3,
   Shield,
   MessageSquare,
+  ScrollText,
   ChevronsLeft,
   ChevronsRight,
   LogOut,
@@ -47,8 +48,9 @@ const navGroups = [
   {
     label: 'System',
     items: [
-      { name: 'Platform Stats',  href: '/super-admin/stats',   icon: BarChart3 },
-      { name: 'Access Control',  href: '/super-admin/access',  icon: Shield    },
+      { name: 'Platform Stats',  href: '/super-admin/stats',   icon: BarChart3  },
+      { name: 'Access Control',  href: '/super-admin/access',  icon: Shield     },
+      { name: 'Audit Trail',     href: '/super-admin/audit',   icon: ScrollText },
       { name: 'Settings',        href: '/super-admin/settings', icon: Settings  },
     ],
   },

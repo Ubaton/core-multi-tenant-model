@@ -8,7 +8,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import { query } from '@/lib/db';
+import { query, withTransaction } from '@/lib/db';
 import {
   withSuperAdmin,
   successResponse,
@@ -62,7 +62,10 @@ function mapTenant(row: TenantRow): Tenant {
 export const GET = withSuperAdmin<RouteParams>(async (request, { user }, params) => {
   const { id } = idParamSchema.parse(params);
 
-  const tenantRows = await query<TenantRow>(`SELECT * FROM tenant WHERE id = $1`, [id]);
+  const tenantRows = await query<TenantRow>(
+    `SELECT * FROM tenant WHERE id = $1 AND deleted_at IS NULL`,
+    [id]
+  );
   const tenantRow = tenantRows[0];
 
   if (!tenantRow) {
@@ -72,15 +75,15 @@ export const GET = withSuperAdmin<RouteParams>(async (request, { user }, params)
   const [parentRows, branchRows, userCount, memberCount, leadCount, offeringCount, prayerRequestCount, offeringTotalRows, now] = await Promise.all([
     tenantRow.parent_id
       ? query<{ id: string; name: string; slug: string }>(
-          `SELECT id, name, slug FROM tenant WHERE id = $1`,
+          `SELECT id, name, slug FROM tenant WHERE id = $1 AND deleted_at IS NULL`,
           [tenantRow.parent_id]
         )
       : Promise.resolve([]),
     query<{ id: string; name: string; slug: string; is_active: boolean }>(
-      `SELECT id, name, slug, is_active FROM tenant WHERE parent_id = $1`,
+      `SELECT id, name, slug, is_active FROM tenant WHERE parent_id = $1 AND deleted_at IS NULL`,
       [id]
     ),
-    query<{ count: string }>(`SELECT COUNT(*) as count FROM "user" WHERE tenant_id = $1`, [id]),
+    query<{ count: string }>(`SELECT COUNT(*) as count FROM "user" WHERE tenant_id = $1 AND deleted_at IS NULL`, [id]),
     query<{ count: string }>(`SELECT COUNT(*) as count FROM member WHERE tenant_id = $1`, [id]),
     query<{ count: string }>(`SELECT COUNT(*) as count FROM lead WHERE tenant_id = $1`, [id]),
     query<{ count: string }>(`SELECT COUNT(*) as count FROM offering WHERE tenant_id = $1`, [id]),
@@ -134,7 +137,10 @@ export const PATCH = withSuperAdmin<RouteParams>(async (request, { user }, param
   const data = await parseBody(request, updateTenantSchema);
 
   // Get current tenant for audit
-  const existingRows = await query<TenantRow>(`SELECT * FROM tenant WHERE id = $1`, [id]);
+  const existingRows = await query<TenantRow>(
+    `SELECT * FROM tenant WHERE id = $1 AND deleted_at IS NULL`,
+    [id]
+  );
   const existingRow = existingRows[0];
 
   if (!existingRow) {
@@ -187,7 +193,7 @@ export const PATCH = withSuperAdmin<RouteParams>(async (request, { user }, param
 
   const parentRows = tenantRow.parent_id
     ? await query<{ id: string; name: string; slug: string }>(
-        `SELECT id, name, slug FROM tenant WHERE id = $1`,
+        `SELECT id, name, slug FROM tenant WHERE id = $1 AND deleted_at IS NULL`,
         [tenantRow.parent_id]
       )
     : [];
@@ -211,12 +217,18 @@ export const PATCH = withSuperAdmin<RouteParams>(async (request, { user }, param
 
 /**
  * DELETE /api/tenants/[id]
- * Soft delete tenant (set isActive to false)
+ * Soft delete a tenant - the row is retained so the audit trail stays
+ * resolvable, but it is hidden from every listing. Users belonging to the
+ * tenant are soft deleted alongside it, otherwise they would be left
+ * pointing at a tenant nobody can see.
  */
 export const DELETE = withSuperAdmin<RouteParams>(async (request, { user }, params) => {
   const { id } = idParamSchema.parse(params);
 
-  const existingRows = await query<TenantRow>(`SELECT * FROM tenant WHERE id = $1`, [id]);
+  const existingRows = await query<TenantRow>(
+    `SELECT * FROM tenant WHERE id = $1 AND deleted_at IS NULL`,
+    [id]
+  );
   const existingRow = existingRows[0];
 
   if (!existingRow) {
@@ -224,8 +236,29 @@ export const DELETE = withSuperAdmin<RouteParams>(async (request, { user }, para
   }
   const existingTenant = mapTenant(existingRow);
 
-  // Soft delete - set isActive to false
-  await query(`UPDATE tenant SET is_active = false, updated_at = NOW() WHERE id = $1`, [id]);
+  // Deleting the tenant the acting Super Admin belongs to would lock them out.
+  if (user.tenantId === id) {
+    return errorResponse('BAD_REQUEST', 'Cannot delete your own tenant', 400);
+  }
+
+  const deletedUserIds = await withTransaction(async (client) => {
+    await client.query(
+      `UPDATE tenant
+       SET deleted_at = NOW(), deleted_by = $2, is_active = false, updated_at = NOW()
+       WHERE id = $1`,
+      [id, user.id]
+    );
+
+    const result = await client.query<{ id: string }>(
+      `UPDATE "user"
+       SET deleted_at = NOW(), deleted_by = $2, is_active = false, updated_at = NOW()
+       WHERE tenant_id = $1 AND deleted_at IS NULL
+       RETURNING id`,
+      [id, user.id]
+    );
+
+    return result.rows.map((row) => row.id);
+  });
 
   // Log audit
   await logAudit(
@@ -235,7 +268,12 @@ export const DELETE = withSuperAdmin<RouteParams>(async (request, { user }, para
     'Tenant',
     id,
     existingTenant,
-    { isActive: false },
+    {
+      deletedAt: new Date().toISOString(),
+      deletedBy: user.id,
+      isActive: false,
+      cascadedUserIds: deletedUserIds,
+    },
     request
   );
 

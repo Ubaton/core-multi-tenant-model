@@ -29,13 +29,13 @@ export const GET = withSuperAdmin(async () => {
     offeringsAggregateRows,
   ] = await Promise.all([
     // Tenants
-    query<{ count: string }>(`SELECT COUNT(*) AS count FROM tenant`),
-    query<{ count: string }>(`SELECT COUNT(*) AS count FROM tenant WHERE is_active = true`),
-    query<{ count: string }>(`SELECT COUNT(*) AS count FROM tenant WHERE is_hq = true`),
+    query<{ count: string }>(`SELECT COUNT(*) AS count FROM tenant WHERE deleted_at IS NULL`),
+    query<{ count: string }>(`SELECT COUNT(*) AS count FROM tenant WHERE is_active = true AND deleted_at IS NULL`),
+    query<{ count: string }>(`SELECT COUNT(*) AS count FROM tenant WHERE is_hq = true AND deleted_at IS NULL`),
 
     // Users
-    query<{ count: string }>(`SELECT COUNT(*) AS count FROM "user"`),
-    query<{ count: string }>(`SELECT COUNT(*) AS count FROM "user" WHERE is_active = true`),
+    query<{ count: string }>(`SELECT COUNT(*) AS count FROM "user" WHERE deleted_at IS NULL`),
+    query<{ count: string }>(`SELECT COUNT(*) AS count FROM "user" WHERE is_active = true AND deleted_at IS NULL`),
 
     // Members
     query<{ count: string }>(`SELECT COUNT(*) AS count FROM member`),

@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
          t.is_active AS tenant_is_active
        FROM "user" u
        LEFT JOIN tenant t ON t.id = u.tenant_id
-       WHERE u.email = $1`,
+       WHERE u.email = $1 AND u.deleted_at IS NULL`,
       [email.toLowerCase()]
     );
     const row = rows[0];

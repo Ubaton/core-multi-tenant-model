@@ -99,7 +99,8 @@ export const GET = withSuperAdmin(async (request) => {
   const tenantId = searchParams.get('tenantId') || undefined;
   const isActive = searchParams.get('isActive');
 
-  const conditions: string[] = [];
+  // Soft-deleted users are retained for the audit trail, never listed.
+  const conditions: string[] = ['u.deleted_at IS NULL'];
   const params: unknown[] = [];
 
   if (search) {
@@ -201,7 +202,7 @@ export const POST = withSuperAdmin(async (request, { user }) => {
   let tenant: { id: string; name: string; slug: string } | null = null;
   if (rows[0].tenant_id) {
     const tenantRows = await query<{ id: string; name: string; slug: string }>(
-      `SELECT id, name, slug FROM tenant WHERE id = $1`,
+      `SELECT id, name, slug FROM tenant WHERE id = $1 AND deleted_at IS NULL`,
       [rows[0].tenant_id]
     );
     tenant = tenantRows[0] ?? null;

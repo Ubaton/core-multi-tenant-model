@@ -64,7 +64,7 @@ export const GET = withSuperAdmin<RouteParams>(async (request: NextRequest, { us
             t.name AS tenant_name, t.slug AS tenant_slug
      FROM "user" u
      LEFT JOIN tenant t ON t.id = u.tenant_id
-     WHERE u.id = $1`,
+     WHERE u.id = $1 AND u.deleted_at IS NULL`,
     [id]
   );
 
@@ -113,7 +113,7 @@ export const PATCH = withSuperAdmin<RouteParams>(async (request: NextRequest, { 
   const body = await parseBody(request, updateUserSchema);
 
   const existingRows = await query<{ id: string; email: string; role: string }>(
-    `SELECT id, email, role FROM "user" WHERE id = $1`,
+    `SELECT id, email, role FROM "user" WHERE id = $1 AND deleted_at IS NULL`,
     [id]
   );
   const existingUser = existingRows[0];
@@ -173,7 +173,7 @@ export const PATCH = withSuperAdmin<RouteParams>(async (request: NextRequest, { 
   let tenant: { id: string; name: string; slug: string } | null = null;
   if (row.tenant_id) {
     const tenantRows = await query<{ id: string; name: string; slug: string }>(
-      `SELECT id, name, slug FROM tenant WHERE id = $1`,
+      `SELECT id, name, slug FROM tenant WHERE id = $1 AND deleted_at IS NULL`,
       [row.tenant_id]
     );
     tenant = tenantRows[0] ?? null;
@@ -209,7 +209,8 @@ export const PATCH = withSuperAdmin<RouteParams>(async (request: NextRequest, { 
 
 /**
  * DELETE /api/users/[id]
- * Delete a user
+ * Soft delete a user - the row is retained so the audit trail stays
+ * resolvable, but it is hidden from every listing.
  */
 export const DELETE = withSuperAdmin<RouteParams>(async (request: NextRequest, { user }, params) => {
   const { id } = params;
@@ -219,8 +220,10 @@ export const DELETE = withSuperAdmin<RouteParams>(async (request: NextRequest, {
     return errorResponse('BAD_REQUEST', 'Cannot delete your own account', 400);
   }
 
-  const existingRows = await query<{ id: string; email: string; role: string }>(
-    `SELECT id, email, role FROM "user" WHERE id = $1`,
+  const existingRows = await query<{
+    id: string; email: string; role: string; is_active: boolean; tenant_id: string | null;
+  }>(
+    `SELECT id, email, role, is_active, tenant_id FROM "user" WHERE id = $1 AND deleted_at IS NULL`,
     [id]
   );
   const existingUser = existingRows[0];
@@ -229,15 +232,43 @@ export const DELETE = withSuperAdmin<RouteParams>(async (request: NextRequest, {
     return errorResponse('NOT_FOUND', 'User not found', 404);
   }
 
-  await query(`DELETE FROM "user" WHERE id = $1`, [id]);
+  // Never leave the system without a way in.
+  if (existingUser.role === 'SUPER_ADMIN') {
+    const remaining = await query<{ count: string }>(
+      `SELECT COUNT(*) AS count FROM "user"
+       WHERE role = 'SUPER_ADMIN' AND is_active = true AND deleted_at IS NULL AND id <> $1`,
+      [id]
+    );
+    if (parseInt(remaining[0]?.count ?? '0', 10) === 0) {
+      return errorResponse(
+        'BAD_REQUEST',
+        'Cannot delete the last active Super Admin account',
+        400
+      );
+    }
+  }
+
+  await query(
+    `UPDATE "user"
+     SET deleted_at = NOW(), deleted_by = $2, is_active = false, updated_at = NOW()
+     WHERE id = $1`,
+    [id, user.id]
+  );
 
   await logAudit(
     user.id,
     user.tenantId,
-    'DELETE',
+    'DELETE_USER',
     'User',
     id,
-    { email: existingUser.email, role: existingUser.role }
+    {
+      email: existingUser.email,
+      role: existingUser.role,
+      isActive: existingUser.is_active,
+      tenantId: existingUser.tenant_id,
+    },
+    { deletedAt: new Date().toISOString(), deletedBy: user.id },
+    request
   );
 
   return successResponse({ message: 'User deleted successfully' });

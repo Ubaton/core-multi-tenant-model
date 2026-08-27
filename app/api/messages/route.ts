@@ -273,7 +273,7 @@ export async function POST(request: NextRequest) {
     // Validate receiver if specified
     if (data.receiverId) {
       const receiverRows = await query<{ id: string; role: UserRole; tenant_id: string | null }>(
-        `SELECT id, role, tenant_id FROM "user" WHERE id = $1`,
+        `SELECT id, role, tenant_id FROM "user" WHERE id = $1 AND deleted_at IS NULL`,
         [data.receiverId]
       );
       const receiver = receiverRows[0];
@@ -306,7 +306,7 @@ export async function POST(request: NextRequest) {
     let messageTenantId: string | null = user.tenantId || null;
     if (isSuperAdmin && data.tenantId) {
       const tenantRows = await query<{ id: string }>(
-        `SELECT id FROM tenant WHERE id = $1`,
+        `SELECT id FROM tenant WHERE id = $1 AND deleted_at IS NULL`,
         [data.tenantId]
       );
       if (!tenantRows[0]) {

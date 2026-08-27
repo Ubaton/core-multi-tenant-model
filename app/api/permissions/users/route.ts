@@ -54,7 +54,7 @@ function cloneRoleDefaults(role: UserRole) {
 
 async function computeEffectivePermissionsForUser(targetUserId: string) {
   const targetUserRows = await query<{ id: string; role: UserRole; tenant_id: string | null }>(
-    `SELECT id, role, tenant_id FROM "user" WHERE id = $1`,
+    `SELECT id, role, tenant_id FROM "user" WHERE id = $1 AND deleted_at IS NULL`,
     [targetUserId]
   );
   const targetUser = targetUserRows[0];
@@ -159,7 +159,7 @@ export const PUT = withSuperAdmin(async (request: NextRequest, { user }) => {
   const { userId, module, permission, granted } = body;
 
   const targetUserRows = await query<{ id: string; role: UserRole; tenant_id: string | null }>(
-    `SELECT id, role, tenant_id FROM "user" WHERE id = $1`,
+    `SELECT id, role, tenant_id FROM "user" WHERE id = $1 AND deleted_at IS NULL`,
     [userId]
   );
   const targetUser = targetUserRows[0];

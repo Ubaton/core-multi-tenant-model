@@ -86,7 +86,7 @@ export const GET = withSuperAdmin<RouteParams>(async (request, { user }, params)
 
   // Verify tenant exists
   const tenantRows = await query<{ id: string; name: string }>(
-    `SELECT id, name FROM tenant WHERE id = $1`,
+    `SELECT id, name FROM tenant WHERE id = $1 AND deleted_at IS NULL`,
     [tenantId]
   );
   const tenant = tenantRows[0];

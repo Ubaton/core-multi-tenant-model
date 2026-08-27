@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
       is_active: boolean;
     }>(
       `SELECT id, email, first_name, last_name, role, tenant_id, is_active
-       FROM "user" WHERE id = $1`,
+       FROM "user" WHERE id = $1 AND deleted_at IS NULL`,
       [payload.userId]
     );
     const row = rows[0];
