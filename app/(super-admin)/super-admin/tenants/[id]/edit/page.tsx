@@ -19,7 +19,7 @@ import { useTenant, useUpdateTenant, useTenants, useTenantAdmins, useCreateTenan
 import { toast } from 'sonner';
 
 // Default email domain as required
-const DEFAULT_EMAIL_DOMAIN = 'unityfellowship.org.za';
+const DEFAULT_EMAIL_DOMAIN = 'unityfellowshipchurch.org.za';
 
 /**
  * Generate a secure random password

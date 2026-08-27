@@ -40,7 +40,7 @@ import { cn } from '@/lib/utils';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
-const DEFAULT_EMAIL_DOMAIN = 'unityfellowship.org.za';
+const DEFAULT_EMAIL_DOMAIN = 'unityfellowshipchurch.org.za';
 
 type TenantRole = 'CHURCH_ADMIN' | 'STAFF' | 'CALL_CENTER' | 'SUBSCRIBER' | 'MEMBER';
 
