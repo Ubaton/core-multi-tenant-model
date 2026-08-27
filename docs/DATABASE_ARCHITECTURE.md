@@ -1098,7 +1098,7 @@ VALUES (
 INSERT INTO "user" (id, email, password_hash, first_name, last_name, role, is_active, email_verified, tenant_id, created_at, updated_at)
 VALUES (
     'clsa000000000000000',
-    'superadmin@churchhub.com',
+    'info@unityfellowshipchurch.org.za',
     '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/X4k3Hc0pLKJ8.k1pO',
     'Super',
     'Admin',

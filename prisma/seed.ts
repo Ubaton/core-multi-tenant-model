@@ -66,7 +66,7 @@ async function main() {
      RETURNING id, email`,
     [
       randomUUID(),
-      'superadmin@churchhub.com',
+      'info@unityfellowshipchurch.org.za',
       passwordHash,
       'Super',
       'Admin',
@@ -84,7 +84,7 @@ async function main() {
   console.log('════════════════════════════════════════════════════════════');
   console.log('  SUPER_ADMIN CREDENTIALS');
   console.log('════════════════════════════════════════════════════════════');
-  console.log('  Email:    superadmin@churchhub.com');
+  console.log('  Email:    info@unityfellowshipchurch.org.za');
   console.log('  Password: SuperAdmin@123');
   console.log('════════════════════════════════════════════════════════════');
   console.log('');
