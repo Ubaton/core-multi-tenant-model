@@ -23,8 +23,8 @@ export default function SuperAdminLayout({
         <SuperAdminSidebar />
         <SuperAdminContentWrapper>
           <Header MobileNav={SuperAdminMobileNav} />
-          <main className="h-[calc(100dvh-4rem)] py-6 overflow-hidden">
-            <div className="mx-auto h-full w-full px-4 sm:px-6 lg:px-8">
+          <main className="h-[calc(100dvh-4rem)] py-6 overflow-y-auto overscroll-contain">
+            <div className="mx-auto min-h-full w-full px-4 sm:px-6 lg:px-8">
               {children}
             </div>
           </main>

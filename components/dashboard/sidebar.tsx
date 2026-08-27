@@ -368,7 +368,7 @@ export function Sidebar() {
 
 export function TenantMobileNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
-    <div className="flex h-full flex-col bg-background">
+    <div className="flex min-h-[calc(100dvh-4rem)] flex-col bg-background">
       <SidebarContent collapsed={false} onNavigate={onNavigate} />
     </div>
   );

@@ -44,7 +44,7 @@ function SheetContent({
         data-slot="sheet-content"
         data-side={side}
         className={cn(
-          "bg-background ring-foreground/10 fixed inset-y-0 z-50 w-72 outline-none ring-1",
+          "bg-background ring-foreground/10 fixed inset-y-0 z-50 w-72 overflow-y-auto overscroll-contain outline-none ring-1",
           "data-open:animate-in data-closed:animate-out data-closed:fade-out-0 data-open:fade-in-0 duration-150",
           side === "left" ? "left-0 border-r" : "right-0 border-l",
           className
