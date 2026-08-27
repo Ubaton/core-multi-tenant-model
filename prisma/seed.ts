@@ -31,13 +31,14 @@ async function main() {
     `INSERT INTO tenant (id, name, slug, description, country, timezone, is_active, is_hq)
      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
      ON CONFLICT (slug) DO UPDATE SET
-       description = EXCLUDED.description
+       is_hq = true,
+       is_active = true
      RETURNING id, name`,
     [
       randomUUID(),
-      'ChurchHub HQ',
-      'churchhub-hq',
-      'ChurchHub System Administration',
+      'Unity Fellowship Church',
+      'unity-fellowship-church',
+      'Unity Fellowship Church — system HQ tenant',
       'South Africa',
       'Africa/Johannesburg',
       true,
