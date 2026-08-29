@@ -5,8 +5,8 @@
  * ════════════════════════════════════════════════════════════════════════════
  */
 
-import { query } from '@/lib/db';
 import { withSuperAdmin, successResponse } from '@/lib/api';
+import { checkDatabaseHealth } from '@/lib/system/health';
 import pkg from '@/package.json';
 
 export const dynamic = 'force-dynamic';
@@ -23,29 +23,18 @@ async function getNextVersion(): Promise<string> {
 }
 
 export const GET = withSuperAdmin(async () => {
-  const [nextVersion, database] = await Promise.all([
+  const [nextVersion, health] = await Promise.all([
     getNextVersion(),
-    getDatabaseVersion(),
+    checkDatabaseHealth(),
   ]);
 
   return successResponse({
     appVersion: pkg.version,
     nodeVersion: process.version.replace(/^v/, ''),
     nextVersion,
-    database,
+    database: health.database ?? 'PostgreSQL (unreachable)',
+    health,
     environment: process.env.NODE_ENV ?? 'development',
     uptimeSeconds: Math.floor(process.uptime()),
   });
 });
-
-/** Read the PostgreSQL server version, e.g. "PostgreSQL 16.4". */
-async function getDatabaseVersion(): Promise<string> {
-  try {
-    const rows = await query<{ version: string }>('SELECT version()');
-    const raw = rows[0]?.version ?? '';
-    const match = raw.match(/^PostgreSQL\s+([\d.]+)/i);
-    return match ? `PostgreSQL ${match[1]}` : 'PostgreSQL';
-  } catch {
-    return 'PostgreSQL';
-  }
-}

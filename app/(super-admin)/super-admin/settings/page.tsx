@@ -31,10 +31,22 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useSettings, useUpdateSettings, type SystemSettings } from '@/lib/client/hooks/use-settings';
-import { useSystemInfo } from '@/lib/client/hooks/use-system-info';
+import {
+  useSystemInfo,
+  useSystemHealth,
+  useRunHealthCheck,
+  useClearCache,
+  type HealthStatus,
+} from '@/lib/client/hooks/use-system-info';
 import type { UpdateSystemSettingsInput } from '@/lib/validations';
 import { useTheme } from '@/context/theme-context';
 import { toast } from 'sonner';
+
+const healthStatusStyles: Record<HealthStatus, { label: string; dot: string; text: string }> = {
+  online: { label: 'online', dot: 'bg-success', text: 'text-success' },
+  degraded: { label: 'slow to respond', dot: 'bg-warning', text: 'text-warning' },
+  offline: { label: 'offline', dot: 'bg-destructive', text: 'text-destructive' },
+};
 
 /** Format a process uptime in seconds as a compact "2d 3h 14m" string. */
 function formatUptime(seconds: number): string {
@@ -69,6 +81,33 @@ export default function SuperAdminSettingsPage() {
   const { data: settings, isLoading, error } = useSettings();
   const updateSettings = useUpdateSettings();
   const { data: systemInfo, isLoading: isSystemInfoLoading } = useSystemInfo();
+  const { data: health, isLoading: isHealthLoading } = useSystemHealth();
+  const runHealthCheck = useRunHealthCheck();
+  const clearCache = useClearCache();
+
+  const handleHealthCheck = async () => {
+    try {
+      const result = await runHealthCheck.mutateAsync();
+      if (result.status === 'offline') {
+        toast.error('Database is unreachable. See the details below.');
+      } else if (result.status === 'degraded') {
+        toast.warning(`Database responded slowly (${result.latencyMs}ms).`);
+      } else {
+        toast.success(`Database is online (${result.latencyMs}ms).`);
+      }
+    } catch {
+      toast.error('Health check could not be completed.');
+    }
+  };
+
+  const handleClearCache = async () => {
+    try {
+      await clearCache.mutateAsync();
+      toast.success('Cache cleared. Fresh data is being loaded.');
+    } catch {
+      toast.error('Cache could not be cleared.');
+    }
+  };
   const { theme, setTheme } = useTheme();
 
   // Populate form when settings are loaded
@@ -769,26 +808,107 @@ export default function SuperAdminSettingsPage() {
                   ))}
                 </div>
 
+                <div className="rounded-lg border p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <span
+                        className={cn(
+                          'h-2.5 w-2.5 rounded-full',
+                          health ? healthStatusStyles[health.status].dot : 'bg-muted-foreground'
+                        )}
+                      />
+                      <div>
+                        <p className="font-medium">
+                          Database{' '}
+                          <span className={cn(health && healthStatusStyles[health.status].text)}>
+                            {isHealthLoading
+                              ? 'checking…'
+                              : health
+                                ? healthStatusStyles[health.status].label
+                                : 'unknown'}
+                          </span>
+                        </p>
+                        {health && (
+                          <p className="text-sm text-muted-foreground">
+                            {health.latencyMs}ms response · {health.uptimePercent}% of the last{' '}
+                            {health.history.length} check
+                            {health.history.length === 1 ? '' : 's'} succeeded · last checked{' '}
+                            {new Date(health.checkedAt).toLocaleTimeString()}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                    <Button
+                      variant="outline"
+                      onClick={handleHealthCheck}
+                      disabled={runHealthCheck.isPending}
+                    >
+                      {runHealthCheck.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Server className="mr-2 h-4 w-4" />
+                      )}
+                      Run Health Check
+                    </Button>
+                  </div>
+
+                  {health?.error && (
+                    <div className="mt-4 rounded-lg border border-destructive/30 bg-destructive/10 p-3">
+                      <p className="flex items-center gap-2 text-sm font-medium text-destructive">
+                        <AlertCircle className="h-4 w-4" />
+                        Connection failed
+                      </p>
+                      <p className="mt-1 break-words font-mono text-xs text-destructive/90">
+                        {health.error}
+                      </p>
+                    </div>
+                  )}
+
+                  {!health?.error && health?.lastFailure && (
+                    <div className="mt-4 rounded-lg border border-warning/30 bg-warning/10 p-3">
+                      <p className="text-sm font-medium text-warning">
+                        Recovered from an outage at{' '}
+                        {new Date(health.lastFailure.checkedAt).toLocaleString()}
+                      </p>
+                      <p className="mt-1 break-words font-mono text-xs text-warning/90">
+                        {health.lastFailure.error}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
                 <div className="space-y-4">
                   <h3 className="font-medium">Maintenance</h3>
                   <div className="flex flex-wrap gap-3">
-                    <Button variant="outline">
-                      <Database className="mr-2 h-4 w-4" />
+                    <Button
+                      variant="outline"
+                      onClick={handleClearCache}
+                      disabled={clearCache.isPending}
+                    >
+                      {clearCache.isPending ? (
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      ) : (
+                        <Database className="mr-2 h-4 w-4" />
+                      )}
                       Clear Cache
                     </Button>
-                    <Button variant="outline">
-                      <Server className="mr-2 h-4 w-4" />
-                      Health Check
-                    </Button>
                   </div>
+                  <p className="text-sm text-muted-foreground">
+                    Clearing the cache discards saved page and data snapshots so the next visit
+                    loads everything fresh from the database. Nothing is deleted and no one is
+                    signed out.
+                  </p>
                 </div>
 
                 <div className="rounded-lg bg-warning/10 border border-warning/30 p-4">
                   <p className="text-sm text-warning">
-                    <strong>Note:</strong> System settings are read-only in this interface. 
-                    For environment configuration changes, please update the environment variables directly.
+                    <strong>Heads up:</strong> Everything on this tab is read-only — it reports how
+                    the platform is running but can&apos;t change it. Server settings live in the
+                    hosting environment, so if something here looks wrong, share this page with your
+                    system engineer and they can take it from there.
                   </p>
                 </div>
+
               </CardContent>
             </Card>
           )}
