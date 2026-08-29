@@ -20,6 +20,7 @@ export * from './use-user-permissions';
 export * from './use-services';
 export * from './use-platform-stats';
 export * from './use-audit-logs';
+export * from './use-system-info';
 
 // Explicit re-exports to avoid naming conflicts with use-permissions.ts
 export {

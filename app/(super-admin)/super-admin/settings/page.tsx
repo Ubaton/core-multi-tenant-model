@@ -31,9 +31,23 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { useSettings, useUpdateSettings, type SystemSettings } from '@/lib/client/hooks/use-settings';
+import { useSystemInfo } from '@/lib/client/hooks/use-system-info';
 import type { UpdateSystemSettingsInput } from '@/lib/validations';
 import { useTheme } from '@/context/theme-context';
 import { toast } from 'sonner';
+
+/** Format a process uptime in seconds as a compact "2d 3h 14m" string. */
+function formatUptime(seconds: number): string {
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const mins = Math.floor((seconds % 3600) / 60);
+  const parts = [
+    days > 0 ? `${days}d` : null,
+    days > 0 || hours > 0 ? `${hours}h` : null,
+    `${mins}m`,
+  ].filter(Boolean);
+  return parts.join(' ');
+}
 
 const settingsTabs = [
   { id: 'general', label: 'General', icon: Settings },
@@ -54,6 +68,7 @@ export default function SuperAdminSettingsPage() {
   
   const { data: settings, isLoading, error } = useSettings();
   const updateSettings = useUpdateSettings();
+  const { data: systemInfo, isLoading: isSystemInfoLoading } = useSystemInfo();
   const { theme, setTheme } = useTheme();
 
   // Populate form when settings are loaded
@@ -735,22 +750,23 @@ export default function SuperAdminSettingsPage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid gap-4 sm:grid-cols-2">
-                  <div className="p-4 rounded-lg bg-muted/50">
-                    <p className="text-sm text-muted-foreground">Application Version</p>
-                    <p className="text-lg font-semibold">1.0.0</p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-muted/50">
-                    <p className="text-sm text-muted-foreground">Node.js Version</p>
-                    <p className="text-lg font-semibold">{typeof window === 'undefined' ? process.version : 'N/A'}</p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-muted/50">
-                    <p className="text-sm text-muted-foreground">Next.js Version</p>
-                    <p className="text-lg font-semibold">16.1.1</p>
-                  </div>
-                  <div className="p-4 rounded-lg bg-muted/50">
-                    <p className="text-sm text-muted-foreground">Database</p>
-                    <p className="text-lg font-semibold">PostgreSQL</p>
-                  </div>
+                  {[
+                    { label: 'Application Version', value: systemInfo ? `v${systemInfo.appVersion}` : null },
+                    { label: 'Node.js Version', value: systemInfo ? `v${systemInfo.nodeVersion}` : null },
+                    { label: 'Next.js Version', value: systemInfo ? `v${systemInfo.nextVersion}` : null },
+                    { label: 'Database', value: systemInfo?.database ?? null },
+                    { label: 'Environment', value: systemInfo?.environment ?? null },
+                    { label: 'Uptime', value: systemInfo ? formatUptime(systemInfo.uptimeSeconds) : null },
+                  ].map((item) => (
+                    <div key={item.label} className="p-4 rounded-lg bg-muted/50">
+                      <p className="text-sm text-muted-foreground">{item.label}</p>
+                      {isSystemInfoLoading ? (
+                        <div className="mt-1 h-6 w-24 animate-pulse rounded bg-muted" />
+                      ) : (
+                        <p className="text-lg font-semibold">{item.value ?? 'Unavailable'}</p>
+                      )}
+                    </div>
+                  ))}
                 </div>
 
                 <div className="space-y-4">
