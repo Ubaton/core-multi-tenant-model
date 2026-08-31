@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next"
 import { Geist_Mono, Nunito_Sans } from "next/font/google";
 import { QueryProvider } from "@/lib/client";
 import { ThemeProvider } from "@/context";
@@ -49,6 +50,7 @@ export default function RootLayout({
             <Toaster />
           </QueryProvider>
         </ThemeProvider>
+        <Analytics />
       </body>
     </html>
   );
