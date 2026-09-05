@@ -17,6 +17,9 @@ import { successResponse, handleError, parseBody } from '@/lib/api';
 import { forgotPasswordSchema } from '@/lib/validations';
 import { isEmailConfigured, resolveAppUrl, sendPasswordResetEmail } from '@/lib/email';
 
+// Nodemailer opens a real TCP socket, which the Edge runtime cannot do.
+export const runtime = 'nodejs';
+
 /** How long a reset link stays valid. */
 const TOKEN_EXPIRY_MINUTES = 60;
 
@@ -44,9 +47,11 @@ export async function POST(request: NextRequest) {
     );
     const user = rows[0];
 
+    const emailConfigured = await isEmailConfigured();
+
     // Disabled accounts get the same silent treatment as unknown addresses.
     if (!user || !user.is_active) {
-      return successResponse({ message: GENERIC_MESSAGE, emailConfigured: isEmailConfigured() });
+      return successResponse({ message: GENERIC_MESSAGE, emailConfigured });
     }
 
     // Invalidate any outstanding tokens so only the newest link works.
@@ -80,11 +85,20 @@ export async function POST(request: NextRequest) {
     // Without a mail provider the link would be unreachable, so surface it in
     // development only. Never in production, and never once mail is configured.
     const exposeLink =
-      !delivered && !isEmailConfigured() && process.env.NODE_ENV !== 'production';
+      !delivered && !emailConfigured && process.env.NODE_ENV !== 'production';
+
+    if (!delivered && emailConfigured) {
+      // Configured but failing: the user is told a link is coming and none is.
+      // Surface it loudly here so it is caught in logs rather than by a report.
+      console.error(
+        `[auth] Password reset email for ${user.email} could not be delivered ` +
+          `despite a configured transport. Check the [email] log lines above.`
+      );
+    }
 
     return successResponse({
       message: GENERIC_MESSAGE,
-      emailConfigured: isEmailConfigured(),
+      emailConfigured,
       ...(exposeLink ? { resetUrl } : {}),
     });
   } catch (error) {
