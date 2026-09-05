@@ -7,7 +7,7 @@
 'use client';
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { get, put } from '../api-client';
+import { get, post, put } from '../api-client';
 import type { UpdateSystemSettingsInput } from '@/lib/validations';
 
 // Query keys
@@ -59,6 +59,27 @@ export function useSettings() {
     queryKey: settingsKeys.detail(),
     queryFn: async () => {
       const response = await get<SystemSettings>('/api/settings');
+      return response.data!;
+    },
+  });
+}
+
+export interface SmtpTestResult {
+  ok: boolean;
+  message: string;
+  host?: string;
+  port?: number;
+  sentTo?: string;
+}
+
+/**
+ * Hook to test the saved SMTP settings by sending a message to the signed-in
+ * Super Admin. Tests the stored configuration, so save before testing.
+ */
+export function useTestEmail() {
+  return useMutation({
+    mutationFn: async () => {
+      const response = await post<SmtpTestResult>('/api/settings/test-email', {});
       return response.data!;
     },
   });

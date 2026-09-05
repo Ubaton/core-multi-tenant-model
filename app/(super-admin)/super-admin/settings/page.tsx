@@ -16,6 +16,7 @@ import {
   Mail,
   Server,
   Save,
+  Send,
   Loader2,
   CheckCircle,
   AlertCircle,
@@ -30,7 +31,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { useSettings, useUpdateSettings, type SystemSettings } from '@/lib/client/hooks/use-settings';
+import { useSettings, useUpdateSettings, useTestEmail, type SystemSettings } from '@/lib/client/hooks/use-settings';
 import {
   useSystemInfo,
   useSystemHealth,
@@ -80,6 +81,7 @@ export default function SuperAdminSettingsPage() {
   
   const { data: settings, isLoading, error } = useSettings();
   const updateSettings = useUpdateSettings();
+  const testEmail = useTestEmail();
   const { data: systemInfo, isLoading: isSystemInfoLoading } = useSystemInfo();
   const { data: health, isLoading: isHealthLoading } = useSystemHealth();
   const runHealthCheck = useRunHealthCheck();
@@ -153,6 +155,24 @@ export default function SuperAdminSettingsPage() {
 
   const handleInputChange = (field: keyof UpdateSystemSettingsInput, value: string | number | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
+  };
+
+  /**
+   * Tests the saved SMTP settings, not what is currently typed in the form, so
+   * unsaved edits are worth flagging rather than silently testing stale values.
+   */
+  const handleTestEmail = async () => {
+    try {
+      const result = await testEmail.mutateAsync();
+      if (result.ok) {
+        toast.success(result.message);
+      } else {
+        // Long enough to read a multi-clause diagnostic before it disappears.
+        toast.error(result.message, { duration: 10000 });
+      }
+    } catch {
+      toast.error('The connection test could not be run. Check the server logs.');
+    }
   };
 
   const handleSave = async (section: string) => {
@@ -548,8 +568,17 @@ export default function SuperAdminSettingsPage() {
                       Saved successfully
                     </span>
                   )}
-                  <Button variant="outline">
-                    Test Connection
+                  <Button
+                    variant="outline"
+                    onClick={handleTestEmail}
+                    disabled={testEmail.isPending}
+                  >
+                    {testEmail.isPending ? (
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Send className="mr-2 h-4 w-4" />
+                    )}
+                    {testEmail.isPending ? 'Testing...' : 'Test Connection'}
                   </Button>
                   <Button 
                     onClick={() => handleSave('email')}

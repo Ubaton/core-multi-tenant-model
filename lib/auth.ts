@@ -88,9 +88,11 @@ export function verifyAccessToken(token: string): TokenPayload | null {
 /**
  * Verify and decode a refresh token
  */
-export function verifyRefreshToken(token: string): { userId: string } | null {
+export function verifyRefreshToken(
+  token: string
+): { userId: string; iat?: number } | null {
   try {
-    return jwt.verify(token, JWT_REFRESH_SECRET) as { userId: string };
+    return jwt.verify(token, JWT_REFRESH_SECRET) as { userId: string; iat?: number };
   } catch {
     return null;
   }
@@ -124,6 +126,30 @@ export async function getTokenFromCookie(): Promise<string | null> {
  * Get the current authenticated user from the request
  * Checks both Authorization header and cookies
  */
+/**
+ * True when a token predates the user's session cutoff, i.e. it was issued
+ * before a password reset signed every device out.
+ *
+ * `iat` is whole seconds, so the comparison is done in seconds and is strict:
+ * a token minted in the same second as the cutoff is kept. That way a user who
+ * signs in immediately after resetting is not bounced straight back out by
+ * sub-second ordering.
+ */
+export function isTokenRevoked(
+  issuedAt: number | undefined,
+  sessionsValidFrom: Date | null
+): boolean {
+  if (!sessionsValidFrom) {
+    return false;
+  }
+  // A token with no iat cannot be placed relative to the cutoff; refuse it
+  // rather than let an unplaceable token through.
+  if (issuedAt === undefined) {
+    return true;
+  }
+  return issuedAt < Math.floor(new Date(sessionsValidFrom).getTime() / 1000);
+}
+
 export async function getCurrentUser(): Promise<AuthUser | null> {
   // Try header first (API calls), then cookie (browser navigation)
   const token = await getTokenFromHeader() ?? await getTokenFromCookie();
@@ -146,14 +172,21 @@ export async function getCurrentUser(): Promise<AuthUser | null> {
     role: UserRole;
     tenant_id: string | null;
     is_active: boolean;
+    sessions_valid_from: Date | null;
   }>(
-    `SELECT id, email, first_name, last_name, role, tenant_id, is_active
+    `SELECT id, email, first_name, last_name, role, tenant_id, is_active,
+            sessions_valid_from
      FROM "user" WHERE id = $1 AND deleted_at IS NULL`,
     [payload.userId]
   );
   const row = rows[0];
 
   if (!row || !row.is_active) {
+    return null;
+  }
+
+  // Signed out everywhere by a password reset since this token was issued.
+  if (isTokenRevoked(payload.iat, row.sessions_valid_from)) {
     return null;
   }
 

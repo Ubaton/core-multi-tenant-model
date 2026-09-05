@@ -109,9 +109,16 @@ export async function POST(request: NextRequest) {
         throw new TokenAlreadyUsedError();
       }
 
+      // sessions_valid_from signs the user out on every device: tokens issued
+      // before this instant are refused at verification. Someone resetting
+      // because their account was compromised must not leave a live session
+      // behind for whoever compromised it.
       await client.query(
         `UPDATE "user"
-         SET password_hash = $1, must_change_password = FALSE, updated_at = NOW()
+         SET password_hash = $1,
+             must_change_password = FALSE,
+             sessions_valid_from = NOW(),
+             updated_at = NOW()
          WHERE id = $2`,
         [passwordHash, row.user_id]
       );

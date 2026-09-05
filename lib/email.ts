@@ -271,6 +271,114 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
 }
 
 // ════════════════════════════════════════════════════════════════════════════
+// DIAGNOSTICS
+// ════════════════════════════════════════════════════════════════════════════
+
+export interface SmtpTestResult {
+  ok: boolean;
+  /** Human-readable outcome, safe to show a Super Admin. */
+  message: string;
+  /** Which host was dialled, so the admin can spot a typo. */
+  host?: string;
+  port?: number;
+}
+
+/**
+ * Translate a nodemailer/socket failure into something an administrator can
+ * act on. The raw errors name a syscall, not the mistake that caused it.
+ */
+function describeSmtpError(error: unknown, config: SmtpConfig): string {
+  const code = (error as { code?: string; responseCode?: number })?.code;
+  const responseCode = (error as { responseCode?: number })?.responseCode;
+  const raw = error instanceof Error ? error.message : String(error);
+
+  if (code === 'EAUTH' || responseCode === 535) {
+    return `The server rejected the username or password for ${config.user}.`;
+  }
+  if (code === 'ETIMEDOUT' || code === 'ESOCKET' || code === 'ECONNECTION') {
+    const hint =
+      config.secure && config.port !== 465
+        ? ` Port ${config.port} usually expects TLS/SSL to be off (STARTTLS).`
+        : !config.secure && config.port === 465
+          ? ' Port 465 requires TLS/SSL to be on.'
+          : '';
+    return `Could not connect to ${config.host} on port ${config.port}.${hint}`;
+  }
+  if (code === 'EDNS' || code === 'ENOTFOUND') {
+    return `The host ${config.host} could not be found. Check it for a typo.`;
+  }
+  return `The mail server reported: ${raw}`;
+}
+
+/**
+ * Open a connection with the saved credentials and authenticate, without
+ * sending anything. When `sendTo` is given, also deliver a short test message
+ * so the admin gets end-to-end proof rather than just a successful handshake.
+ */
+export async function testSmtpConnection(sendTo?: string): Promise<SmtpTestResult> {
+  const config = await loadSmtpConfig();
+
+  if (!config) {
+    return {
+      ok: false,
+      message:
+        'SMTP is not configured yet. Fill in the host, username and password, save, then test.',
+    };
+  }
+
+  const where = { host: config.host, port: config.port };
+
+  try {
+    await getTransporter(config).verify();
+  } catch (error) {
+    console.error('[email] SMTP verification failed:', error);
+    cachedTransport?.transporter.close();
+    cachedTransport = null;
+    return { ok: false, message: describeSmtpError(error, config), ...where };
+  }
+
+  if (!sendTo) {
+    return {
+      ok: true,
+      message: `Connected to ${config.host} and signed in as ${config.user}.`,
+      ...where,
+    };
+  }
+
+  const result = await sendViaSmtp(
+    {
+      to: sendTo,
+      subject: 'ChurchHub SMTP test',
+      text:
+        'This is a test message from ChurchHub.\n\n' +
+        `Sent through ${config.host}:${config.port} as ${config.user}.\n` +
+        'If you received it, password reset emails will work.\n',
+      html:
+        `<p>This is a test message from ChurchHub.</p>` +
+        `<p>Sent through ${escapeHtml(config.host)}:${config.port} as ${escapeHtml(config.user)}.</p>` +
+        `<p>If you received it, password reset emails will work.</p>`,
+    },
+    config
+  );
+
+  if (!result.delivered) {
+    return {
+      ok: false,
+      message:
+        `Signed in to ${config.host}, but the test message was rejected. ` +
+        `The From address (${config.fromEmail}) usually has to match the mailbox you authenticate as.`,
+      ...where,
+    };
+  }
+
+  return {
+    ok: true,
+    message: `Test email sent to ${sendTo}. Check the inbox, and the spam folder.`,
+    ...where,
+  };
+}
+
+// ════════════════════════════════════════════════════════════════════════════
 // TEMPLATES
 // ════════════════════════════════════════════════════════════════════════════
 

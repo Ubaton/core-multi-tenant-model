@@ -12,7 +12,8 @@ import {
   verifyRefreshToken,
   generateAccessToken,
   generateRefreshToken,
-  setAuthCookies
+  setAuthCookies,
+  isTokenRevoked
 } from '@/lib/auth';
 import { successResponse, errorResponse, handleError } from '@/lib/api';
 import type { UserRole } from '@/lib/types/db';
@@ -47,8 +48,10 @@ export async function POST(request: NextRequest) {
       role: UserRole;
       tenant_id: string | null;
       is_active: boolean;
+      sessions_valid_from: Date | null;
     }>(
-      `SELECT id, email, first_name, last_name, role, tenant_id, is_active
+      `SELECT id, email, first_name, last_name, role, tenant_id, is_active,
+              sessions_valid_from
        FROM "user" WHERE id = $1 AND deleted_at IS NULL`,
       [payload.userId]
     );
@@ -56,6 +59,12 @@ export async function POST(request: NextRequest) {
 
     if (!row || !row.is_active) {
       return errorResponse('USER_NOT_FOUND', 'User not found or inactive', 401);
+    }
+
+    // Refusing here is what makes the sign-out stick: without it an old refresh
+    // token would keep minting fresh access tokens after a password reset.
+    if (isTokenRevoked(payload.iat, row.sessions_valid_from)) {
+      return errorResponse('INVALID_TOKEN', 'Invalid or expired refresh token', 401);
     }
 
     const user = {
