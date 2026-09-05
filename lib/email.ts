@@ -20,14 +20,19 @@
  * returned `delivered` flag instead.
  *
  * Environment:
- *   RESEND_API_KEY  Fallback provider key. When absent, only SMTP is tried.
- *   EMAIL_FROM      From address used by the Resend fallback.
+ *   RESEND_API_KEY  Resend key. When absent, only SMTP is tried.
+ *   EMAIL_FROM      From address, e.g. "Name <noreply@yourdomain>". Required
+ *                   whenever RESEND_API_KEY is set; its domain must be
+ *                   verified at resend.com/domains.
+ *   EMAIL_REPLY_TO  Optional. Where replies go when the From address is a
+ *                   noreply@ that nobody reads.
  *   APP_URL         Public base URL used to build links (falls back to the
  *                   request origin). Set this in production - behind a proxy
  *                   the request origin can be an internal hostname.
  */
 
 import nodemailer, { type Transporter } from 'nodemailer';
+import { Resend } from 'resend';
 import { query } from '@/lib/db';
 
 export interface SendEmailInput {
@@ -35,6 +40,12 @@ export interface SendEmailInput {
   subject: string;
   html: string;
   text: string;
+  /**
+   * Resend de-duplicates sends sharing a key for 24 hours. Shaped
+   * `<event-type>/<entity-id>`. Lets a retry after a timeout be safe rather
+   * than delivering the same message twice.
+   */
+  idempotencyKey?: string;
 }
 
 export interface SendEmailResult {
@@ -52,7 +63,6 @@ interface SmtpConfig {
   fromName: string | null;
 }
 
-const RESEND_ENDPOINT = 'https://api.resend.com/emails';
 const SETTINGS_ID = 'system_settings';
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -206,6 +216,19 @@ async function sendViaSmtp(
   }
 }
 
+/**
+ * Resend's client is cheap to construct but holds config, so build it once.
+ * Created lazily: the key is read at send time, not at module load.
+ */
+let resendClient: { key: string; client: Resend } | null = null;
+
+function getResendClient(apiKey: string): Resend {
+  if (resendClient?.key !== apiKey) {
+    resendClient = { key: apiKey, client: new Resend(apiKey) };
+  }
+  return resendClient.client;
+}
+
 async function sendViaResend(
   input: SendEmailInput
 ): Promise<SendEmailResult & { error?: string }> {
@@ -214,33 +237,41 @@ async function sendViaResend(
     return { delivered: false, error: 'RESEND_API_KEY is not set.' };
   }
 
-  const from = process.env.EMAIL_FROM ?? 'ChurchHub <onboarding@resend.dev>';
+  // No test-address fallback: onboarding@resend.dev only delivers to the
+  // account owner, so defaulting to it would silently drop mail to everyone
+  // else. Better to fail loudly with an actionable reason.
+  const from = process.env.EMAIL_FROM;
+  if (!from) {
+    return {
+      delivered: false,
+      error:
+        'EMAIL_FROM is not set. Set it to a verified sender, e.g. ' +
+        '"Unity Fellowship Church <noreply@unityfellowshipchurch.org.za>".',
+    };
+  }
 
   try {
-    const response = await fetch(RESEND_ENDPOINT, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${apiKey}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        from,
-        to: [input.to],
-        subject: input.subject,
-        html: input.html,
-        text: input.text,
-      }),
+    // The SDK reports failures on `error` rather than throwing; try/catch here
+    // is only for network-level faults.
+    const { data, error } = await getResendClient(apiKey).emails.send({
+      from,
+      to: [input.to],
+      subject: input.subject,
+      html: input.html,
+      text: input.text,
+      ...(process.env.EMAIL_REPLY_TO ? { replyTo: process.env.EMAIL_REPLY_TO } : {}),
+      ...(input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : {}),
     });
 
-    if (!response.ok) {
-      const detail = await response.text().catch(() => '');
-      console.error(`[email] Provider rejected message (${response.status}): ${detail}`);
-      return { delivered: false, error: describeResendError(response.status, detail, from) };
+    if (error) {
+      console.error('[email] Resend rejected message:', error);
+      return { delivered: false, error: describeResendError(error, from) };
     }
 
+    console.info(`[email] Sent via Resend (id: ${data?.id ?? 'unknown'})`);
     return { delivered: true };
   } catch (error) {
-    console.error('[email] Failed to send message:', error);
+    console.error('[email] Failed to reach Resend:', error);
     return {
       delivered: false,
       error: `Could not reach the Resend API: ${
@@ -251,23 +282,32 @@ async function sendViaResend(
 }
 
 /**
- * Turn a Resend API rejection into something an administrator can act on. The
- * raw body is JSON aimed at developers, not at whoever is filling in settings.
+ * Turn a Resend rejection into something an administrator can act on. The SDK
+ * error is aimed at developers, not at whoever is filling in settings.
  */
-function describeResendError(status: number, body: string, from: string): string {
-  if (status === 401 || status === 403) {
+function describeResendError(
+  error: { name?: string; message?: string },
+  from: string
+): string {
+  const name = error.name ?? '';
+  const message = error.message ?? '';
+
+  if (name === 'restricted_api_key') {
+    return 'This Resend API key is restricted and cannot send. Create a key with sending permission.';
+  }
+  if (name === 'invalid_access' || message.includes('API key is invalid')) {
     return 'Resend rejected the API key. Check RESEND_API_KEY in the deployment environment.';
   }
-  if (body.includes('not verified') || body.includes('domain')) {
-    return `Resend rejected the From address (${from}). The sending domain must be verified in Resend, with its DNS records added, before it can send.`;
-  }
-  if (status === 422) {
-    return `Resend rejected the message as invalid. Check that EMAIL_FROM (${from}) is a full address, e.g. "Name <you@yourdomain.org.za>".`;
-  }
-  if (status === 429) {
+  if (name === 'rate_limit_exceeded') {
     return 'Resend rate limit reached. Wait a moment and try again.';
   }
-  return `Resend returned ${status}: ${body.slice(0, 300)}`;
+  if (message.includes('not verified') || message.includes('domain')) {
+    return `Resend will not send from ${from}: the domain is not verified. Add the DNS records Resend lists at resend.com/domains, then retry.`;
+  }
+  if (name === 'validation_error' || name === 'missing_required_field') {
+    return `Resend rejected the message: ${message}`;
+  }
+  return `Resend error (${name || 'unknown'}): ${message}`;
 }
 
 /**
@@ -489,11 +529,16 @@ export async function sendPasswordResetEmail(options: {
     </div>
   `;
 
+  // One key per reset token: a retried send after a timeout cannot deliver two
+  // copies of the same link. Keys expire after 24h, well past the 60m expiry.
+  const tokenId = resetUrl.split('token=')[1]?.slice(0, 32) ?? '';
+
   return sendEmail({
     to,
     subject: 'Reset your ChurchHub password',
     html,
     text,
+    idempotencyKey: tokenId ? `password-reset/${tokenId}` : undefined,
   });
 }
 
