@@ -67,6 +67,7 @@ export function useSettings() {
 export interface SmtpTestResult {
   ok: boolean;
   message: string;
+  transport: 'resend' | 'smtp' | 'none';
   host?: string;
   port?: number;
   sentTo?: string;

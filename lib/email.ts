@@ -6,11 +6,12 @@
  * Minimal transactional email sender with two interchangeable transports.
  *
  * Delivery is attempted in this order:
- *   1. SMTP, using the credentials a Super Admin saved in system_settings.
- *      This is the primary path - it lets the platform be pointed at the
- *      church's own mailbox without a redeploy.
- *   2. The Resend HTTP API, when RESEND_API_KEY is set. Useful on hosts that
- *      block outbound SMTP.
+ *   1. The Resend HTTP API, whenever RESEND_API_KEY is set. Preferred because
+ *      serverless hosts (Vercel among them) block outbound SMTP, so trying
+ *      SMTP first would burn its connection timeout on every single send.
+ *   2. SMTP, using the credentials a Super Admin saved in system_settings.
+ *      Works when the app is self-hosted, and lets the platform be pointed at
+ *      the church's own mailbox without a redeploy.
  *   3. Neither configured - the message is logged to the server console so the
  *      reset flow stays usable in development.
  *
@@ -205,10 +206,12 @@ async function sendViaSmtp(
   }
 }
 
-async function sendViaResend(input: SendEmailInput): Promise<SendEmailResult> {
+async function sendViaResend(
+  input: SendEmailInput
+): Promise<SendEmailResult & { error?: string }> {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
-    return { delivered: false };
+    return { delivered: false, error: 'RESEND_API_KEY is not set.' };
   }
 
   const from = process.env.EMAIL_FROM ?? 'ChurchHub <onboarding@resend.dev>';
@@ -232,14 +235,39 @@ async function sendViaResend(input: SendEmailInput): Promise<SendEmailResult> {
     if (!response.ok) {
       const detail = await response.text().catch(() => '');
       console.error(`[email] Provider rejected message (${response.status}): ${detail}`);
-      return { delivered: false };
+      return { delivered: false, error: describeResendError(response.status, detail, from) };
     }
 
     return { delivered: true };
   } catch (error) {
     console.error('[email] Failed to send message:', error);
-    return { delivered: false };
+    return {
+      delivered: false,
+      error: `Could not reach the Resend API: ${
+        error instanceof Error ? error.message : String(error)
+      }`,
+    };
   }
+}
+
+/**
+ * Turn a Resend API rejection into something an administrator can act on. The
+ * raw body is JSON aimed at developers, not at whoever is filling in settings.
+ */
+function describeResendError(status: number, body: string, from: string): string {
+  if (status === 401 || status === 403) {
+    return 'Resend rejected the API key. Check RESEND_API_KEY in the deployment environment.';
+  }
+  if (body.includes('not verified') || body.includes('domain')) {
+    return `Resend rejected the From address (${from}). The sending domain must be verified in Resend, with its DNS records added, before it can send.`;
+  }
+  if (status === 422) {
+    return `Resend rejected the message as invalid. Check that EMAIL_FROM (${from}) is a full address, e.g. "Name <you@yourdomain.org.za>".`;
+  }
+  if (status === 429) {
+    return 'Resend rate limit reached. Wait a moment and try again.';
+  }
+  return `Resend returned ${status}: ${body.slice(0, 300)}`;
 }
 
 /**
@@ -247,18 +275,20 @@ async function sendViaResend(input: SendEmailInput): Promise<SendEmailResult> {
  * delivered: false rather than throwing when none is configured or all fail.
  */
 export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult> {
-  const smtpConfig = await loadSmtpConfig();
+  if (process.env.RESEND_API_KEY) {
+    const result = await sendViaResend(input);
+    if (result.delivered) {
+      return { delivered: true };
+    }
+    console.warn('[email] Resend failed; trying SMTP if it is configured.');
+  }
 
+  const smtpConfig = await loadSmtpConfig();
   if (smtpConfig) {
     const result = await sendViaSmtp(input, smtpConfig);
     if (result.delivered) {
       return result;
     }
-    console.warn('[email] SMTP failed; falling back to the HTTP provider.');
-  }
-
-  if (process.env.RESEND_API_KEY) {
-    return sendViaResend(input);
   }
 
   console.info(
@@ -278,6 +308,8 @@ export interface SmtpTestResult {
   ok: boolean;
   /** Human-readable outcome, safe to show a Super Admin. */
   message: string;
+  /** Which transport was exercised, so the admin knows what was proven. */
+  transport: 'resend' | 'smtp' | 'none';
   /** Which host was dialled, so the admin can spot a typo. */
   host?: string;
   port?: number;
@@ -315,14 +347,50 @@ function describeSmtpError(error: unknown, config: SmtpConfig): string {
  * sending anything. When `sendTo` is given, also deliver a short test message
  * so the admin gets end-to-end proof rather than just a successful handshake.
  */
-export async function testSmtpConnection(sendTo?: string): Promise<SmtpTestResult> {
+/**
+ * Exercise the transport that a real password reset would use, and send a test
+ * message so the admin gets end-to-end proof rather than a bare handshake.
+ *
+ * Deliberately mirrors sendEmail's precedence: testing SMTP while production
+ * actually sends over Resend would be a green light for the wrong thing.
+ */
+export async function testEmailDelivery(sendTo: string): Promise<SmtpTestResult> {
+  if (process.env.RESEND_API_KEY) {
+    const result = await sendViaResend({
+      to: sendTo,
+      subject: 'ChurchHub email test',
+      text:
+        'This is a test message from ChurchHub, sent through Resend.\n\n' +
+        'If you received it, password reset emails will work.\n',
+      html:
+        '<p>This is a test message from ChurchHub, sent through Resend.</p>' +
+        '<p>If you received it, password reset emails will work.</p>',
+    });
+
+    if (!result.delivered) {
+      return {
+        ok: false,
+        transport: 'resend',
+        message: result.error ?? 'Resend could not deliver the test message.',
+      };
+    }
+
+    return {
+      ok: true,
+      transport: 'resend',
+      message: `Test email sent to ${sendTo} via Resend. Check the inbox, and the spam folder.`,
+    };
+  }
+
   const config = await loadSmtpConfig();
 
   if (!config) {
     return {
       ok: false,
+      transport: 'none',
       message:
-        'SMTP is not configured yet. Fill in the host, username and password, save, then test.',
+        'No email transport is configured. Set RESEND_API_KEY in the environment, ' +
+        'or fill in the SMTP host, username and password above and save.',
     };
   }
 
@@ -334,13 +402,10 @@ export async function testSmtpConnection(sendTo?: string): Promise<SmtpTestResul
     console.error('[email] SMTP verification failed:', error);
     cachedTransport?.transporter.close();
     cachedTransport = null;
-    return { ok: false, message: describeSmtpError(error, config), ...where };
-  }
-
-  if (!sendTo) {
     return {
-      ok: true,
-      message: `Connected to ${config.host} and signed in as ${config.user}.`,
+      ok: false,
+      transport: 'smtp',
+      message: describeSmtpError(error, config),
       ...where,
     };
   }
@@ -364,6 +429,7 @@ export async function testSmtpConnection(sendTo?: string): Promise<SmtpTestResul
   if (!result.delivered) {
     return {
       ok: false,
+      transport: 'smtp',
       message:
         `Signed in to ${config.host}, but the test message was rejected. ` +
         `The From address (${config.fromEmail}) usually has to match the mailbox you authenticate as.`,
@@ -373,6 +439,7 @@ export async function testSmtpConnection(sendTo?: string): Promise<SmtpTestResul
 
   return {
     ok: true,
+    transport: 'smtp',
     message: `Test email sent to ${sendTo}. Check the inbox, and the spam folder.`,
     ...where,
   };
