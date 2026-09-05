@@ -387,20 +387,31 @@ export const acceptInvitationSchema = z.object({
 // SYSTEM SETTINGS SCHEMAS
 // ════════════════════════════════════════════════════════════════════════════
 
+/**
+ * The settings form submits every field on each save, sending '' for boxes the
+ * admin left blank. An empty string is "not set", not a malformed value, so
+ * normalise it to null before the field's own rules run - otherwise one blank
+ * optional email would fail validation for the entire form.
+ */
+const blankAsNull = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess((value) => (value === '' ? null : value), schema);
+
 export const updateSystemSettingsSchema = z.object({
   // General Settings
   platformName: z.string().min(1).max(200).optional(),
-  platformDescription: z.string().max(1000).optional().nullable(),
-  supportEmail: z.string().email().optional().nullable(),
-  supportPhone: z.string().max(20).optional().nullable(),
+  platformDescription: blankAsNull(z.string().max(1000).optional().nullable()),
+  supportEmail: blankAsNull(z.string().email().optional().nullable()),
+  supportPhone: blankAsNull(z.string().max(20).optional().nullable()),
   defaultTimezone: z.string().optional(),
   // Email/SMTP Settings
-  smtpHost: z.string().max(200).optional().nullable(),
+  smtpHost: blankAsNull(z.string().max(200).optional().nullable()),
   smtpPort: z.coerce.number().int().min(1).max(65535).optional(),
-  smtpUser: z.string().max(200).optional().nullable(),
+  smtpUser: blankAsNull(z.string().max(200).optional().nullable()),
+  // A blank password means "keep the stored one"; the route strips it before
+  // writing, so it must survive validation as an empty string.
   smtpPass: z.string().max(200).optional().nullable(),
-  smtpFromEmail: z.string().email().optional().nullable(),
-  smtpFromName: z.string().max(200).optional().nullable(),
+  smtpFromEmail: blankAsNull(z.string().email().optional().nullable()),
+  smtpFromName: blankAsNull(z.string().max(200).optional().nullable()),
   smtpSecure: z.boolean().optional(),
   // Notification Settings
   notifyNewTenant: z.boolean().optional(),
