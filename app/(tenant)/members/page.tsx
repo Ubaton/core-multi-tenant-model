@@ -9,7 +9,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Plus, Search, MoreHorizontal, Eye, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Search, MoreHorizontal, Eye, Pencil, Trash2, Upload } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -68,12 +68,20 @@ export default function MembersPage() {
           </p>
         </div>
         <RequireCreate module="members">
-          <Link href="/members/new">
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
-              Add Member
-            </Button>
-          </Link>
+          <div className="flex gap-2">
+            <Link href="/members/import">
+              <Button variant="outline">
+                <Upload className="h-4 w-4 mr-2" />
+                Import
+              </Button>
+            </Link>
+            <Link href="/members/new">
+              <Button>
+                <Plus className="h-4 w-4 mr-2" />
+                Add Member
+              </Button>
+            </Link>
+          </div>
         </RequireCreate>
       </div>
 

@@ -13,6 +13,7 @@ import { get, post, patch, del } from '../api-client';
 import { useAppMutation } from './use-app-mutation';
 import type { PaginationMeta } from '@/lib/types';
 import type { CreateMemberInput, UpdateMemberInput } from '@/lib/validations/schemas';
+import type { ImportRow } from '@/lib/members-import';
 
 // Query keys
 export const memberKeys = {
@@ -133,6 +134,33 @@ export function useCreateMember() {
   return useAppMutation<Member, Error, CreateMemberInput>({
     mutationFn: async (data) => {
       const response = await post<Member>('/api/members', data);
+      return response.data!;
+    },
+    invalidateKeys: [memberKeys.lists()],
+  });
+}
+
+export interface ImportRowIssue {
+  row: number;
+  name: string;
+  reasons: string[];
+}
+
+export interface ImportMembersResult {
+  total: number;
+  created: number;
+  skipped: ImportRowIssue[];
+  invalid: ImportRowIssue[];
+}
+
+/**
+ * Bulk import members from parsed CSV rows.
+ * Invalidates all list queries so imported members appear everywhere.
+ */
+export function useImportMembers() {
+  return useAppMutation<ImportMembersResult, Error, ImportRow[]>({
+    mutationFn: async (rows) => {
+      const response = await post<ImportMembersResult>('/api/members/import', { rows });
       return response.data!;
     },
     invalidateKeys: [memberKeys.lists()],
