@@ -155,6 +155,8 @@ model Tenant {
   auditLogs   AuditLog[]
   internalMessages InternalMessage[]
   rolePermissions RolePermission[]
+  registrationLink RegistrationLink?
+  memberRegistrations MemberRegistration[]
 
   @@index([slug])
   @@index([parentId])
@@ -336,6 +338,49 @@ model Member {
   @@index([tenantId])
   @@index([status])
   @@index([familyId])
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// REGISTRATION LINK - Unguessable public URL / QR code for self-registration
+// ════════════════════════════════════════════════════════════════════════════
+
+model RegistrationLink {
+  id        String    @id @default(cuid())
+  tenantId  String    @unique
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  token     String    @unique // Embedded in /register/<token>; rotating it revokes old links
+  isActive  Boolean   @default(true)
+  expiresAt DateTime?
+  createdBy String?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+}
+
+// ════════════════════════════════════════════════════════════════════════════
+// MEMBER REGISTRATION - Staged submissions from the public form
+// ════════════════════════════════════════════════════════════════════════════
+
+model MemberRegistration {
+  id         String   @id @default(cuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  surname    String
+  names      String
+  cellNumber String
+  email      String?
+  idNumber   String?
+  data       Json     // Full form payload
+  status     String   @default("PENDING") // PENDING | REVIEWED
+  ipHash     String?  // Salted hash, rate limiting only
+
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([tenantId, createdAt(sort: Desc)])
+  @@index([tenantId, ipHash, createdAt])
 }
 
 // ════════════════════════════════════════════════════════════════════════════

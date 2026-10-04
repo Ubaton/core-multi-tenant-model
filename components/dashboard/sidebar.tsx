@@ -26,6 +26,7 @@ import {
   LogOut,
   LucideIcon,
   Building2,
+  QrCode,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { VersionBadge } from '@/components/dashboard/version-badge';
@@ -54,6 +55,7 @@ const navGroups: { label: string; items: NavItem[] }[] = [
     items: [
       { name: 'Members',         href: '/members',         icon: Users,       module: 'members'          },
       { name: 'Leads',           href: '/leads',           icon: UserPlus,    module: 'leads'            },
+      { name: 'Registrations',   href: '/registrations',   icon: QrCode,      module: 'members'          },
       { name: 'Prayer Requests', href: '/prayer-requests', icon: HandHeart,   module: 'prayer_requests'  },
     ],
   },

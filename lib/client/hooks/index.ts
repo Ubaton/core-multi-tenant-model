@@ -6,6 +6,7 @@ export * from './use-app-mutation';
 export * from './use-server-events';
 export * from './use-auth';
 export * from './use-members';
+export * from './use-registrations';
 export * from './use-leads';
 export * from './use-prayer-requests';
 export * from './use-offerings';
