@@ -28,6 +28,8 @@ import { useModulePermissions } from '@/lib/client/hooks/use-user-permissions';
 import { REGISTRATION_SECTIONS } from '@/lib/registration/fields';
 
 const PAGE_SIZE = 20;
+const PNG_SIZE = 1024;
+const PNG_MARGIN = 64;
 
 function LinkCard({ canManage }: { canManage: boolean }) {
   const { data: link, isLoading } = useRegistrationLink();
@@ -48,13 +50,44 @@ function LinkCard({ canManage }: { canManage: boolean }) {
   const downloadQr = () => {
     const svg = qrRef.current?.querySelector('svg');
     if (!svg) return;
-    const blob = new Blob([new XMLSerializer().serializeToString(svg)], { type: 'image/svg+xml' });
-    const href = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = href;
-    anchor.download = 'registration-qr.svg';
-    anchor.click();
-    URL.revokeObjectURL(href);
+    const svgUrl = URL.createObjectURL(
+      new Blob([new XMLSerializer().serializeToString(svg)], { type: 'image/svg+xml' })
+    );
+    const image = new Image();
+    image.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = PNG_SIZE + PNG_MARGIN * 2;
+      canvas.height = canvas.width;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        URL.revokeObjectURL(svgUrl);
+        toast.error('Could not create the image');
+        return;
+      }
+      // White background and quiet zone keep the code scannable from print or dark mode.
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.drawImage(image, PNG_MARGIN, PNG_MARGIN, PNG_SIZE, PNG_SIZE);
+      URL.revokeObjectURL(svgUrl);
+
+      canvas.toBlob((png) => {
+        if (!png) {
+          toast.error('Could not create the image');
+          return;
+        }
+        const href = URL.createObjectURL(png);
+        const anchor = document.createElement('a');
+        anchor.href = href;
+        anchor.download = 'registration-qr.png';
+        anchor.click();
+        URL.revokeObjectURL(href);
+      }, 'image/png');
+    };
+    image.onerror = () => {
+      URL.revokeObjectURL(svgUrl);
+      toast.error('Could not create the image');
+    };
+    image.src = svgUrl;
   };
 
   const handleRotate = async () => {
@@ -105,7 +138,7 @@ function LinkCard({ canManage }: { canManage: boolean }) {
                 </Button>
                 <Button variant="outline" onClick={downloadQr}>
                   <Download className="mr-2 h-4 w-4" aria-hidden="true" />
-                  Download QR
+                  Download QR (PNG)
                 </Button>
                 {canManage && (
                   <Button variant="outline" onClick={handleRotate} disabled={rotate.isPending}>
