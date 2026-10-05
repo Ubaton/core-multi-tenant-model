@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "prepare": "git config core.hooksPath .githooks || true",
+    "db:migrate": "node scripts/migrate.mjs",
     "version:bump": "node scripts/bump-version.mjs",
     "version:check": "node scripts/bump-version.mjs --dry-run"
   },
