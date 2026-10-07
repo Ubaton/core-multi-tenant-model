@@ -26,6 +26,7 @@ import {
 } from '@/lib/client';
 import { useModulePermissions } from '@/lib/client/hooks/use-user-permissions';
 import { REGISTRATION_SECTIONS } from '@/lib/registration/fields';
+import { canManageRegistrationLink } from '@/lib/registration/permissions';
 
 const PAGE_SIZE = 20;
 const PNG_SIZE = 1024;
@@ -281,7 +282,7 @@ function SubmissionsCard({ canEdit }: { canEdit: boolean }) {
 }
 
 export default function RegistrationsPage() {
-  const { canView, canCreate, canEdit, isLoading } = useModulePermissions();
+  const { canView, canEdit, role, isLoading } = useModulePermissions();
 
   if (!isLoading && !canView('members')) {
     return <AccessDenied message="You don't have permission to view registrations." />;
@@ -293,7 +294,7 @@ export default function RegistrationsPage() {
         <h1 className="text-2xl font-bold text-foreground">Registrations</h1>
         <p className="text-muted-foreground">Let people register themselves by scanning a QR code.</p>
       </div>
-      <LinkCard canManage={canCreate('members')} />
+      <LinkCard canManage={canManageRegistrationLink(role)} />
       <SubmissionsCard canEdit={canEdit('members')} />
     </div>
   );

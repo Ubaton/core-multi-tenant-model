@@ -8,8 +8,9 @@
 
 import { randomUUID } from 'crypto';
 import { query } from '@/lib/db';
-import { withPermission, successResponse, errorResponse, logAudit } from '@/lib/api';
+import { withAuth, withPermission, successResponse, errorResponse, logAudit } from '@/lib/api';
 import { generateRegistrationToken } from '@/lib/registration/server';
+import { canManageRegistrationLink } from '@/lib/registration/permissions';
 
 interface LinkRow {
   token: string;
@@ -35,7 +36,11 @@ export const GET = withPermission('list', 'member', async (_request, context) =>
   return successResponse(rows[0] ? toLink(rows[0]) : null);
 });
 
-export const POST = withPermission('create', 'member', async (request, context) => {
+export const POST = withAuth(async (request, context) => {
+  if (!canManageRegistrationLink(context.user.role)) {
+    return errorResponse('FORBIDDEN', 'Only super admins and church admins can generate registration QR codes', 403);
+  }
+
   if (!context.tenantId) {
     return errorResponse('TENANT_REQUIRED', 'Select a church first', 400);
   }
