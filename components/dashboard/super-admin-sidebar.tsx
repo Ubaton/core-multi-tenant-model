@@ -21,6 +21,7 @@ import {
   ChevronsLeft,
   ChevronsRight,
   LogOut,
+  QrCode,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { VersionBadge } from '@/components/dashboard/version-badge';
@@ -42,6 +43,7 @@ const navGroups = [
     items: [
       { name: 'Churches',  href: '/super-admin/tenants',        icon: Building2    },
       { name: 'Users',    href: '/super-admin/users',          icon: Users        },
+      { name: 'QR Registrations', href: '/super-admin/registrations', icon: QrCode },
       { name: 'Messages', href: '/super-admin/communications', icon: MessageSquare },
     ],
   },

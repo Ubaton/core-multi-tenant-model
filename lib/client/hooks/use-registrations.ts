@@ -9,15 +9,15 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { get, post, patch } from '../api-client';
+import { get, post, patch, getTenantId } from '../api-client';
 import { useAppMutation } from './use-app-mutation';
 import type { PaginationMeta } from '@/lib/types';
 
 export const registrationKeys = {
   all: ['registrations'] as const,
-  link: () => [...registrationKeys.all, 'link'] as const,
+  link: () => [...registrationKeys.all, 'link', getTenantId()] as const,
   lists: () => [...registrationKeys.all, 'list'] as const,
-  list: (filters: RegistrationFilters) => [...registrationKeys.lists(), filters] as const,
+  list: (filters: RegistrationFilters) => [...registrationKeys.lists(), getTenantId(), filters] as const,
 };
 
 export interface RegistrationFilters {
