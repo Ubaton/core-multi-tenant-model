@@ -9,15 +9,14 @@
  * The <QueryProvider> wraps the Next.js app and passes the singleton down
  * via context so every useQuery / useMutation inside shares the same cache.
  *
- * Default strategy — "SSE-first, no redundant polling":
- *  • staleTime: Infinity  — data never goes stale on its own; only SSE
- *                           events (or explicit user actions) trigger refetches.
+ * Default strategy — bounded freshness without polling:
+ *  • staleTime: 30 seconds — stale data refreshes on navigation or focus.
  *  • gcTime: 10 min       — keep unused cache entries around so navigating
  *                           back to a page is instant.
- *  • refetchOnWindowFocus: false — we have SSE; focus-refetch is redundant
- *                                   and wastes DB queries.
+ *  • refetchOnWindowFocus: true — recover missed updates on return.
  *  • refetchOnReconnect: true    — if the network drops, re-sync on recovery.
- *  • retry: 1             — one automatic retry on transient network errors.
+ *  • query retry: 1        — one retry on transient read errors.
+ *  • mutation retry: 0     — avoid repeating writes with uncertain outcomes.
  *
  * GOTCHA (Next.js / Vercel):
  *  Do NOT instantiate QueryClient at module scope in a 'use client' file that

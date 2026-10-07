@@ -18,7 +18,7 @@ export default function SuperAdminRegistrationsPage() {
 }
 
 function ChurchRegistrations() {
-  const { data, isLoading, error } = useTenants({ limit: 100, isActive: true });
+  const { data, isLoading, error } = useTenants({ pageSize: 100 });
   const [selectedId, setSelectedId] = useState('');
   const churches = data?.data.filter((church) => church.isActive) ?? [];
   const selected = churches.find((church) => church.id === selectedId);

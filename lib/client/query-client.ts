@@ -20,15 +20,10 @@ export function makeQueryClient() {
     defaultOptions: {
       queries: {
         /**
-         * staleTime: Infinity
-         * Data never goes stale on its own — the SSE hook is solely responsible
-         * for signalling when remote data has changed.  This eliminates ALL
-         * background refetches that TanStack would otherwise schedule.
-         *
-         * Override per-query when you genuinely need time-based freshness:
-         *   useQuery({ queryKey: ..., staleTime: 60_000 })
+         * SSE is an optimization, not a guarantee. Keep a bounded freshness
+         * window so navigation, focus and reconnection recover missed events.
          */
-        staleTime: Infinity,
+        staleTime: 30_000,
 
         /**
          * gcTime: 10 minutes
@@ -39,11 +34,9 @@ export function makeQueryClient() {
         gcTime: 10 * 60 * 1000,
 
         /**
-         * refetchOnWindowFocus: false
-         * With SSE delivering invalidations in real-time, focus-based refetches
-         * are pure waste.  Disabled globally.
+         * Refetch stale data when returning to the application.
          */
-        refetchOnWindowFocus: false,
+        refetchOnWindowFocus: true,
 
         /**
          * refetchOnReconnect: true
@@ -63,10 +56,10 @@ export function makeQueryClient() {
 
       mutations: {
         /**
-         * retry: 1 for mutations too.  Cloud Run can respond slowly on first
-         * request after scale-to-zero; a single retry handles that gracefully.
+         * Writes are not necessarily idempotent: retrying an uncertain result
+         * can create duplicate records or rotate a registration token twice.
          */
-        retry: 1,
+        retry: 0,
       },
     },
   });

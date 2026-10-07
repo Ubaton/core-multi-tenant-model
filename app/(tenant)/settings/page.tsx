@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { 
   Building2, 
@@ -39,6 +39,10 @@ const settingsTabs = [
 type SettingsTab = typeof settingsTabs[number]['id'];
 
 export default function SettingsPage() {
+  return <Suspense fallback={<p role="status">Loading settings…</p>}><SettingsContent /></Suspense>;
+}
+
+function SettingsContent() {
   const searchParams = useSearchParams();
   const { data: user } = useCurrentUser();
   const { data: tenant } = useTenantProfile();

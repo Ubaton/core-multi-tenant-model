@@ -33,7 +33,7 @@ const PNG_SIZE = 1024;
 const PNG_MARGIN = 64;
 
 function LinkCard({ canManage }: { canManage: boolean }) {
-  const { data: link, isLoading } = useRegistrationLink();
+  const { data: link, isLoading, error, refetch } = useRegistrationLink();
   const rotate = useRotateRegistrationLink();
   const qrRef = useRef<HTMLDivElement>(null);
 
@@ -115,6 +115,11 @@ function LinkCard({ canManage }: { canManage: boolean }) {
       <CardContent>
         {isLoading ? (
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" aria-label="Loading" />
+        ) : error ? (
+          <div className="space-y-3">
+            <p role="alert" className="text-sm text-destructive">Could not load the registration link. Please try again.</p>
+            <Button variant="outline" onClick={() => void refetch()}>Try again</Button>
+          </div>
         ) : !link ? (
           <div className="flex flex-col items-start gap-3">
             <p className="text-sm text-muted-foreground">No registration link has been created yet.</p>
@@ -187,7 +192,7 @@ function SubmissionsCard({ canEdit }: { canEdit: boolean }) {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [openId, setOpenId] = useState<string | null>(null);
-  const { data, isLoading } = useRegistrations({ search: search || undefined, page, limit: PAGE_SIZE });
+  const { data, isLoading, error, refetch } = useRegistrations({ search: search || undefined, page, limit: PAGE_SIZE });
   const markReviewed = useMarkRegistrationReviewed();
 
   const handleReviewed = async (id: string) => {
@@ -223,8 +228,13 @@ function SubmissionsCard({ canEdit }: { canEdit: boolean }) {
           <div className="p-6">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" aria-label="Loading" />
           </div>
+        ) : error ? (
+          <div className="space-y-3 p-6">
+            <p role="alert" className="text-sm text-destructive">Could not load submissions. Please try again.</p>
+            <Button variant="outline" onClick={() => void refetch()}>Try again</Button>
+          </div>
         ) : !data || data.data.length === 0 ? (
-          <p className="p-6 text-sm text-muted-foreground">No submissions yet.</p>
+          <p className="p-6 text-sm text-muted-foreground">{search ? 'No submissions match your search.' : 'No submissions yet.'}</p>
         ) : (
           <ul className="divide-y">
             {data.data.map((r) => {

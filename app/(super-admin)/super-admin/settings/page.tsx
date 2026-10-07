@@ -6,7 +6,7 @@
 
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { 
   Settings, 
@@ -74,6 +74,10 @@ const settingsTabs = [
 type SettingsTab = typeof settingsTabs[number]['id'];
 
 export default function SuperAdminSettingsPage() {
+  return <Suspense fallback={<p role="status">Loading settings…</p>}><SuperAdminSettingsContent /></Suspense>;
+}
+
+function SuperAdminSettingsContent() {
   const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<SettingsTab>('general');
   const [formData, setFormData] = useState<Partial<UpdateSystemSettingsInput>>({});
@@ -299,7 +303,7 @@ export default function SuperAdminSettingsPage() {
                     onChange={(e) => handleInputChange('defaultTimezone', e.target.value)}
                     className="w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
                   >
-                    <option value="Africa/Johannesburg">Africa/Johannesburg (WAT)</option>
+                    <option value="Africa/Lagos">Africa/Lagos (WAT)</option>
                     <option value="Africa/Johannesburg">Africa/Johannesburg (SAST)</option>
                     <option value="Europe/London">Europe/London (GMT/BST)</option>
                     <option value="America/New_York">America/New_York (EST/EDT)</option>

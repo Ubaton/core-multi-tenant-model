@@ -65,10 +65,11 @@ export function useServerEvents() {
   const timerRef   = useRef<ReturnType<typeof setTimeout> | null>(null);
   const esRef      = useRef<EventSource | null>(null);
   // Track last heartbeat to detect silent connection drops.
-  const lastHeartbeatRef = useRef<number>(Date.now());
+  const lastHeartbeatRef = useRef<number>(0);
 
   useEffect(() => {
     let disposed = false;
+    lastHeartbeatRef.current = Date.now();
 
     function connect() {
       if (disposed) return;

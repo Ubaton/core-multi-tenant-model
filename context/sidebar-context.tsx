@@ -7,7 +7,8 @@
 
 'use client';
 
-import { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { createContext, useCallback, useContext, useSyncExternalStore } from 'react';
+import { readPreference, writePreference, subscribePreferences } from '@/lib/client/browser-preferences';
 
 interface SidebarContextType {
   collapsed: boolean;
@@ -23,28 +24,14 @@ export function SidebarProvider({
   children: React.ReactNode;
   storageKey?: string;
 }) {
-  const [collapsed, setCollapsed] = useState(false);
-
-  // Hydrate from localStorage on mount
-  useEffect(() => {
-    try {
-      const stored = localStorage.getItem(storageKey);
-      if (stored === 'true') setCollapsed(true);
-    } catch {
-      // ignore
-    }
-  }, [storageKey]);
+  const collapsed = useSyncExternalStore(
+    subscribePreferences,
+    () => readPreference(storageKey, 'false') === 'true',
+    () => false,
+  );
 
   const toggle = useCallback(() => {
-    setCollapsed((prev) => {
-      const next = !prev;
-      try {
-        localStorage.setItem(storageKey, String(next));
-      } catch {
-        // ignore
-      }
-      return next;
-    });
+    writePreference(storageKey, String(readPreference(storageKey, 'false') !== 'true'));
   }, [storageKey]);
 
   return (

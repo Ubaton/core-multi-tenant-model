@@ -49,6 +49,8 @@ function LoginForm() {
             <Label htmlFor="email">Email</Label>
             <Input
               id="email"
+              name="email"
+              autoComplete="username"
               type="email"
               placeholder="you@example.com"
               value={email}
@@ -69,6 +71,8 @@ function LoginForm() {
             </div>
             <Input
               id="password"
+              name="password"
+              autoComplete="current-password"
               type="password"
               placeholder="••••••••"
               value={password}
@@ -79,7 +83,7 @@ function LoginForm() {
           </div>
 
           {login.isError && (
-            <div className="p-3 text-sm text-destructive bg-destructive/10 dark:text-destructive rounded-md">
+            <div role="alert" className="p-3 text-sm text-destructive bg-destructive/10 dark:text-destructive rounded-md">
               {login.error instanceof Error ? login.error.message : 'Login failed. Please try again.'}
             </div>
           )}

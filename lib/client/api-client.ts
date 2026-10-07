@@ -48,6 +48,7 @@ export function clearTokens(): void {
   if (typeof window === 'undefined') return;
   localStorage.removeItem(ACCESS_TOKEN_KEY);
   localStorage.removeItem(REFRESH_TOKEN_KEY);
+  localStorage.removeItem(TENANT_ID_KEY);
 }
 
 export function getTenantId(): string | null {
@@ -58,6 +59,11 @@ export function getTenantId(): string | null {
 export function setTenantId(tenantId: string): void {
   if (typeof window === 'undefined') return;
   localStorage.setItem(TENANT_ID_KEY, tenantId);
+}
+
+export function clearTenantId(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem(TENANT_ID_KEY);
 }
 
 // ════════════════════════════════════════════════════════════════════════════
@@ -116,7 +122,7 @@ function buildHeaders(options?: RequestOptions): Headers {
 /**
  * Handle API response
  */
-async function handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
+async function handleResponse<T>(response: Response, skipAuth = false): Promise<ApiResponse<T>> {
   // Handle 204 No Content
   if (response.status === 204) {
     return { success: true };
@@ -127,7 +133,7 @@ async function handleResponse<T>(response: Response): Promise<ApiResponse<T>> {
   // Handle errors
   if (!response.ok) {
     // Handle 401 - attempt token refresh
-    if (response.status === 401 && !response.url.includes('/auth/refresh')) {
+    if (!skipAuth && response.status === 401 && !response.url.includes('/auth/refresh')) {
       const refreshed = await attemptTokenRefresh();
       if (!refreshed) {
         clearTokens();
@@ -192,7 +198,7 @@ export async function get<T>(
     method: 'GET',
     headers: buildHeaders(options),
   });
-  return handleResponse<T>(response);
+  return handleResponse<T>(response, options?.skipAuth);
 }
 
 /**
@@ -210,7 +216,7 @@ export async function post<T, D = unknown>(
     headers: buildHeaders(options),
     body: data instanceof FormData ? data : JSON.stringify(data),
   });
-  return handleResponse<T>(response);
+  return handleResponse<T>(response, options?.skipAuth);
 }
 
 /**
@@ -228,7 +234,7 @@ export async function patch<T, D = unknown>(
     headers: buildHeaders(options),
     body: JSON.stringify(data),
   });
-  return handleResponse<T>(response);
+  return handleResponse<T>(response, options?.skipAuth);
 }
 
 /**
@@ -246,7 +252,7 @@ export async function put<T, D = unknown>(
     headers: buildHeaders(options),
     body: JSON.stringify(data),
   });
-  return handleResponse<T>(response);
+  return handleResponse<T>(response, options?.skipAuth);
 }
 
 /**
@@ -262,7 +268,7 @@ export async function del<T>(
     method: 'DELETE',
     headers: buildHeaders(options),
   });
-  return handleResponse<T>(response);
+  return handleResponse<T>(response, options?.skipAuth);
 }
 
 // ════════════════════════════════════════════════════════════════════════════

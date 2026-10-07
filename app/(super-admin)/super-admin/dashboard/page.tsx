@@ -8,7 +8,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { Building2, Users, Globe, Activity, DollarSign, ChevronLeft, ChevronRight, Loader2 } from 'lucide-react';
+import { Building2, Users, Globe, Activity, DollarSign, ChevronLeft, ChevronRight, Loader2, QrCode } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useTenants, usePlatformStats } from '@/lib/client';
@@ -35,11 +35,16 @@ export default function SuperAdminDashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="flex flex-wrap items-start justify-between gap-4">
+        <div>
         <h1 className="text-2xl font-bold text-foreground">Platform Overview</h1>
         <p className="text-muted-foreground">
           Monitor and manage all tenants across the platform
         </p>
+        </div>
+        <Link href="/super-admin/registrations" className="inline-flex h-10 items-center gap-2 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground hover:bg-primary/85">
+          <QrCode className="size-4" aria-hidden="true" />QR Registrations
+        </Link>
       </div>
 
       {/* Stats Grid */}
@@ -120,22 +125,22 @@ export default function SuperAdminDashboardPage() {
           </CardContent>
         </Card>
 
-        <Card className="bg-success/10 border-success/30">
+        <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium text-success">
+            <CardTitle className="text-sm font-medium text-muted-foreground">
               Total Offerings
             </CardTitle>
-            <DollarSign className="h-4 w-4 text-success" />
+            <DollarSign className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             {isLoadingStats ? (
               <div className="h-8 w-24 bg-success/10 rounded animate-pulse" />
             ) : (
               <>
-                <div className="text-2xl font-bold text-success">
+                <div className="text-2xl font-bold tabular-nums">
                   R {totalOfferings.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                 </div>
-                <p className="text-xs text-success">across all tenants</p>
+                <p className="text-xs text-muted-foreground">across all tenants</p>
               </>
             )}
           </CardContent>
@@ -178,18 +183,18 @@ export default function SuperAdminDashboardPage() {
                 <Link
                   key={tenant.id}
                   href={`/super-admin/tenants/${tenant.id}`}
-                  className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted transition-colors"
+                  className="flex flex-wrap items-center justify-between gap-4 p-4 border rounded-xl hover:bg-muted transition-colors"
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex min-w-0 items-center gap-4">
                     <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
                       <Building2 className="h-5 w-5 text-muted-foreground" />
                     </div>
-                    <div>
-                      <p className="font-medium text-foreground">
+                    <div className="min-w-0">
+                      <p className="font-medium text-foreground break-words">
                         {tenant.name}
                       </p>
                       <p className="text-sm text-muted-foreground">
-                        {tenant.slug}.yourdomain.com
+                        {tenant.slug}
                       </p>
                     </div>
                   </div>

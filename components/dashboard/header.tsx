@@ -9,7 +9,7 @@
 import * as React from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { Bell, Menu, User, X } from 'lucide-react';
+import { Bell, Menu, User, X, Sun, Moon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -20,7 +20,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import { Sheet, SheetClose, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetClose, SheetContent, SheetTrigger, SheetTitle } from '@/components/ui/sheet';
+import { useTheme } from '@/context/theme-context';
 import { useCurrentUser, useLogout } from '@/lib/client';
 import { useUnreadMessageCount } from '@/lib/client/hooks';
 
@@ -35,7 +36,8 @@ export function Header({
   const logout = useLogout();
   const pathname = usePathname();
   const router = useRouter();
-  const { data: unreadCount, isLoading: isLoadingCount } = useUnreadMessageCount();
+  const { data: unreadCount } = useUnreadMessageCount();
+  const { resolvedTheme, setTheme } = useTheme();
 
   const [mobileNavOpen, setMobileNavOpen] = React.useState(false);
 
@@ -48,13 +50,12 @@ export function Header({
     ? '/super-admin/settings'
     : '/settings';
 
-  // There isn't a dedicated /profile route; the tenant profile lives under Settings.
-  const profileLink = pathname?.startsWith('/super-admin')
-    ? '/super-admin/settings'
-    : '/settings?tab=profile';
+  const section = pathname?.replace(/^\/super-admin\//, '/').split('/')[1] ?? 'dashboard';
+  const pageTitle = ({ dashboard: 'Overview', tenants: 'Churches', users: 'Users', registrations: 'QR Registrations', access: 'Access Control', audit: 'Audit Trail', stats: 'Platform Stats', calls: 'Call Center', 'prayer-requests': 'Prayer Requests' } as Record<string, string>)[section]
+    ?? section.replace(/-/g, ' ').replace(/^./, (letter) => letter.toUpperCase());
 
   return (
-    <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-x-4 border-b bg-background/80 backdrop-blur supports-backdrop-filter:bg-background/60 px-4 sm:gap-x-6 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-40 flex h-16 shrink-0 items-center gap-3 bg-background/95 px-4 sm:px-6 lg:px-8">
       {/* Mobile menu button */}
       {MobileNav ? (
         <Sheet open={mobileNavOpen} onOpenChange={setMobileNavOpen}>
@@ -67,6 +68,7 @@ export function Header({
             }
           />
           <SheetContent className="p-0">
+            <SheetTitle className="sr-only">Navigation</SheetTitle>
             <div className="flex h-16 items-center justify-end border-b px-4">
               <SheetClose
                 render={
@@ -88,28 +90,29 @@ export function Header({
 
       {/* Separator */}
       <div className="h-6 w-px bg-border lg:hidden" />
+      <p className="min-w-0 truncate text-sm font-medium text-muted-foreground">{pageTitle}</p>
 
       <div className="flex flex-1 justify-end gap-x-4 self-stretch lg:gap-x-6">
         <div className="flex items-center gap-x-4 lg:gap-x-6">
           {/* Messages/Notifications */}
-          <Link href={messagesLink}>
-            <Button variant="ghost" size="icon" className="relative">
-              <span className="sr-only">View messages</span>
+          <Link href={messagesLink} aria-label="View messages" className="relative flex size-10 items-center justify-center rounded-lg hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring">
               <Bell className={`h-5 w-5 ${unreadCount && unreadCount > 0 ? 'text-foreground' : 'text-muted-foreground'}`} />
               {typeof unreadCount === 'number' && unreadCount > 0 && (
-                <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 flex items-center justify-center rounded-full bg-destructive text-white text-xs font-medium animate-pulse">
+                <span className="absolute top-0 right-0 min-w-5 h-5 px-1 flex items-center justify-center rounded-full bg-foreground text-background text-xs font-medium">
                   {unreadCount > 99 ? '99+' : unreadCount}
                 </span>
               )}
-            </Button>
           </Link>
+          <Button variant="ghost" size="icon" aria-label={`Switch to ${resolvedTheme === 'dark' ? 'light' : 'dark'} mode`} onClick={() => setTheme(resolvedTheme === 'dark' ? 'light' : 'dark')}>
+            {resolvedTheme === 'dark' ? <Sun aria-hidden="true" /> : <Moon aria-hidden="true" />}
+          </Button>
 
           {/* Separator */}
           <div className="hidden lg:block lg:h-6 lg:w-px lg:bg-border" />
 
           {/* Profile dropdown */}
           <DropdownMenu>
-            <DropdownMenuTrigger className="flex items-center gap-x-3 p-1.5 rounded-md hover:bg-accent/60 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60">
+            <DropdownMenuTrigger aria-label="Account menu" className="flex items-center gap-x-3 p-1.5 rounded-lg hover:bg-accent/60 transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60">
               <div className="h-8 w-8 rounded-full bg-muted/60 ring-1 ring-border flex items-center justify-center">
                 <User className="h-5 w-5 text-muted-foreground" />
               </div>
@@ -133,11 +136,11 @@ export function Header({
                 </DropdownMenuLabel>
               </DropdownMenuGroup>
               <DropdownMenuSeparator />
-              {/* <DropdownMenuItem onClick={() => router.push(profileLink)}>Your Profile</DropdownMenuItem> */}
               <DropdownMenuItem onClick={() => router.push(settingsLink)}>Settings</DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem
                 onClick={() => logout.mutate()}
+                disabled={logout.isPending}
                 className="text-destructive"
               >
                 Sign out

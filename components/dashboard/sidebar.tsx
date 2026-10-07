@@ -25,7 +25,6 @@ import {
   ChevronsRight,
   LogOut,
   LucideIcon,
-  Building2,
   QrCode,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -88,7 +87,7 @@ function NavTooltip({ label, children }: { label: string; children: React.ReactN
           'pointer-events-none absolute left-full ml-3 z-200',
           'rounded-md bg-foreground px-2.5 py-1.5 text-xs font-medium text-background shadow-md',
           'whitespace-nowrap',
-          'opacity-0 translate-x-1 group-hover/tip:opacity-100 group-hover/tip:translate-x-0',
+          'opacity-0 translate-x-1 group-hover/tip:opacity-100 group-focus-within/tip:opacity-100 group-hover/tip:translate-x-0 group-focus-within/tip:translate-x-0',
           'transition-all duration-150 ease-out'
         )}
       >
@@ -146,6 +145,8 @@ function NavItem({
     <Link
       href={item.href}
       onClick={onClick}
+      aria-label={item.name}
+      aria-current={isActive ? 'page' : undefined}
       className={cn(
         'group/link relative flex items-center rounded-lg text-sm font-medium',
         'transition-colors duration-150 outline-none focus-visible:ring-2 focus-visible:ring-ring/60',
@@ -153,15 +154,15 @@ function NavItem({
           ? 'h-10 w-10 mx-auto justify-center'
           : 'gap-3 px-3 py-2.5 w-full',
         isActive
-          ? 'bg-primary text-primary-foreground shadow-sm'
-          : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+          ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+          : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
       )}
     >
       <Icon
         className={cn(
           'shrink-0 transition-transform duration-150',
           collapsed ? 'h-5 w-5' : 'h-4 w-4',
-          !isActive && 'group-hover/link:scale-110'
+          'motion-reduce:transition-none'
         )}
       />
       {!collapsed && <span className="truncate">{item.name}</span>}
@@ -237,7 +238,7 @@ function SidebarContent({
               'text-muted-foreground hover:text-foreground hover:bg-accent',
               'transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60'
             )}
-            title="Collapse sidebar"
+            title="Collapse sidebar" aria-label="Collapse sidebar"
           >
             <ChevronsLeft className="h-4 w-4" />
           </button>
@@ -245,13 +246,13 @@ function SidebarContent({
       </div>
 
       {/* ── Navigation ────────────────────────────────────────────────── */}
-      <nav className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4">
+      <nav aria-label="Main navigation" className="flex-1 overflow-y-auto overflow-x-hidden px-3 py-4">
         <div className="space-y-5">
           {navGroups.map((group, gi) => (
             <div key={group.label}>
               {/* Group label */}
               {!collapsed ? (
-                <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/50 select-none">
+                <p className="mb-1.5 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground select-none">
                   {group.label}
                 </p>
               ) : (
@@ -287,7 +288,7 @@ function SidebarContent({
                 'text-muted-foreground hover:text-foreground hover:bg-accent',
                 'transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60'
               )}
-              title="Expand sidebar"
+              title="Expand sidebar" aria-label="Expand sidebar"
             >
               <ChevronsRight className="h-4 w-4" />
             </button>
@@ -334,7 +335,7 @@ function SidebarContent({
                 'text-muted-foreground hover:text-destructive hover:bg-destructive/10',
                 'transition-colors outline-none focus-visible:ring-2 focus-visible:ring-ring/60'
               )}
-              title="Sign out"
+              title="Sign out" aria-label="Sign out" disabled={logout.isPending}
             >
               <LogOut className="h-3.5 w-3.5" />
             </button>
@@ -356,7 +357,7 @@ export function Sidebar() {
     <aside
       className={cn(
         'hidden lg:fixed lg:inset-y-0 lg:left-0 lg:z-50 lg:flex lg:flex-col',
-        'border-r border-border bg-background',
+        'border-r border-sidebar-border bg-sidebar',
         'transition-[width] duration-300 ease-in-out will-change-[width]',
         collapsed ? 'lg:w-17' : 'lg:w-64'
       )}
@@ -370,7 +371,7 @@ export function Sidebar() {
 
 export function TenantMobileNav({ onNavigate }: { onNavigate?: () => void }) {
   return (
-    <div className="flex min-h-[calc(100dvh-4rem)] flex-col bg-background">
+    <div className="flex min-h-[calc(100dvh-4rem)] flex-col bg-sidebar">
       <SidebarContent collapsed={false} onNavigate={onNavigate} />
     </div>
   );

@@ -1,13 +1,13 @@
 import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next"
-import { Geist_Mono, Nunito_Sans } from "next/font/google";
+import { Geist_Mono, Geist } from "next/font/google";
 import { QueryProvider } from "@/lib/client";
 import { ThemeProvider } from "@/context";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
 // Body/UI face. `display: swap` keeps text readable while the font loads.
-const nunitoSans = Nunito_Sans({
+const geistSans = Geist({
   variable: "--font-sans",
   subsets: ["latin"],
   display: "swap",
@@ -40,7 +40,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${nunitoSans.variable} ${geistMono.variable}`}
+      className={`${geistSans.variable} ${geistMono.variable}`}
       suppressHydrationWarning
     >
       <body className="antialiased">

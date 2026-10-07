@@ -18,6 +18,7 @@ import {
   setRefreshToken,
   clearTokens,
   setTenantId,
+  clearTenantId,
 } from '../api-client';
 import type {
   LoginInput,
@@ -111,6 +112,10 @@ export function useLogin() {
       setRefreshToken(data.refreshToken);
       
       // Store tenant ID for Super Admin context
+      // Clear the previous account's church context before assigning this one.
+      if (!data.user.tenantId) {
+        clearTenantId();
+      }
       if (data.user.tenantId) {
         setTenantId(data.user.tenantId);
       }
