@@ -8,15 +8,13 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Combobox, ComboboxInput, ComboboxContent, ComboboxList, ComboboxItem, ComboboxEmpty } from '@/components/ui/combobox';
 import {
   HONEYPOT_FIELD,
   REGISTRATION_SECTIONS,
   validateRegistration,
   type RegistrationField,
 } from '@/lib/church-opening/fields';
-
-const SELECT_CLASS =
-  'border-input bg-background/60 hover:bg-background focus-visible:border-ring focus-visible:ring-ring/50 aria-invalid:border-destructive h-8 w-full rounded-lg border px-2.5 text-base outline-none transition-colors focus-visible:ring-[3px] md:text-sm';
 
 interface FieldControlProps {
   field: RegistrationField;
@@ -39,14 +37,31 @@ function FieldControl({ field, value, error, onChange, disabled }: FieldControlP
   let control: React.ReactNode;
   if (field.type === 'select') {
     control = (
-      <select {...common} disabled={disabled} autoComplete={field.autoComplete} className={SELECT_CLASS} value={value} onChange={(e) => onChange(e.target.value)}>
-        <option value="">{disabled ? 'Select a country first' : `Select ${field.label.toLowerCase()}…`}</option>
-        {field.options?.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+      <Combobox
+        items={(field.options ?? []).map((option) => option.value)}
+        value={value || null}
+        onValueChange={(selected: string | null) => onChange(selected ?? '')}
+        disabled={disabled}
+        name={field.key}
+        required={field.required}
+        autoHighlight
+      >
+        <ComboboxInput
+          id={id}
+          className="w-full"
+          disabled={disabled}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${id}-error` : undefined}
+          aria-required={field.required}
+          placeholder={disabled ? 'Select a country first' : `Search ${field.label.toLowerCase()}…`}
+        />
+        <ComboboxContent>
+          <ComboboxEmpty>No matching {field.label.toLowerCase()} found.</ComboboxEmpty>
+          <ComboboxList>
+            {(option: string) => <ComboboxItem key={option} value={option}>{option}</ComboboxItem>}
+          </ComboboxList>
+        </ComboboxContent>
+      </Combobox>
     );
   } else if (field.type === 'textarea') {
     control = <Textarea {...common} rows={3} value={value} onChange={(e) => onChange(e.target.value)} />;
