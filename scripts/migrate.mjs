@@ -49,6 +49,8 @@ console.log(`Migrating ${new URL(process.env.DATABASE_URL).hostname} ...`);
 
 await client.connect();
 try {
+  // Multiple container instances can start together. Only one migrates at a time.
+  await client.query('SELECT pg_advisory_lock(73642108)');
   await client.query(
     `CREATE TABLE IF NOT EXISTS schema_migration (
        name TEXT PRIMARY KEY,
@@ -77,13 +79,21 @@ try {
 
   for (const name of pending) {
     console.log(`Applying ${name} ...`);
-    await client.query(readFileSync(path.join(MIGRATIONS_DIR, name), 'utf8'));
-    await client.query('INSERT INTO schema_migration (name) VALUES ($1)', [name]);
+    await client.query('BEGIN');
+    try {
+      await client.query(readFileSync(path.join(MIGRATIONS_DIR, name), 'utf8'));
+      await client.query('INSERT INTO schema_migration (name) VALUES ($1)', [name]);
+      await client.query('COMMIT');
+    } catch (error) {
+      await client.query('ROLLBACK');
+      throw error;
+    }
   }
   if (pending.length > 0) console.log(`Applied ${pending.length} migration(s).`);
 } catch (error) {
   console.error('Migration failed:', error.message);
   process.exitCode = 1;
 } finally {
+  // Closing the session also releases the advisory lock on failure.
   await client.end();
 }
