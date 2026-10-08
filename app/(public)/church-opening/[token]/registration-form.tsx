@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { getProvinceOptions } from '@/lib/church-opening/locations';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -22,9 +23,10 @@ interface FieldControlProps {
   value: string;
   error?: string;
   onChange: (value: string) => void;
+  disabled?: boolean;
 }
 
-function FieldControl({ field, value, error, onChange }: FieldControlProps) {
+function FieldControl({ field, value, error, onChange, disabled }: FieldControlProps) {
   const id = `field-${field.key}`;
   const common = {
     id,
@@ -37,8 +39,8 @@ function FieldControl({ field, value, error, onChange }: FieldControlProps) {
   let control: React.ReactNode;
   if (field.type === 'select') {
     control = (
-      <select {...common} className={SELECT_CLASS} value={value} onChange={(e) => onChange(e.target.value)}>
-        <option value="">Select…</option>
+      <select {...common} disabled={disabled} autoComplete={field.autoComplete} className={SELECT_CLASS} value={value} onChange={(e) => onChange(e.target.value)}>
+        <option value="">{disabled ? 'Select a country first' : `Select ${field.label.toLowerCase()}…`}</option>
         {field.options?.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}
@@ -87,10 +89,9 @@ export function RegistrationForm({ token }: { token: string }) {
   const [isDone, setIsDone] = useState(false);
 
   const setValue = (key: string, value: string) => {
-    setValues((prev) => ({ ...prev, [key]: value }));
+    setValues((prev) => ({ ...prev, [key]: value, ...(key === 'country' ? { province: '' } : {}) }));
     setErrors((prev) => {
-      if (!prev[key]) return prev;
-      return Object.fromEntries(Object.entries(prev).filter(([k]) => k !== key));
+      return Object.fromEntries(Object.entries(prev).filter(([k]) => k !== key && !(key === 'country' && k === 'province')));
     });
   };
 
@@ -162,7 +163,8 @@ export function RegistrationForm({ token }: { token: string }) {
             {section.fields.map((field) => (
               <div key={field.key} className={field.type === 'textarea' ? 'sm:col-span-2' : undefined}>
                 <FieldControl
-                  field={field}
+                  field={field.key === 'province' ? { ...field, options: getProvinceOptions(values.country ?? '') } : field}
+                  disabled={field.key === 'province' && !values.country}
                   value={values[field.key] ?? ''}
                   error={errors[field.key]}
                   onChange={(v) => setValue(field.key, v)}

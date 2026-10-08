@@ -28,3 +28,10 @@ test('rejects invalid email, phone and oversized locations', () => {
     assert.equal(validateRegistration({ ...valid, ...override }).ok, false);
   }
 });
+
+
+test('rejects invented countries and provinces from a different country', () => {
+  assert.equal(validateRegistration({ ...valid, country: 'Invented country' }).ok, false);
+  assert.equal(validateRegistration({ ...valid, country: 'Zimbabwe', province: 'Gauteng' }).ok, false);
+  assert.equal(validateRegistration({ ...valid, country: 'Zimbabwe', province: 'Harare Province' }).ok, true);
+});

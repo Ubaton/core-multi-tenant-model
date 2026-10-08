@@ -14,6 +14,7 @@
  */
 
 import { z } from 'zod';
+import { COUNTRY_OPTIONS, getProvinceOptions } from './locations';
 import { normalizePhone } from '@/lib/members-import';
 
 export type FieldType = 'text' | 'tel' | 'email' | 'date' | 'number' | 'select' | 'textarea';
@@ -48,8 +49,8 @@ export const REGISTRATION_SECTIONS: readonly RegistrationSection[] = [{
     { key: 'surname', label: 'Surname', type: 'text', required: true, autoComplete: 'family-name' },
     { key: 'emailAddress', label: 'Email', type: 'email', required: true, autoComplete: 'email' },
     { key: 'cellNumber', label: 'Cell Number', type: 'tel', required: true, autoComplete: 'tel' },
-    { key: 'country', label: 'Country', type: 'text', required: true, autoComplete: 'country-name' },
-    { key: 'province', label: 'Province', type: 'text', required: true, autoComplete: 'address-level1' },
+    { key: 'country', label: 'Country', type: 'select', options: COUNTRY_OPTIONS, required: true, autoComplete: 'country-name' },
+    { key: 'province', label: 'Province', type: 'select', required: true, autoComplete: 'address-level1' },
   ],
 }];
 
@@ -132,7 +133,10 @@ export function validateRegistration(raw: unknown): RegistrationValidation {
       continue;
     }
 
-    const result = fieldSchemas.get(field.key)!.safeParse(text);
+    const schema = field.key === 'province'
+      ? fieldSchema({ ...field, options: getProvinceOptions(typeof input.country === 'string' ? input.country.trim() : '') })
+      : fieldSchemas.get(field.key)!;
+    const result = schema.safeParse(text);
     if (result.success && result.data !== undefined) {
       data[field.key] = result.data;
     } else if (!result.success) {
