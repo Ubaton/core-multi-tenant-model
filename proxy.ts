@@ -23,7 +23,7 @@ const PIN_COOKIE = 'reg_only';
 const AUTH_COOKIE = 'auth_token';
 const REFRESH_COOKIE = 'refresh_token';
 const TOKEN_PATTERN = /^[A-Za-z0-9_-]{43}$/;
-const FORM_PATH = /^\/register\/([A-Za-z0-9_-]{43})\/?$/;
+const FORM_PATH = /^\/(register|church-opening)\/([A-Za-z0-9_-]{43})\/?$/;
 const PUBLIC_API_PREFIX = '/api/public/registration/';
 
 function hasStaffSession(request: NextRequest): boolean {
@@ -46,7 +46,7 @@ export function proxy(request: NextRequest) {
   if (formMatch) {
     const response = withPrivateHeaders(NextResponse.next());
     if (!hasStaffSession(request)) {
-      response.cookies.set(PIN_COOKIE, formMatch[1], {
+      response.cookies.set(PIN_COOKIE, formMatch[1] === 'register' ? formMatch[2] : `church-opening:${formMatch[2]}`, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'lax',
@@ -57,12 +57,14 @@ export function proxy(request: NextRequest) {
   }
 
   // Form submission endpoint is the one API a pinned guest may call.
-  if (pathname.startsWith(PUBLIC_API_PREFIX)) {
+  if ((pathname.startsWith(PUBLIC_API_PREFIX) || pathname.startsWith('/api/public/church-opening-registration/'))) {
     return NextResponse.next();
   }
 
   const pinnedToken = request.cookies.get(PIN_COOKIE)?.value;
-  if (!pinnedToken || !TOKEN_PATTERN.test(pinnedToken) || hasStaffSession(request)) {
+  const opening = pinnedToken?.startsWith('church-opening:') ?? false;
+  const token = opening ? pinnedToken!.slice('church-opening:'.length) : pinnedToken;
+  if (!token || !TOKEN_PATTERN.test(token) || hasStaffSession(request)) {
     return NextResponse.next();
   }
 
@@ -76,7 +78,7 @@ export function proxy(request: NextRequest) {
     );
   }
 
-  return withPrivateHeaders(NextResponse.redirect(new URL(`/register/${pinnedToken}`, request.url)));
+  return withPrivateHeaders(NextResponse.redirect(new URL(`/${opening ? 'church-opening' : 'register'}/${token}`, request.url)));
 }
 
 export const config = {

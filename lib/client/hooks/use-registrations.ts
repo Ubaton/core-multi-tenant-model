@@ -15,9 +15,9 @@ import type { PaginationMeta } from '@/lib/types';
 
 export const registrationKeys = {
   all: ['registrations'] as const,
-  link: () => [...registrationKeys.all, 'link', getTenantId()] as const,
-  lists: () => [...registrationKeys.all, 'list'] as const,
-  list: (filters: RegistrationFilters) => [...registrationKeys.lists(), getTenantId(), filters] as const,
+  link: (opening = false) => [...registrationKeys.all, 'link', opening, getTenantId()] as const,
+  lists: (opening = false) => [...registrationKeys.all, 'list', opening] as const,
+  list: (filters: RegistrationFilters, opening = false) => [...registrationKeys.lists(opening), getTenantId(), filters] as const,
 };
 
 export interface RegistrationFilters {
@@ -50,26 +50,26 @@ interface RegistrationsResponse {
   meta: PaginationMeta;
 }
 
-export function useRegistrationLink() {
+export function useRegistrationLink(opening = false) {
   return useQuery({
-    queryKey: registrationKeys.link(),
-    queryFn: async () => (await get<RegistrationLink | null>('/api/registrations/link')).data ?? null,
+    queryKey: registrationKeys.link(opening),
+    queryFn: async () => (await get<RegistrationLink | null>(`${opening ? '/api/church-opening-registrations' : '/api/registrations'}/link`)).data ?? null,
   });
 }
 
 /** Creates the link on first use, and rotates it (revoking the old URL/QR) afterwards. */
-export function useRotateRegistrationLink() {
+export function useRotateRegistrationLink(opening = false) {
   return useAppMutation<RegistrationLink, Error, void>({
-    mutationFn: async () => (await post<RegistrationLink>('/api/registrations/link', {})).data!,
-    invalidateKeys: [registrationKeys.link()],
+    mutationFn: async () => (await post<RegistrationLink>(`${opening ? '/api/church-opening-registrations' : '/api/registrations'}/link`, {})).data!,
+    invalidateKeys: [registrationKeys.link(opening)],
   });
 }
 
-export function useRegistrations(filters: RegistrationFilters = {}) {
+export function useRegistrations(filters: RegistrationFilters = {}, opening = false) {
   return useQuery({
-    queryKey: registrationKeys.list(filters),
+    queryKey: registrationKeys.list(filters, opening),
     queryFn: async (): Promise<RegistrationsResponse> => {
-      const response = await get<Registration[]>('/api/registrations', {
+      const response = await get<Registration[]>((opening ? '/api/church-opening-registrations' : '/api/registrations'), {
         search: filters.search,
         page: filters.page,
         limit: filters.limit,
@@ -79,9 +79,9 @@ export function useRegistrations(filters: RegistrationFilters = {}) {
   });
 }
 
-export function useMarkRegistrationReviewed() {
+export function useMarkRegistrationReviewed(opening = false) {
   return useAppMutation<{ id: string; status: string }, Error, string>({
-    mutationFn: async (id) => (await patch<{ id: string; status: string }>(`/api/registrations/${id}`, {})).data!,
-    invalidateKeys: [registrationKeys.lists()],
+    mutationFn: async (id) => (await patch<{ id: string; status: string }>(`${opening ? '/api/church-opening-registrations' : '/api/registrations'}/${id}`, {})).data!,
+    invalidateKeys: [registrationKeys.lists(opening)],
   });
 }

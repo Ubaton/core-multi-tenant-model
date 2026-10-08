@@ -26,18 +26,19 @@ import {
 } from '@/lib/client';
 import { useModulePermissions } from '@/lib/client/hooks/use-user-permissions';
 import { REGISTRATION_SECTIONS } from '@/lib/registration/fields';
+import { REGISTRATION_SECTIONS as OPENING_SECTIONS } from '@/lib/church-opening/fields';
 import { canManageRegistrationLink } from '@/lib/registration/permissions';
 
 const PAGE_SIZE = 20;
 const PNG_SIZE = 1024;
 const PNG_MARGIN = 64;
 
-function LinkCard({ canManage }: { canManage: boolean }) {
-  const { data: link, isLoading, error, refetch } = useRegistrationLink();
-  const rotate = useRotateRegistrationLink();
+function LinkCard({ canManage, opening = false }: { canManage: boolean; opening?: boolean }) {
+  const { data: link, isLoading, error, refetch } = useRegistrationLink(opening);
+  const rotate = useRotateRegistrationLink(opening);
   const qrRef = useRef<HTMLDivElement>(null);
 
-  const url = link ? `${window.location.origin}/register/${link.token}` : '';
+  const url = link ? `${window.location.origin}/${opening ? 'church-opening' : 'register'}/${link.token}` : '';
 
   const copy = async () => {
     try {
@@ -79,7 +80,7 @@ function LinkCard({ canManage }: { canManage: boolean }) {
         const href = URL.createObjectURL(png);
         const anchor = document.createElement('a');
         anchor.href = href;
-        anchor.download = 'registration-qr.png';
+        anchor.download = opening ? 'church-opening-qr.png' : 'registration-qr.png';
         anchor.click();
         URL.revokeObjectURL(href);
       }, 'image/png');
@@ -106,7 +107,7 @@ function LinkCard({ canManage }: { canManage: boolean }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Registration QR code</CardTitle>
+        <CardTitle>{opening ? 'Church opening QR code' : 'Registration QR code'}</CardTitle>
         <CardDescription>
           Anyone who scans this or opens the link can fill in the registration form without logging in. They see
           the form only, nothing else on the site.
@@ -164,10 +165,10 @@ function LinkCard({ canManage }: { canManage: boolean }) {
   );
 }
 
-function RegistrationDetails({ registration }: { registration: Registration }) {
+function RegistrationDetails({ registration, opening = false }: { registration: Registration; opening?: boolean }) {
   return (
     <div className="grid gap-6 border-t bg-muted/30 p-4 sm:grid-cols-2">
-      {REGISTRATION_SECTIONS.map((section) => {
+      {(opening ? OPENING_SECTIONS : REGISTRATION_SECTIONS).map((section) => {
         const filled = section.fields.filter((f) => registration.data[f.key]);
         if (filled.length === 0) return null;
         return (
@@ -188,12 +189,12 @@ function RegistrationDetails({ registration }: { registration: Registration }) {
   );
 }
 
-function SubmissionsCard({ canEdit }: { canEdit: boolean }) {
+function SubmissionsCard({ canEdit, opening = false }: { canEdit: boolean; opening?: boolean }) {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [openId, setOpenId] = useState<string | null>(null);
-  const { data, isLoading, error, refetch } = useRegistrations({ search: search || undefined, page, limit: PAGE_SIZE });
-  const markReviewed = useMarkRegistrationReviewed();
+  const { data, isLoading, error, refetch } = useRegistrations({ search: search || undefined, page, limit: PAGE_SIZE }, opening);
+  const markReviewed = useMarkRegistrationReviewed(opening);
 
   const handleReviewed = async (id: string) => {
     try {
@@ -235,6 +236,32 @@ function SubmissionsCard({ canEdit }: { canEdit: boolean }) {
           </div>
         ) : !data || data.data.length === 0 ? (
           <p className="p-6 text-sm text-muted-foreground">{search ? 'No submissions match your search.' : 'No submissions yet.'}</p>
+        ) : opening ? (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <caption className="sr-only">Church opening submissions</caption>
+              <thead className="border-b bg-muted/30">
+                <tr>{['Name', 'Surname', 'Email', 'Cell Number', 'Country', 'Province', 'Status', 'Actions'].map((label) => (
+                  <th key={label} scope="col" className="whitespace-nowrap px-4 py-3 font-medium">{label}</th>
+                ))}</tr>
+              </thead>
+              <tbody className="divide-y">
+                {data.data.map((r) => (
+                  <tr key={r.id}>
+                    {[r.names, r.surname, r.email, r.cellNumber, r.data.country, r.data.province].map((value, index) => (
+                      <td key={index} className="px-4 py-3">{value}</td>
+                    ))}
+                    <td className="px-4 py-3"><Badge variant={r.status === 'PENDING' ? 'default' : 'secondary'}>{r.status === 'PENDING' ? 'New' : 'Reviewed'}</Badge></td>
+                    <td className="px-4 py-3">
+                      {canEdit && r.status === 'PENDING' && (
+                        <Button size="sm" variant="outline" onClick={() => handleReviewed(r.id)} disabled={markReviewed.isPending}>Mark reviewed<span className="sr-only">: {r.names} {r.surname}</span></Button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         ) : (
           <ul className="divide-y">
             {data.data.map((r) => {
@@ -265,7 +292,7 @@ function SubmissionsCard({ canEdit }: { canEdit: boolean }) {
                       </Button>
                     )}
                   </div>
-                  {isOpen && <RegistrationDetails registration={r} />}
+                  {isOpen && <RegistrationDetails registration={r} opening={opening} />}
                 </li>
               );
             })}
@@ -306,6 +333,11 @@ export default function RegistrationsPage() {
       </div>
       <LinkCard canManage={canManageRegistrationLink(role)} />
       <SubmissionsCard canEdit={canEdit('members')} />
+      <section className="space-y-6" aria-labelledby="church-opening-title">
+        <h2 id="church-opening-title" className="text-xl font-bold text-foreground">VILLAGE OF THE LORD CHURCH OPENING.</h2>
+        <LinkCard opening canManage={canManageRegistrationLink(role)} />
+        <SubmissionsCard opening canEdit={canEdit('members')} />
+      </section>
     </div>
   );
 }
