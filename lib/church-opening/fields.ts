@@ -47,10 +47,32 @@ export const REGISTRATION_SECTIONS: readonly RegistrationSection[] = [{
   fields: [
     { key: 'names', label: 'Name', type: 'text', required: true, autoComplete: 'given-name' },
     { key: 'surname', label: 'Surname', type: 'text', required: true, autoComplete: 'family-name' },
+    { key: 'age', label: 'Age', type: 'number' },
+    {
+      key: 'gender',
+      label: 'Gender',
+      type: 'select',
+      options: [
+        { value: 'Male', label: 'Male' },
+        { value: 'Female', label: 'Female' },
+        { value: 'Other', label: 'Other' },
+      ],
+    },
     { key: 'emailAddress', label: 'Email', type: 'email', required: true, autoComplete: 'email' },
     { key: 'cellNumber', label: 'Cell Number', type: 'tel', required: true, autoComplete: 'tel' },
     { key: 'country', label: 'Country', type: 'select', options: COUNTRY_OPTIONS, required: true, autoComplete: 'country-name' },
     { key: 'province', label: 'Province', type: 'select', required: true, autoComplete: 'address-level1' },
+    { key: 'suburb', label: 'Suburb', type: 'text', autoComplete: 'address-level3' },
+    {
+      key: 'hasSpiritualHome',
+      label: 'Do you have a spiritual home?',
+      type: 'select',
+      placeholder: 'Select Yes or No',
+      options: [
+        { value: 'Yes', label: 'Yes' },
+        { value: 'No', label: 'No' },
+      ],
+    },
   ],
 }];
 

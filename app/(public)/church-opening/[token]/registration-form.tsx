@@ -53,10 +53,10 @@ function FieldControl({ field, value, error, onChange, disabled }: FieldControlP
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${id}-error` : undefined}
           aria-required={field.required}
-          placeholder={disabled ? 'Select a country first' : `Search ${field.label.toLowerCase()}…`}
+          placeholder={disabled ? 'Select a country first' : field.placeholder ?? `Search ${field.label.toLowerCase()}…`}
         />
         <ComboboxContent>
-          <ComboboxEmpty>No matching {field.label.toLowerCase()} found.</ComboboxEmpty>
+          <ComboboxEmpty>No matching options found.</ComboboxEmpty>
           <ComboboxList>
             {(option: string) => <ComboboxItem key={option} value={option}>{option}</ComboboxItem>}
           </ComboboxList>
