@@ -22,6 +22,8 @@ export const registrationKeys = {
 
 export interface RegistrationFilters {
   search?: string;
+  attendance?: 'checked-in' | 'not-checked-in';
+  registeredBefore?: string;
   page?: number;
   limit?: number;
 }
@@ -43,6 +45,8 @@ export interface Registration {
   data: Record<string, string>;
   status: 'PENDING' | 'REVIEWED';
   createdAt: string;
+  registrationCode?: string;
+  checkedInAt?: string | null;
 }
 
 interface RegistrationsResponse {
@@ -71,6 +75,8 @@ export function useRegistrations(filters: RegistrationFilters = {}, opening = fa
     queryFn: async (): Promise<RegistrationsResponse> => {
       const response = await get<Registration[]>((opening ? '/api/church-opening-registrations' : '/api/registrations'), {
         search: filters.search,
+        attendance: filters.attendance,
+        registeredBefore: filters.registeredBefore,
         page: filters.page,
         limit: filters.limit,
       });
@@ -83,5 +89,15 @@ export function useMarkRegistrationReviewed(opening = false) {
   return useAppMutation<{ id: string; status: string }, Error, string>({
     mutationFn: async (id) => (await patch<{ id: string; status: string }>(`${opening ? '/api/church-opening-registrations' : '/api/registrations'}/${id}`, {})).data!,
     invalidateKeys: [registrationKeys.lists(opening)],
+  });
+}
+
+export function useCheckInChurchOpeningRegistration() {
+  return useAppMutation<{ checkedInAt: string }, Error, string>({
+    mutationFn: async (id) => (await post<{ checkedInAt: string }>(
+      `/api/church-opening-registrations/${encodeURIComponent(id)}/check-in`,
+      {}
+    )).data!,
+    invalidateKeys: [registrationKeys.lists(true)],
   });
 }

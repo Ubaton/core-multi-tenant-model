@@ -12,8 +12,10 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { randomUUID } from 'crypto';
+import { getCurrentUser } from '@/lib/auth';
 import { query } from '@/lib/db';
 import { errorResponse, successResponse, createdResponse, handleError } from '@/lib/api';
+import { hasPermission } from '@/lib/permissions';
 import { HONEYPOT_FIELD, validateRegistration } from '@/lib/church-opening/fields';
 import {
   MAX_BODY_BYTES,
@@ -76,28 +78,41 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
 
     const ipHash = hashClientIp(request);
     if (await isRateLimited(link.tenantId, ipHash)) {
-      return errorResponse('RATE_LIMITED', 'Too many submissions. Please try again later.', 429);
+      const user = await getCurrentUser();
+      if (user?.tenantId !== link.tenantId || !hasPermission(user, 'create', 'member')) {
+        return errorResponse('RATE_LIMITED', 'Too many submissions. Please try again later or ask the check-in team for help.', 429);
+      }
     }
 
     const { data } = result;
-    await query(
-      `INSERT INTO church_opening_registration
-         (id, tenant_id, surname, names, cell_number, email, id_number, data, ip_hash)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [
-        randomUUID(),
-        link.tenantId,
-        data.surname,
-        data.names,
-        data.cellNumber,
-        data.emailAddress ?? null,
-        data.idNumber ?? null,
-        JSON.stringify(data),
-        ipHash,
-      ]
-    );
+    const values = [
+      randomUUID(),
+      link.tenantId,
+      data.surname,
+      data.names,
+      data.cellNumber,
+      data.emailAddress ?? null,
+      data.idNumber ?? null,
+      JSON.stringify(data),
+      ipHash,
+    ];
 
-    return createdResponse({ received: true });
+    for (let attempt = 0; attempt < 3; attempt++) {
+      const [registration] = await query<{ registration_code: string }>(
+        `INSERT INTO church_opening_registration
+           (id, tenant_id, surname, names, cell_number, email, id_number, data, ip_hash)
+         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+         ON CONFLICT (tenant_id, registration_code) DO NOTHING
+         RETURNING registration_code`,
+        values
+      );
+
+      if (registration) {
+        return createdResponse({ received: true, registrationCode: registration.registration_code });
+      }
+    }
+
+    throw new Error('Could not allocate a church opening registration code');
   } catch (error) {
     return handleError(error);
   }

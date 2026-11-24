@@ -1,8 +1,10 @@
 'use client';
 
 import { useState } from 'react';
+import { normalizeRegistrationCode } from '@/lib/church-opening/attendance';
 import { getProvinceOptions } from '@/lib/church-opening/locations';
 import { CheckCircle2, Loader2 } from 'lucide-react';
+import { QRCodeSVG } from 'qrcode.react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -101,7 +103,7 @@ export function RegistrationForm({ token }: { token: string }) {
   const [formError, setFormError] = useState('');
   const [consent, setConsent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isDone, setIsDone] = useState(false);
+  const [confirmation, setConfirmation] = useState<{ code: string | null; checkInUrl: string | null } | null>(null);
 
   const setValue = (key: string, value: string) => {
     setValues((prev) => ({ ...prev, [key]: value, ...(key === 'country' ? { province: '' } : {}) }));
@@ -136,7 +138,14 @@ export function RegistrationForm({ token }: { token: string }) {
       const body = await response.json().catch(() => null);
 
       if (response.ok) {
-        setIsDone(true);
+        const responseCode = body?.data?.registrationCode;
+        const code = typeof responseCode === 'string' ? normalizeRegistrationCode(responseCode) : null;
+        setConfirmation({
+          code,
+          checkInUrl: code
+            ? new URL(`/registrations?checkIn=${encodeURIComponent(code)}#church-opening-check-in`, window.location.origin).href
+            : null,
+        });
         return;
       }
 
@@ -152,15 +161,27 @@ export function RegistrationForm({ token }: { token: string }) {
     }
   };
 
-  if (isDone) {
+  if (confirmation) {
     return (
       <Card>
         <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
           <CheckCircle2 className="h-12 w-12 text-green-600" aria-hidden="true" />
           <h2 className="text-xl font-semibold text-foreground">Thank you!</h2>
-          <p className="text-sm text-muted-foreground">
-            Your details have been received. You can now close this page.
-          </p>
+          <p className="text-sm text-muted-foreground">Your registration is complete.</p>
+          {confirmation.code && confirmation.checkInUrl && (
+            <>
+              <p className="max-w-sm text-sm text-muted-foreground">
+                Take a screenshot of this QR code or write down your registration code. Show either one to the check-in team when you arrive.
+              </p>
+              <div className="rounded-lg bg-white">
+                <QRCodeSVG value={confirmation.checkInUrl} size={176} marginSize={4} title="Your check-in QR code" />
+              </div>
+              <div>
+                <p className="text-sm text-muted-foreground">Registration code</p>
+                <p className="select-all font-mono text-lg font-semibold tracking-wider">{confirmation.code}</p>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     );

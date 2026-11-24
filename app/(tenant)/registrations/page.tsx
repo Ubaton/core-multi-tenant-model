@@ -8,30 +8,40 @@
 
 'use client';
 
-import { useRef, useState } from 'react';
+import { Suspense, useRef, useState } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
 import { Copy, Download, Loader2, QrCode, RefreshCw, Search } from 'lucide-react';
 import { toast } from 'sonner';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { AccessDenied } from '@/components/permission-gate';
 import {
+  useCheckInChurchOpeningRegistration,
   useMarkRegistrationReviewed,
   useRegistrationLink,
   useRegistrations,
   useRotateRegistrationLink,
   type Registration,
+  type RegistrationFilters,
 } from '@/lib/client';
 import { useModulePermissions } from '@/lib/client/hooks/use-user-permissions';
 import { REGISTRATION_SECTIONS } from '@/lib/registration/fields';
 import { REGISTRATION_SECTIONS as OPENING_SECTIONS } from '@/lib/church-opening/fields';
+import { normalizeRegistrationCode } from '@/lib/church-opening/attendance';
 import { canManageRegistrationLink } from '@/lib/registration/permissions';
 
 const PAGE_SIZE = 20;
 const PNG_SIZE = 1024;
 const PNG_MARGIN = 64;
+const openingDateTime = new Intl.DateTimeFormat('en-ZA', {
+  dateStyle: 'medium',
+  timeStyle: 'short',
+  timeZone: 'Africa/Johannesburg',
+});
 
 function LinkCard({ canManage, opening = false }: { canManage: boolean; opening?: boolean }) {
   const { data: link, isLoading, error, refetch } = useRegistrationLink(opening);
@@ -139,6 +149,11 @@ function LinkCard({ canManage, opening = false }: { canManage: boolean; opening?
             <div className="min-w-0 flex-1 space-y-3">
               <Input readOnly value={url} aria-label="Registration link" onFocus={(e) => e.currentTarget.select()} />
               <div className="flex flex-wrap gap-2">
+                {opening && (
+                  <a href={url} target="_blank" rel="noreferrer" className={buttonVariants({ variant: 'outline' })}>
+                    Open registration form<span className="sr-only"> (opens in a new tab)</span>
+                  </a>
+                )}
                 <Button variant="outline" onClick={copy}>
                   <Copy className="mr-2 h-4 w-4" aria-hidden="true" />
                   Copy link
@@ -189,12 +204,29 @@ function RegistrationDetails({ registration, opening = false }: { registration: 
   );
 }
 
-function SubmissionsCard({ canEdit, opening = false }: { canEdit: boolean; opening?: boolean }) {
-  const [search, setSearch] = useState('');
+function SubmissionsCard({
+  canEdit,
+  opening = false,
+  initialSearch = '',
+}: {
+  canEdit: boolean;
+  opening?: boolean;
+  initialSearch?: string;
+}) {
+  const [search, setSearch] = useState(initialSearch);
+  const [attendance, setAttendance] = useState<RegistrationFilters['attendance']>();
+  const [registeredBefore, setRegisteredBefore] = useState('');
   const [page, setPage] = useState(1);
   const [openId, setOpenId] = useState<string | null>(null);
-  const { data, isLoading, error, refetch } = useRegistrations({ search: search || undefined, page, limit: PAGE_SIZE }, opening);
+  const { data, isLoading, error, refetch } = useRegistrations({
+    search: search || undefined,
+    attendance,
+    registeredBefore: registeredBefore || undefined,
+    page,
+    limit: PAGE_SIZE,
+  }, opening);
   const markReviewed = useMarkRegistrationReviewed(opening);
+  const checkIn = useCheckInChurchOpeningRegistration();
 
   const handleReviewed = async (id: string) => {
     try {
@@ -204,18 +236,30 @@ function SubmissionsCard({ canEdit, opening = false }: { canEdit: boolean; openi
     }
   };
 
+  const handleCheckIn = async (registration: Registration) => {
+    try {
+      await checkIn.mutateAsync(registration.id);
+      toast.success(`${registration.names} ${registration.surname} is checked in`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Could not check in attendee');
+    }
+  };
+
   const meta = data?.meta;
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Submissions{meta ? ` (${meta.totalCount})` : ''}</CardTitle>
+        <CardTitle>{opening ? 'Attendance and submissions' : 'Submissions'}{meta ? ` (${meta.totalCount})` : ''}</CardTitle>
+        {opening && (
+          <CardDescription>Scan an attendee’s QR code or find their registration below, then select Check in.</CardDescription>
+        )}
         <div className="relative max-w-sm pt-2">
           <Search className="absolute left-2.5 top-1/2 mt-1 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
             className="pl-8"
-            placeholder="Search name, cell number or email"
-            aria-label="Search submissions"
+            placeholder={opening ? 'Search code, name, cell number or email' : 'Search name, cell number or email'}
+            aria-label={opening ? 'Search by registration code, name, cell number or email' : 'Search submissions'}
             value={search}
             onChange={(e) => {
               setSearch(e.target.value);
@@ -223,6 +267,39 @@ function SubmissionsCard({ canEdit, opening = false }: { canEdit: boolean; openi
             }}
           />
         </div>
+        {opening && (
+          <div className="flex flex-wrap gap-3 pt-2">
+            <div className="space-y-1.5">
+              <Label htmlFor="opening-attendance">Attendance</Label>
+              <select
+                id="opening-attendance"
+                className="h-10 rounded-lg border border-input bg-background px-3 text-sm focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50"
+                value={attendance ?? ''}
+                onChange={(event) => {
+                  const value = event.target.value;
+                  setAttendance(value === 'checked-in' || value === 'not-checked-in' ? value : undefined);
+                  setPage(1);
+                }}
+              >
+                <option value="">All registrations</option>
+                <option value="checked-in">Checked in</option>
+                <option value="not-checked-in">Not checked in</option>
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label htmlFor="opening-registration-cutoff">Registered before (SAST)</Label>
+              <Input
+                id="opening-registration-cutoff"
+                type="date"
+                value={registeredBefore}
+                onChange={(event) => {
+                  setRegisteredBefore(event.target.value);
+                  setPage(1);
+                }}
+              />
+            </div>
+          </div>
+        )}
       </CardHeader>
       <CardContent className="p-0">
         {isLoading ? (
@@ -235,33 +312,9 @@ function SubmissionsCard({ canEdit, opening = false }: { canEdit: boolean; openi
             <Button variant="outline" onClick={() => void refetch()}>Try again</Button>
           </div>
         ) : !data || data.data.length === 0 ? (
-          <p className="p-6 text-sm text-muted-foreground">{search ? 'No submissions match your search.' : 'No submissions yet.'}</p>
-        ) : opening ? (
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
-              <caption className="sr-only">Church opening submissions</caption>
-              <thead className="border-b bg-muted/30">
-                <tr>{['Name', 'Surname', 'Email', 'Cell Number', 'Country', 'Province', 'Status', 'Actions'].map((label) => (
-                  <th key={label} scope="col" className="whitespace-nowrap px-4 py-3 font-medium">{label}</th>
-                ))}</tr>
-              </thead>
-              <tbody className="divide-y">
-                {data.data.map((r) => (
-                  <tr key={r.id}>
-                    {[r.names, r.surname, r.email, r.cellNumber, r.data.country, r.data.province].map((value, index) => (
-                      <td key={index} className="px-4 py-3">{value}</td>
-                    ))}
-                    <td className="px-4 py-3"><Badge variant={r.status === 'PENDING' ? 'default' : 'secondary'}>{r.status === 'PENDING' ? 'New' : 'Reviewed'}</Badge></td>
-                    <td className="px-4 py-3">
-                      {canEdit && r.status === 'PENDING' && (
-                        <Button size="sm" variant="outline" onClick={() => handleReviewed(r.id)} disabled={markReviewed.isPending}>Mark reviewed<span className="sr-only">: {r.names} {r.surname}</span></Button>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <p className="p-6 text-sm text-muted-foreground">
+            {search || attendance || registeredBefore ? 'No submissions match your filters.' : 'No submissions yet.'}
+          </p>
         ) : (
           <ul className="divide-y">
             {data.data.map((r) => {
@@ -280,12 +333,32 @@ function SubmissionsCard({ canEdit, opening = false }: { canEdit: boolean; openi
                       </span>
                       <span className="block text-xs text-muted-foreground">
                         {r.cellNumber}
-                        {r.email ? ` · ${r.email}` : ''} · {new Date(r.createdAt).toLocaleDateString()}
+                        {r.email ? ` · ${r.email}` : ''}
+                        {!opening && ` · ${new Date(r.createdAt).toLocaleDateString()}`}
                       </span>
+                      {opening && (
+                        <span className="block text-xs text-muted-foreground">
+                          Registered <time dateTime={r.createdAt}>{openingDateTime.format(new Date(r.createdAt))}</time>
+                          {r.registrationCode && <> · <span className="font-mono">{r.registrationCode}</span></>}
+                        </span>
+                      )}
                     </button>
+                    {opening && (
+                      r.checkedInAt ? (
+                        <div className="space-y-1 text-xs text-muted-foreground">
+                          <Badge>Checked in</Badge>
+                          <time className="block" dateTime={r.checkedInAt}>{openingDateTime.format(new Date(r.checkedInAt))}</time>
+                        </div>
+                      ) : <Badge variant="outline">Not checked in</Badge>
+                    )}
                     <Badge variant={r.status === 'PENDING' ? 'default' : 'secondary'}>
                       {r.status === 'PENDING' ? 'New' : 'Reviewed'}
                     </Badge>
+                    {opening && canEdit && !r.checkedInAt && (
+                      <Button size="sm" onClick={() => handleCheckIn(r)} disabled={checkIn.isPending}>
+                        Check in<span className="sr-only"> {r.names} {r.surname}</span>
+                      </Button>
+                    )}
                     {canEdit && r.status === 'PENDING' && (
                       <Button size="sm" variant="outline" onClick={() => handleReviewed(r.id)} disabled={markReviewed.isPending}>
                         Mark reviewed
@@ -318,6 +391,13 @@ function SubmissionsCard({ canEdit, opening = false }: { canEdit: boolean; openi
   );
 }
 
+function OpeningSubmissions({ canEdit }: { canEdit: boolean }) {
+  const searchParams = useSearchParams();
+  const code = normalizeRegistrationCode(searchParams.get('checkIn') ?? '') ?? '';
+
+  return <SubmissionsCard key={code} opening canEdit={canEdit} initialSearch={code} />;
+}
+
 export default function RegistrationsPage() {
   const { canView, canEdit, role, isLoading } = useModulePermissions();
 
@@ -336,7 +416,11 @@ export default function RegistrationsPage() {
       <section className="space-y-6" aria-labelledby="church-opening-title">
         <h2 id="church-opening-title" className="text-xl font-bold text-foreground">VILLAGE OF THE LORD CHURCH OPENING.</h2>
         <LinkCard opening canManage={canManageRegistrationLink(role)} />
-        <SubmissionsCard opening canEdit={canEdit('members')} />
+        <div id="church-opening-check-in">
+          <Suspense fallback={<Loader2 className="h-5 w-5 animate-spin text-muted-foreground" aria-label="Loading submissions" />}>
+            <OpeningSubmissions canEdit={canEdit('members')} />
+          </Suspense>
+        </div>
       </section>
     </div>
   );

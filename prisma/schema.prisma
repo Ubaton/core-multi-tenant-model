@@ -416,12 +416,15 @@ model ChurchOpeningRegistration {
   data       Json     // Full form payload
   status     String   @default("PENDING") // PENDING | REVIEWED
   ipHash     String?  // Salted hash, rate limiting only
+  registrationCode String    @default(dbgenerated("'REG-' || upper(left(replace(gen_random_uuid()::text, '-', ''), 12))")) @map("registration_code")
+  checkedInAt      DateTime? @map("checked_in_at") @db.Timestamptz(3)
 
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 
   @@index([tenantId, createdAt(sort: Desc)])
   @@index([tenantId, ipHash, createdAt])
+  @@unique([tenantId, registrationCode], map: "uq_church_opening_registration_code")
 }
 
 // ════════════════════════════════════════════════════════════════════════════

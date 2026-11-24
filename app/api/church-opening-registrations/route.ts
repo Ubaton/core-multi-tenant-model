@@ -6,7 +6,10 @@
  */
 
 import { query } from '@/lib/db';
+import { z } from 'zod';
+import { normalizeRegistrationCode } from '@/lib/church-opening/attendance';
 import {
+  errorResponse,
   withPermission,
   successResponse,
   calculatePagination,
@@ -25,6 +28,8 @@ interface RegistrationRow {
   id_number: string | null;
   data: Record<string, string>;
   status: string;
+  registration_code: string;
+  checked_in_at: Date | null;
   created_at: Date;
 }
 
@@ -38,21 +43,40 @@ export const GET = withPermission('list', 'member', async (request, context) => 
   const page = clampInt(searchParams.get('page'), 1, 1, 100000);
   const pageSize = clampInt(searchParams.get('limit'), DEFAULT_PAGE_SIZE, 1, MAX_PAGE_SIZE);
   const search = searchParams.get('search')?.trim().slice(0, 100);
+  const attendance = searchParams.get('attendance');
+  const registeredBefore = searchParams.get('registeredBefore');
 
   const params: unknown[] = [context.tenantId];
   let where = 'tenant_id = $1';
   if (search) {
-    params.push(`%${search}%`);
-    where += ` AND (surname ILIKE $2 OR names ILIKE $2 OR cell_number ILIKE $2 OR email ILIKE $2)`;
+    const code = normalizeRegistrationCode(search);
+    if (code) {
+      params.push(code);
+      where += ' AND registration_code = $2';
+    } else {
+      params.push(`%${search}%`);
+      where += ` AND (concat_ws(' ', names, surname) ILIKE $2 OR cell_number ILIKE $2 OR email ILIKE $2)`;
+    }
+  }
+  if (attendance === 'checked-in') where += ' AND checked_in_at IS NOT NULL';
+  if (attendance === 'not-checked-in') where += ' AND checked_in_at IS NULL';
+  if (registeredBefore) {
+    if (registeredBefore.startsWith('0000') || !z.iso.date().safeParse(registeredBefore).success) {
+      return errorResponse('VALIDATION_ERROR', 'Enter a valid registration cutoff date', 400);
+    }
+    params.push(registeredBefore);
+    where += ` AND created_at < ($${params.length}::date::timestamp AT TIME ZONE 'Africa/Johannesburg') AT TIME ZONE 'UTC'`;
   }
 
   const { skip, take } = calculatePagination(page, pageSize);
 
   const [rows, countRows] = await Promise.all([
     query<RegistrationRow>(
-      `SELECT id, surname, names, cell_number, email, id_number, data, status, created_at
+      `SELECT id, surname, names, cell_number, email, id_number, data, status, registration_code, checked_in_at,
+              created_at AT TIME ZONE 'UTC' AS created_at
        FROM church_opening_registration WHERE ${where}
-       ORDER BY created_at DESC LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
+       ORDER BY church_opening_registration.created_at DESC, id DESC
+       LIMIT $${params.length + 1} OFFSET $${params.length + 2}`,
       [...params, take, skip]
     ),
     query<{ count: string }>(`SELECT COUNT(*) AS count FROM church_opening_registration WHERE ${where}`, params),
@@ -67,6 +91,8 @@ export const GET = withPermission('list', 'member', async (request, context) => 
     idNumber: r.id_number,
     data: r.data,
     status: r.status,
+    registrationCode: r.registration_code,
+    checkedInAt: r.checked_in_at,
     createdAt: r.created_at,
   }));
 
