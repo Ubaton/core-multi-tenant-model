@@ -48,7 +48,7 @@ function FieldControl({ field, value, error, onChange, disabled }: FieldControlP
       >
         <ComboboxInput
           id={id}
-          className="w-full"
+          className="h-10 w-full"
           disabled={disabled}
           aria-invalid={error ? true : undefined}
           aria-describedby={error ? `${id}-error` : undefined}
