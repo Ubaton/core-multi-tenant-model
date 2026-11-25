@@ -12,6 +12,7 @@ import { useQuery } from '@tanstack/react-query';
 import { get, post, patch, getTenantId } from '../api-client';
 import { useAppMutation } from './use-app-mutation';
 import type { PaginationMeta } from '@/lib/types';
+import type { ReceiptSendOutcome } from '@/lib/church-opening/email';
 
 export const registrationKeys = {
   all: ['registrations'] as const,
@@ -24,6 +25,7 @@ export interface RegistrationFilters {
   search?: string;
   attendance?: 'checked-in' | 'not-checked-in';
   registeredBefore?: string;
+  receipt?: 'unrecorded';
   page?: number;
   limit?: number;
 }
@@ -47,11 +49,14 @@ export interface Registration {
   createdAt: string;
   registrationCode?: string;
   checkedInAt?: string | null;
+  receiptSentAt?: string | null;
 }
+
+type RegistrationListMeta = PaginationMeta & { receiptEmailsEnabled?: boolean };
 
 interface RegistrationsResponse {
   data: Registration[];
-  meta: PaginationMeta;
+  meta: RegistrationListMeta;
 }
 
 export function useRegistrationLink(opening = false) {
@@ -77,6 +82,7 @@ export function useRegistrations(filters: RegistrationFilters = {}, opening = fa
         search: filters.search,
         attendance: filters.attendance,
         registeredBefore: filters.registeredBefore,
+        receipt: filters.receipt,
         page: filters.page,
         limit: filters.limit,
       });
@@ -98,6 +104,32 @@ export function useCheckInChurchOpeningRegistration() {
       `/api/church-opening-registrations/${encodeURIComponent(id)}/check-in`,
       {}
     )).data!,
+    invalidateKeys: [registrationKeys.lists(true)],
+  });
+}
+
+export function useSendChurchOpeningReceipts() {
+  return useAppMutation<Record<ReceiptSendOutcome, number>, Error, { ids: string[]; resend?: boolean }>({
+    retry: false,
+    mutationFn: async ({ ids, resend = false }) => {
+      const counts = { sent: 0, skipped: 0, failed: 0 };
+
+      for (const [index, id] of ids.entries()) {
+        if (index > 0) await new Promise((resolve) => setTimeout(resolve, 500));
+
+        try {
+          const response = await post<{ outcome: ReceiptSendOutcome }>(
+            `/api/church-opening-registrations/${encodeURIComponent(id)}/receipt`,
+            { resend }
+          );
+          counts[response.data?.outcome ?? 'failed']++;
+        } catch {
+          counts.failed++;
+        }
+      }
+
+      return counts;
+    },
     invalidateKeys: [registrationKeys.lists(true)],
   });
 }

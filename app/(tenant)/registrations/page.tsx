@@ -11,7 +11,7 @@
 import { Suspense, useRef, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
-import { Copy, Download, Loader2, QrCode, RefreshCw, Search } from 'lucide-react';
+import { Copy, Download, Loader2, Mail, QrCode, RefreshCw, Search } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button, buttonVariants } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -25,6 +25,7 @@ import {
   useRegistrationLink,
   useRegistrations,
   useRotateRegistrationLink,
+  useSendChurchOpeningReceipts,
   type Registration,
   type RegistrationFilters,
 } from '@/lib/client';
@@ -216,17 +217,20 @@ function SubmissionsCard({
   const [search, setSearch] = useState(initialSearch);
   const [attendance, setAttendance] = useState<RegistrationFilters['attendance']>();
   const [registeredBefore, setRegisteredBefore] = useState('');
+  const [unrecordedOnly, setUnrecordedOnly] = useState(false);
   const [page, setPage] = useState(1);
   const [openId, setOpenId] = useState<string | null>(null);
   const { data, isLoading, error, refetch } = useRegistrations({
     search: search || undefined,
     attendance,
     registeredBefore: registeredBefore || undefined,
+    receipt: unrecordedOnly ? 'unrecorded' : undefined,
     page,
     limit: PAGE_SIZE,
   }, opening);
   const markReviewed = useMarkRegistrationReviewed(opening);
   const checkIn = useCheckInChurchOpeningRegistration();
+  const sendReceipts = useSendChurchOpeningReceipts();
 
   const handleReviewed = async (id: string) => {
     try {
@@ -246,6 +250,30 @@ function SubmissionsCard({
   };
 
   const meta = data?.meta;
+  const receiptEmailsEnabled = opening && meta?.receiptEmailsEnabled === true;
+  const unrecordedIds = data?.data
+    .filter((registration) => registration.email?.trim() && !registration.receiptSentAt)
+    .map((registration) => registration.id) ?? [];
+
+  const handleSendReceipts = async (ids: string[], resend = false) => {
+    const result = await sendReceipts.mutateAsync({ ids, resend });
+    if (result.sent > 0) {
+      if (unrecordedOnly) setPage(1);
+      toast.success(result.sent === 1 ? 'Registration receipt sent' : `${result.sent} registration receipts sent`);
+    }
+    if (result.failed > 0) {
+      toast.error(result.failed === 1 ? 'Could not send one receipt. Check the address and try again.' : `Could not send ${result.failed} receipts. Check the addresses and try again.`);
+    }
+    if (result.skipped > 0) {
+      toast.info('Skipped receipts that were just sent, are being sent, or have no email address.');
+    }
+  };
+
+  const handleSendUnrecorded = () => {
+    if (window.confirm(`Send a registration receipt to each of the ${unrecordedIds.length} attendees on this page with no send recorded?`)) {
+      void handleSendReceipts(unrecordedIds);
+    }
+  };
 
   return (
     <Card>
@@ -300,6 +328,29 @@ function SubmissionsCard({
             </div>
           </div>
         )}
+        {(receiptEmailsEnabled || unrecordedOnly) && (
+          <div className="flex flex-wrap items-center gap-3 pt-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                className="size-4"
+                checked={unrecordedOnly}
+                onChange={(event) => {
+                  setUnrecordedOnly(event.target.checked);
+                  setPage(1);
+                }}
+              />
+              Show only registrations without a recorded receipt email
+            </label>
+            {canEdit && receiptEmailsEnabled && unrecordedOnly && unrecordedIds.length > 0 && (
+              <Button variant="outline" size="sm" onClick={handleSendUnrecorded} disabled={sendReceipts.isPending}>
+                <Mail aria-hidden="true" />
+                Send receipts on this page ({unrecordedIds.length})
+              </Button>
+            )}
+            {sendReceipts.isPending && <span role="status" className="text-sm text-muted-foreground">Sending receipts…</span>}
+          </div>
+        )}
       </CardHeader>
       <CardContent className="p-0">
         {isLoading ? (
@@ -313,7 +364,7 @@ function SubmissionsCard({
           </div>
         ) : !data || data.data.length === 0 ? (
           <p className="p-6 text-sm text-muted-foreground">
-            {search || attendance || registeredBefore ? 'No submissions match your filters.' : 'No submissions yet.'}
+            {search || attendance || registeredBefore || unrecordedOnly ? 'No submissions match your filters.' : 'No submissions yet.'}
           </p>
         ) : (
           <ul className="divide-y">
@@ -342,6 +393,13 @@ function SubmissionsCard({
                           {r.registrationCode && <> · <span className="font-mono">{r.registrationCode}</span></>}
                         </span>
                       )}
+                      {receiptEmailsEnabled && (
+                        <span className="block text-xs text-muted-foreground">
+                          {!r.email?.trim() ? 'No email address' : r.receiptSentAt
+                            ? <>Receipt sent <time dateTime={r.receiptSentAt}>{openingDateTime.format(new Date(r.receiptSentAt))}</time></>
+                            : 'No receipt email recorded'}
+                        </span>
+                      )}
                     </button>
                     {opening && (
                       r.checkedInAt ? (
@@ -357,6 +415,17 @@ function SubmissionsCard({
                     {opening && canEdit && !r.checkedInAt && (
                       <Button size="sm" onClick={() => handleCheckIn(r)} disabled={checkIn.isPending}>
                         Check in<span className="sr-only"> {r.names} {r.surname}</span>
+                      </Button>
+                    )}
+                    {receiptEmailsEnabled && canEdit && r.email?.trim() && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => void handleSendReceipts([r.id], !!r.receiptSentAt)}
+                        disabled={sendReceipts.isPending}
+                      >
+                        {r.receiptSentAt ? 'Resend receipt' : 'Send receipt'}
+                        <span className="sr-only"> to {r.names} {r.surname}</span>
                       </Button>
                     )}
                     {canEdit && r.status === 'PENDING' && (

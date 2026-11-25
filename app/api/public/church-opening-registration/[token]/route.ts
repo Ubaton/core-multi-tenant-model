@@ -111,7 +111,7 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       if (registration) {
         const code = registration.registration_code;
         const receiptSent = isChurchOpeningEmailTenant(link.tenantSlug)
-          ? await sendChurchOpeningRegistrationEmails({ registrationId, code, data })
+          ? await sendChurchOpeningRegistrationEmails({ tenantId: link.tenantId, registrationId, code, data })
           : undefined;
         return createdResponse({ received: true, registrationCode: code, receiptSent });
       }

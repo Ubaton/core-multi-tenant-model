@@ -8,6 +8,7 @@
 import { query } from '@/lib/db';
 import { z } from 'zod';
 import { normalizeRegistrationCode } from '@/lib/church-opening/attendance';
+import { isChurchOpeningEmailTenant } from '@/lib/church-opening/email';
 import {
   errorResponse,
   withPermission,
@@ -30,6 +31,7 @@ interface RegistrationRow {
   status: string;
   registration_code: string;
   checked_in_at: Date | null;
+  receipt_sent_at: Date | null;
   created_at: Date;
 }
 
@@ -45,6 +47,7 @@ export const GET = withPermission('list', 'member', async (request, context) => 
   const search = searchParams.get('search')?.trim().slice(0, 100);
   const attendance = searchParams.get('attendance');
   const registeredBefore = searchParams.get('registeredBefore');
+  const receiptEmailsEnabled = isChurchOpeningEmailTenant(context.tenant.tenant?.slug ?? '');
 
   const params: unknown[] = [context.tenantId];
   let where = 'tenant_id = $1';
@@ -60,6 +63,9 @@ export const GET = withPermission('list', 'member', async (request, context) => 
   }
   if (attendance === 'checked-in') where += ' AND checked_in_at IS NOT NULL';
   if (attendance === 'not-checked-in') where += ' AND checked_in_at IS NULL';
+  if (receiptEmailsEnabled && searchParams.get('receipt') === 'unrecorded') {
+    where += " AND receipt_sent_at IS NULL AND NULLIF(btrim(email), '') IS NOT NULL";
+  }
   if (registeredBefore) {
     if (registeredBefore.startsWith('0000') || !z.iso.date().safeParse(registeredBefore).success) {
       return errorResponse('VALIDATION_ERROR', 'Enter a valid registration cutoff date', 400);
@@ -72,7 +78,7 @@ export const GET = withPermission('list', 'member', async (request, context) => 
 
   const [rows, countRows] = await Promise.all([
     query<RegistrationRow>(
-      `SELECT id, surname, names, cell_number, email, id_number, data, status, registration_code, checked_in_at,
+      `SELECT id, surname, names, cell_number, email, id_number, data, status, registration_code, checked_in_at, receipt_sent_at,
               created_at AT TIME ZONE 'UTC' AS created_at
        FROM church_opening_registration WHERE ${where}
        ORDER BY church_opening_registration.created_at DESC, id DESC
@@ -93,8 +99,13 @@ export const GET = withPermission('list', 'member', async (request, context) => 
     status: r.status,
     registrationCode: r.registration_code,
     checkedInAt: r.checked_in_at,
+    receiptSentAt: r.receipt_sent_at,
     createdAt: r.created_at,
   }));
 
-  return successResponse(registrations, createPaginationMeta(page, pageSize, Number(countRows[0]?.count ?? 0)));
+  const meta = {
+    ...createPaginationMeta(page, pageSize, Number(countRows[0]?.count ?? 0)),
+    receiptEmailsEnabled,
+  };
+  return successResponse(registrations, meta);
 });
