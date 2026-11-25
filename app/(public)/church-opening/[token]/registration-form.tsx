@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { normalizeRegistrationCode } from '@/lib/church-opening/attendance';
+import { getChurchOpeningCheckInUrl, normalizeRegistrationCode } from '@/lib/church-opening/attendance';
 import { getProvinceOptions } from '@/lib/church-opening/locations';
 import { CheckCircle2, Loader2 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
@@ -97,13 +97,13 @@ function FieldControl({ field, value, error, onChange, disabled }: FieldControlP
   );
 }
 
-export function RegistrationForm({ token }: { token: string }) {
+export function RegistrationForm({ token, emailsEnabled }: { token: string; emailsEnabled: boolean }) {
   const [values, setValues] = useState<Record<string, string>>({});
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState('');
   const [consent, setConsent] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [confirmation, setConfirmation] = useState<{ code: string | null; checkInUrl: string | null } | null>(null);
+  const [confirmation, setConfirmation] = useState<{ code: string | null; receiptSent?: boolean } | null>(null);
 
   const setValue = (key: string, value: string) => {
     setValues((prev) => ({ ...prev, [key]: value, ...(key === 'country' ? { province: '' } : {}) }));
@@ -142,9 +142,7 @@ export function RegistrationForm({ token }: { token: string }) {
         const code = typeof responseCode === 'string' ? normalizeRegistrationCode(responseCode) : null;
         setConfirmation({
           code,
-          checkInUrl: code
-            ? new URL(`/registrations?checkIn=${encodeURIComponent(code)}#church-opening-check-in`, window.location.origin).href
-            : null,
+          receiptSent: typeof body?.data?.receiptSent === 'boolean' ? body.data.receiptSent : undefined,
         });
         return;
       }
@@ -166,15 +164,22 @@ export function RegistrationForm({ token }: { token: string }) {
       <Card>
         <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
           <CheckCircle2 className="h-12 w-12 text-green-600" aria-hidden="true" />
-          <h2 className="text-xl font-semibold text-foreground">Thank you!</h2>
-          <p className="text-sm text-muted-foreground">Your registration is complete.</p>
-          {confirmation.code && confirmation.checkInUrl && (
+          <h2 className="text-xl font-semibold text-foreground">Thank you for registering!</h2>
+          {confirmation.receiptSent === true && (
+            <p className="max-w-sm text-sm text-muted-foreground">
+              Check your email for your QR code. Show the email to the ushers at the gate so they can check you in.
+            </p>
+          )}
+          {confirmation.receiptSent === false && (
+            <p className="text-sm text-muted-foreground">The email receipt could not be sent.</p>
+          )}
+          {confirmation.code && (
             <>
               <p className="max-w-sm text-sm text-muted-foreground">
                 Take a screenshot of this QR code or write down your registration code. Show either one to the check-in team when you arrive.
               </p>
               <div className="rounded-lg bg-white">
-                <QRCodeSVG value={confirmation.checkInUrl} size={176} marginSize={4} title="Your check-in QR code" />
+                <QRCodeSVG value={getChurchOpeningCheckInUrl(confirmation.code, window.location.origin)} size={176} marginSize={4} title="Your check-in QR code" />
               </div>
               <div>
                 <p className="text-sm text-muted-foreground">Registration code</p>
@@ -232,7 +237,10 @@ export function RegistrationForm({ token }: { token: string }) {
           checked={consent}
           onChange={(e) => setConsent(e.target.checked)}
         />
-        <span>I agree that the church may store and use these details for the church opening.</span>
+        <span>
+          I agree that the church may store and use these details for the church opening.
+          {emailsEnabled && ' The church will email me a receipt and send my submission to the event team.'}
+        </span>
       </label>
 
       {formError && (

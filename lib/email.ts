@@ -36,10 +36,19 @@ import { Resend } from 'resend';
 import { query } from '@/lib/db';
 
 export interface SendEmailInput {
+  from?: string;
   to: string;
   subject: string;
   html: string;
   text: string;
+  attachments?: {
+    filename: string;
+    content: Buffer;
+    contentType: string;
+    contentId?: string;
+  }[];
+  /** Omit message content and raw provider errors from failure logs. */
+  privateContent?: boolean;
   /**
    * Resend de-duplicates sends sharing a key for 24 hours. Shaped
    * `<event-type>/<entity-id>`. Lets a retry after a timeout be safe rather
@@ -190,23 +199,27 @@ async function sendViaSmtp(
   input: SendEmailInput,
   config: SmtpConfig
 ): Promise<SendEmailResult> {
-  const from = config.fromName
+  const configuredFrom = config.fromName
     ? `${config.fromName} <${config.fromEmail}>`
     : config.fromEmail;
 
   try {
     await getTransporter(config).sendMail({
-      from,
+      from: input.from ?? configuredFrom,
       to: input.to,
       subject: input.subject,
       html: input.html,
       text: input.text,
+      attachments: input.attachments?.map(({ contentId, ...attachment }) => ({
+        ...attachment,
+        cid: contentId,
+      })),
     });
     return { delivered: true };
   } catch (error) {
     console.error(
       `[email] SMTP delivery failed via ${config.host}:${config.port} -`,
-      error
+      input.privateContent ? '' : error
     );
     // A failed transport is usually a bad credential or a dropped socket; drop
     // it so the next attempt reconnects instead of reusing a dead pool.
@@ -240,7 +253,7 @@ async function sendViaResend(
   // No test-address fallback: onboarding@resend.dev only delivers to the
   // account owner, so defaulting to it would silently drop mail to everyone
   // else. Better to fail loudly with an actionable reason.
-  const from = process.env.EMAIL_FROM;
+  const from = input.from ?? process.env.EMAIL_FROM;
   if (!from) {
     return {
       delivered: false,
@@ -259,19 +272,20 @@ async function sendViaResend(
       subject: input.subject,
       html: input.html,
       text: input.text,
+      ...(input.attachments ? { attachments: input.attachments } : {}),
       ...(process.env.EMAIL_REPLY_TO ? { replyTo: process.env.EMAIL_REPLY_TO } : {}),
       ...(input.idempotencyKey ? { idempotencyKey: input.idempotencyKey } : {}),
     });
 
     if (error) {
-      console.error('[email] Resend rejected message:', error);
+      console.error('[email] Resend rejected message:', input.privateContent ? error.name : error);
       return { delivered: false, error: describeResendError(error, from) };
     }
 
     console.info(`[email] Sent via Resend (id: ${data?.id ?? 'unknown'})`);
     return { delivered: true };
   } catch (error) {
-    console.error('[email] Failed to reach Resend:', error);
+    console.error('[email] Failed to reach Resend:', input.privateContent ? '' : error);
     return {
       delivered: false,
       error: `Could not reach the Resend API: ${
@@ -331,12 +345,16 @@ export async function sendEmail(input: SendEmailInput): Promise<SendEmailResult>
     }
   }
 
-  console.info(
-    `[email] No working transport - message not sent.\n` +
-      `  To:      ${input.to}\n` +
-      `  Subject: ${input.subject}\n` +
-      `  Body:\n${input.text}`
-  );
+  if (input.privateContent) {
+    console.warn('[email] No working transport for a private message.');
+  } else {
+    console.info(
+      `[email] No working transport - message not sent.\n` +
+        `  To:      ${input.to}\n` +
+        `  Subject: ${input.subject}\n` +
+        `  Body:\n${input.text}`
+    );
+  }
   return { delivered: false };
 }
 
@@ -542,7 +560,7 @@ export async function sendPasswordResetEmail(options: {
   });
 }
 
-function escapeHtml(value: string): string {
+export function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')

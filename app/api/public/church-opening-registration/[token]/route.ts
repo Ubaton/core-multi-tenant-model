@@ -1,12 +1,11 @@
 /**
  * ════════════════════════════════════════════════════════════════════════════
  * PUBLIC REGISTRATION API (no login)
- * GET  /api/public/registration/[token] - Church name for the form header
- * POST /api/public/registration/[token] - Submit a registration
+ * GET  /api/public/church-opening-registration/[token] - Form header
+ * POST /api/public/church-opening-registration/[token] - Save a registration
+ * and send the receipt and event-team copy for the official event tenant.
  *
- * Reachable by anyone holding the link, so it is deliberately narrow: it can
- * only read the church name and append one staged registration row. Unknown,
- * rotated and expired tokens are indistinguishable (404).
+ * Unknown, rotated and expired tokens are indistinguishable (404).
  * ════════════════════════════════════════════════════════════════════════════
  */
 
@@ -16,6 +15,7 @@ import { getCurrentUser } from '@/lib/auth';
 import { query } from '@/lib/db';
 import { errorResponse, successResponse, createdResponse, handleError } from '@/lib/api';
 import { hasPermission } from '@/lib/permissions';
+import { isChurchOpeningEmailTenant, sendChurchOpeningRegistrationEmails } from '@/lib/church-opening/email';
 import { HONEYPOT_FIELD, validateRegistration } from '@/lib/church-opening/fields';
 import {
   MAX_BODY_BYTES,
@@ -85,8 +85,9 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
     }
 
     const { data } = result;
+    const registrationId = randomUUID();
     const values = [
-      randomUUID(),
+      registrationId,
       link.tenantId,
       data.surname,
       data.names,
@@ -108,7 +109,11 @@ export async function POST(request: NextRequest, { params }: RouteParams) {
       );
 
       if (registration) {
-        return createdResponse({ received: true, registrationCode: registration.registration_code });
+        const code = registration.registration_code;
+        const receiptSent = isChurchOpeningEmailTenant(link.tenantSlug)
+          ? await sendChurchOpeningRegistrationEmails({ registrationId, code, data })
+          : undefined;
+        return createdResponse({ received: true, registrationCode: code, receiptSent });
       }
     }
 

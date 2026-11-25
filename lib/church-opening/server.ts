@@ -26,6 +26,7 @@ export function isWellFormedToken(token: string): boolean {
 
 export interface ActiveRegistrationLink {
   tenantId: string;
+  tenantSlug: string;
   tenantName: string;
   tenantLogo: string | null;
 }
@@ -38,8 +39,8 @@ export interface ActiveRegistrationLink {
 export async function findActiveLink(token: string): Promise<ActiveRegistrationLink | null> {
   if (!isWellFormedToken(token)) return null;
 
-  const rows = await query<{ tenant_id: string; name: string; logo: string | null }>(
-    `SELECT t.id AS tenant_id, t.name, t.logo
+  const rows = await query<{ tenant_id: string; slug: string; name: string; logo: string | null }>(
+    `SELECT t.id AS tenant_id, t.slug, t.name, t.logo
      FROM church_opening_link rl
      JOIN tenant t ON t.id = rl.tenant_id
      WHERE rl.token = $1
@@ -51,7 +52,7 @@ export async function findActiveLink(token: string): Promise<ActiveRegistrationL
   );
 
   const row = rows[0];
-  return row ? { tenantId: row.tenant_id, tenantName: row.name, tenantLogo: row.logo } : null;
+  return row ? { tenantId: row.tenant_id, tenantSlug: row.slug, tenantName: row.name, tenantLogo: row.logo } : null;
 }
 
 /** Salted hash of the caller's IP: enough to rate-limit, useless to identify. */

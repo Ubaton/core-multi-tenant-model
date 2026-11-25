@@ -7,6 +7,7 @@
  */
 
 import type { Metadata } from 'next';
+import { isChurchOpeningEmailTenant } from '@/lib/church-opening/email';
 import { findActiveLink } from '@/lib/church-opening/server';
 import { RegistrationForm } from './registration-form';
 
@@ -42,7 +43,7 @@ export default async function RegisterPage({ params }: { params: Promise<{ token
           Please fill in your details. Fields marked * are required.
         </p>
       </header>
-      <RegistrationForm token={token} />
+      <RegistrationForm token={token} emailsEnabled={isChurchOpeningEmailTenant(link.tenantSlug)} />
     </main>
   );
 }
