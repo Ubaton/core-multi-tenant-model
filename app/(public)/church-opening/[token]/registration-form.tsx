@@ -238,7 +238,8 @@ export function RegistrationForm({ token, emailsEnabled }: { token: string; emai
           onChange={(e) => setConsent(e.target.checked)}
         />
         <span>
-          I agree that the church may store and use these details for the church opening.
+          I consent to Unity Fellowship Church & UBN collecting and processing my personal information in
+          accordance with POPIA for purposes of the Church’s Grand Opening and future church activities and communications.
           {emailsEnabled && ' The church will email me a receipt and send my submission to the event team.'}
         </span>
       </label>
